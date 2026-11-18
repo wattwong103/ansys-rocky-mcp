@@ -652,6 +652,8 @@ async def rocky_create_inlet(
     target_velocity: float | None = None,
     periodic: bool | None = None,
     period: float | None = None,
+    velocity_x: float | None = None,
+    velocity_z: float | None = None,
 ) -> dict[str, Any]:
     """Create a particle inlet on a surface or a feed conveyor.
 
@@ -682,6 +684,10 @@ async def rocky_create_inlet(
         Repeat the inlet on a period. A ``period`` turns this on.
     period : float | None, default: None
         Repeat period in seconds. Rocky's token is ``s``.
+    velocity_x : float | None, default: None
+        Local x velocity in meters per second.
+    velocity_z : float | None, default: None
+        Local z velocity in meters per second.
 
     """
     session = get_session(ctx)
@@ -716,6 +722,11 @@ async def rocky_create_inlet(
             inlet.SetStopTime(stop_time, unit="s")
         if target_velocity is not None:
             inlet.SetTargetNormalVelocity(target_velocity, unit="m/s")
+        if velocity_x is not None:
+            inlet.SetUxLocal(velocity_x, unit="m/s")
+        if velocity_z is not None:
+            inlet.SetUzLocal(velocity_z, unit="m/s")
+        if any(value is not None for value in (target_velocity, velocity_x, velocity_z)):
             inlet.SetUseTargetNormalVelocity(True)
         if period is not None and periodic is None:
             periodic = True
@@ -749,6 +760,8 @@ async def rocky_create_inlet(
         target_velocity_m_s=inlet.GetTargetNormalVelocity("m/s"),
         periodic=bool(inlet.GetPeriodic()),
         period_s=inlet.GetPeriod("s"),
+        velocity_x_m_s=inlet.GetUxLocal("m/s"),
+        velocity_z_m_s=inlet.GetUzLocal("m/s"),
     )
 
 

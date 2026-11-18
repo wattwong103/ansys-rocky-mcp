@@ -625,6 +625,8 @@ class MockParticleInlet:
         self._use_target_velocity = False
         self._periodic = False
         self._period = 0.0
+        self._ux = 0.0
+        self._uz = 0.0
 
     def GetName(self) -> str:
         """Return the inlet name."""
@@ -728,6 +730,31 @@ class MockParticleInlet:
         if unit not in (None, "s"):
             raise ValueError(f"Unsupported time unit {unit!r}. Expected 's'.")
         self._period = float(value)
+
+    def _velocity(self, unit: str | None) -> None:
+        """Reject a velocity unit other than meters per second."""
+        if unit not in (None, "m/s"):
+            raise ValueError(f"Unsupported velocity unit {unit!r}. Expected 'm/s'.")
+
+    def GetUxLocal(self, unit: str | None = None) -> float:
+        """Return the local x velocity in meters per second."""
+        self._velocity(unit)
+        return self._ux
+
+    def SetUxLocal(self, value: float, unit: str | None = None) -> None:
+        """Set the local x velocity in meters per second."""
+        self._velocity(unit)
+        self._ux = float(value)
+
+    def GetUzLocal(self, unit: str | None = None) -> float:
+        """Return the local z velocity in meters per second."""
+        self._velocity(unit)
+        return self._uz
+
+    def SetUzLocal(self, value: float, unit: str | None = None) -> None:
+        """Set the local z velocity in meters per second."""
+        self._velocity(unit)
+        self._uz = float(value)
 
 
 class MockVolumetricInlet:
