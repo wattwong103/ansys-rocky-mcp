@@ -466,11 +466,13 @@ async def test_particle_size_distribution_is_set(study: Client) -> None:
             "particle_id": particles[0],
             "model": "incomplete_beta",
             "minimum_size": 0.02,
+            "minimum_size_ratio": 0.25,
             "surface_energy": 0.05,
         },
     )
     assert updated.data["model"] == "incomplete_beta"
     assert updated.data["minimum_size_m"] == pytest.approx(0.02)
+    assert updated.data["minimum_size_ratio"] == pytest.approx(0.25)
     assert updated.data["surface_energy"] == pytest.approx(0.05)
 
 

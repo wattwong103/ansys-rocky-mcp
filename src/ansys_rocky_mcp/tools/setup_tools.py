@@ -635,6 +635,7 @@ async def rocky_set_size_distribution(
     particle_id: str,
     model: str,
     minimum_size: float | None = None,
+    minimum_size_ratio: float | None = None,
     surface_energy: float | None = None,
     unit: str = "m",
     energy_unit: str = "J/m2",
@@ -649,6 +650,8 @@ async def rocky_set_size_distribution(
         One of ``gaudin_schumann``, ``incomplete_beta``, or ``custom``.
     minimum_size : float | None, default: None
         Minimum sieve size. Omit it to leave the current size.
+    minimum_size_ratio : float | None, default: None
+        Minimum size as a fraction of the maximum size.
     unit : str, default: "m"
         Unit of ``minimum_size``.
     surface_energy : float | None, default: None
@@ -668,6 +671,8 @@ async def rocky_set_size_distribution(
         particle.SetDistributionModel(model)
         if minimum_size is not None:
             particle.SetMinimumSize(minimum_size, unit=unit)
+        if minimum_size_ratio is not None:
+            particle.SetMinimumSizeRatio(minimum_size_ratio)
         if surface_energy is not None:
             particle.SetSurfaceEnergy(surface_energy, unit=energy_unit)
     except Exception as exc:
@@ -678,6 +683,7 @@ async def rocky_set_size_distribution(
         particle_id=particle_id,
         model=particle.GetDistributionModel(),
         minimum_size_m=particle.GetMinimumSize("m"),
+        minimum_size_ratio=particle.GetMinimumSizeRatio(),
         surface_energy=particle.GetSurfaceEnergy("J/m2"),
     )
 

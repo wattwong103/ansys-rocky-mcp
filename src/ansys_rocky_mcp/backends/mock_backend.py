@@ -441,6 +441,7 @@ class MockParticle:
         self._size_type = "sieve"
         self._minimum_size = DEFAULT_SIEVE_SIZE
         self._distribution = "gaudin_schumann"
+        self._size_ratio = 1.0
         self._surface_energy = 0.0
         self._material: MockSolidMaterial | None = None
         self._horizontal_aspect = 1.0
@@ -561,6 +562,14 @@ class MockParticle:
     def SetDistributionModel(self, value: str) -> None:
         """Set the size distribution model."""
         self._distribution = value
+
+    def GetMinimumSizeRatio(self) -> float:
+        """Return the minimum size as a fraction of the maximum size."""
+        return self._size_ratio
+
+    def SetMinimumSizeRatio(self, value: float) -> None:
+        """Set the minimum size as a fraction of the maximum size."""
+        self._size_ratio = float(value)
 
     def GetSurfaceEnergy(self, unit: str | None = None) -> float:
         """Return the surface energy."""
