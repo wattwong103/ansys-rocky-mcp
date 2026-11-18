@@ -264,6 +264,11 @@ async def test_domain_and_solver_settings_are_applied(study: Client) -> None:
     assert cores.data["processors"] == 4
     assert cores.data["local_processors"] == 4
     assert cores.data["mpi_processors"] == 4
+    released = await study.call_tool(
+        "rocky_set_simulation_settings",
+        {"release_without_overlap_check": True},
+    )
+    assert released.data["release_without_overlap_check"] is True
     gpu = await study.call_tool(
         "rocky_set_simulation_settings",
         {"processing_unit": "GPU", "target_gpus": [0], "gpu_slicing_direction": "Y"},

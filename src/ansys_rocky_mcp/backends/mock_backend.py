@@ -1178,6 +1178,7 @@ class MockSimulatorRun:
         self._fixed_timestep = 1e-4
         self._timestep_model = "variable"
         self._use_fixed_timestep = False
+        self._release_without_overlap = False
         self._processing_unit = "CPU"
         self._target_gpus: list[int] = []
         self._gpu_slicing = "X"
@@ -1282,6 +1283,14 @@ class MockSimulatorRun:
     def SetUseFixedTimestep(self, value: bool) -> None:
         """Enable or disable the fixed timestep."""
         self._use_fixed_timestep = bool(value)
+
+    def GetReleaseParticlesWithoutOverlapCheck(self) -> bool:
+        """Return whether particles are released without an overlap check."""
+        return self._release_without_overlap
+
+    def SetReleaseParticlesWithoutOverlapCheck(self, value: bool) -> None:
+        """Set whether particles are released without an overlap check."""
+        self._release_without_overlap = bool(value)
 
     def GetValidProcessingUnitValues(self) -> list[str]:
         """Return the processing units this stand-in accepts."""

@@ -1155,6 +1155,7 @@ async def rocky_set_simulation_settings(
     processing_unit: str | None = None,
     target_gpus: list[int] | None = None,
     gpu_slicing_direction: str | None = None,
+    release_without_overlap_check: bool | None = None,
     unit: str = "s",
 ) -> dict[str, Any]:
     """Configure the Rocky solver settings.
@@ -1181,6 +1182,8 @@ async def rocky_set_simulation_settings(
         GPU ids for a local GPU run, for example ``[0]``.
     gpu_slicing_direction : str | None, default: None
         How a multi-GPU run splits the domain. Rocky lists the accepted names.
+    release_without_overlap_check : bool | None, default: None
+        Release inlet particles even when they overlap. Needed with force packing.
     unit : str, default: "s"
         Unit of the duration and the time interval.
 
@@ -1244,6 +1247,8 @@ async def rocky_set_simulation_settings(
                 )
             solver.SetMultiGpuSlicingDirection(gpu_slicing_direction)
             _call_local(solver, "SetMultiGpuSlicingDirection", gpu_slicing_direction)
+        if release_without_overlap_check is not None:
+            solver.SetReleaseParticlesWithoutOverlapCheck(release_without_overlap_check)
     except ToolError:
         raise
     except Exception as exc:
@@ -1266,6 +1271,7 @@ async def rocky_set_simulation_settings(
         local_processing_unit=_local_value(solver, "GetProcessingUnit"),
         target_gpus=list(solver.GetTargetGpus()),
         gpu_slicing_direction=solver.GetMultiGpuSlicingDirection(),
+        release_without_overlap_check=bool(solver.GetReleaseParticlesWithoutOverlapCheck()),
     )
 
 
