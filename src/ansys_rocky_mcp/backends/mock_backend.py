@@ -272,6 +272,7 @@ class MockMaterialsInteraction:
         self._stiffness_ratio = 0.0
         self._velocity_exponent = 0.0
         self._velocity_limit = 0.0
+        self._stiffness_multiplier = 1.0
 
     def SetStaticFriction(self, value: float, unit: str | None = None) -> None:
         """Set the static friction coefficient."""
@@ -328,6 +329,14 @@ class MockMaterialsInteraction:
     def GetVelocityLimit(self, unit: str | None = None) -> float:
         """Return the velocity limit."""
         return self._velocity_limit
+
+    def SetContactStiffnessMultiplier(self, value: float, unit: str | None = None) -> None:
+        """Set the contact stiffness multiplier."""
+        self._stiffness_multiplier = float(value)
+
+    def GetContactStiffnessMultiplier(self, unit: str | None = None) -> float:
+        """Return the contact stiffness multiplier."""
+        return self._stiffness_multiplier
 
 
 class MockMaterialsInteractionCollection:
