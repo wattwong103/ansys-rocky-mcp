@@ -262,10 +262,11 @@ async def test_domain_and_solver_settings_are_applied(study: Client) -> None:
     assert timed.data["use_fixed_timestep"] is True
     gpu = await study.call_tool(
         "rocky_set_simulation_settings",
-        {"processing_unit": "GPU", "target_gpus": [0]},
+        {"processing_unit": "GPU", "target_gpus": [0], "gpu_slicing_direction": "Y"},
     )
     assert gpu.data["processing_unit"] == "GPU"
     assert gpu.data["target_gpus"] == [0]
+    assert gpu.data["gpu_slicing_direction"] == "Y"
     with pytest.raises(ToolError, match="processing unit"):
         await study.call_tool(
             "rocky_set_simulation_settings",

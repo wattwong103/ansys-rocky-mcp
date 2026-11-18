@@ -1015,6 +1015,7 @@ class MockSimulatorRun:
         self._use_fixed_timestep = False
         self._processing_unit = "CPU"
         self._target_gpus: list[int] = []
+        self._gpu_slicing = "X"
 
     def GetSimulationDuration(self, unit: str | None = None) -> float:
         """Return the simulation duration."""
@@ -1131,6 +1132,21 @@ class MockSimulatorRun:
     def SetTargetGpus(self, gpus: list[int]) -> None:
         """Set the GPU ids used by a local simulation."""
         self._target_gpus = [int(gpu) for gpu in gpus]
+
+    def GetValidMultiGpuSlicingDirectionValues(self) -> list[str]:
+        """Return the multi-GPU slicing directions this stand-in accepts."""
+        return ["X", "Y", "Z"]
+
+    def GetMultiGpuSlicingDirection(self) -> str:
+        """Return the multi-GPU slicing direction."""
+        return self._gpu_slicing
+
+    def SetMultiGpuSlicingDirection(self, value: str) -> None:
+        """Set the multi-GPU slicing direction."""
+        valid = self.GetValidMultiGpuSlicingDirectionValues()
+        if value not in valid:
+            raise ValueError(f"Unknown slicing direction {value!r}. Expected one of {valid}.")
+        self._gpu_slicing = value
 
 
 class MockMotionFrame:

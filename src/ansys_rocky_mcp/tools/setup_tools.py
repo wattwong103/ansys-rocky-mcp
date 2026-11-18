@@ -1016,6 +1016,7 @@ async def rocky_set_simulation_settings(
     fixed_timestep: float | None = None,
     processing_unit: str | None = None,
     target_gpus: list[int] | None = None,
+    gpu_slicing_direction: str | None = None,
     unit: str = "s",
 ) -> dict[str, Any]:
     """Configure the Rocky solver settings.
@@ -1040,6 +1041,8 @@ async def rocky_set_simulation_settings(
         ``CPU`` or ``GPU``. Rocky's object lists the accepted names.
     target_gpus : list[int] | None, default: None
         GPU ids for a local GPU run, for example ``[0]``.
+    gpu_slicing_direction : str | None, default: None
+        How a multi-GPU run splits the domain. Rocky lists the accepted names.
     unit : str, default: "s"
         Unit of the duration and the time interval.
 
@@ -1081,6 +1084,14 @@ async def rocky_set_simulation_settings(
             solver.SetProcessingUnit(processing_unit)
         if target_gpus is not None:
             solver.SetTargetGpus(target_gpus)
+        if gpu_slicing_direction is not None:
+            valid_directions = list(solver.GetValidMultiGpuSlicingDirectionValues())
+            if gpu_slicing_direction not in valid_directions:
+                raise ToolError(
+                    f"Unknown GPU slicing direction {gpu_slicing_direction!r}. "
+                    f"Expected one of {valid_directions}."
+                )
+            solver.SetMultiGpuSlicingDirection(gpu_slicing_direction)
     except ToolError:
         raise
     except Exception as exc:
@@ -1099,6 +1110,7 @@ async def rocky_set_simulation_settings(
         use_fixed_timestep=bool(solver.GetUseFixedTimestep()),
         processing_unit=solver.GetProcessingUnit(),
         target_gpus=list(solver.GetTargetGpus()),
+        gpu_slicing_direction=solver.GetMultiGpuSlicingDirection(),
     )
 
 
