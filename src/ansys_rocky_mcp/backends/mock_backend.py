@@ -1231,6 +1231,7 @@ class MockFeedConveyor:
         self._triangle = 0.05
         self._thickness = 0.01
         self._diameter = 0.3
+        self._wall_thickness = 0.01
         self._incline_rad = 0.0
         self._material: Any = None
 
@@ -1379,6 +1380,14 @@ class MockFeedConveyor:
     def GetDiameter(self, unit: str | None = None) -> float:
         """Return the pulley diameter in meters."""
         return self._diameter
+
+    def SetWallThickness(self, value: float, unit: str | None = None) -> None:
+        """Set the conveyor wall thickness in meters."""
+        self._wall_thickness = float(value)
+
+    def GetWallThickness(self, unit: str | None = None) -> float:
+        """Return the conveyor wall thickness in meters."""
+        return self._wall_thickness
 
     def SetBeltInclineAngle(self, value: float, unit: str | None = None) -> None:
         """Set the belt incline. Degrees are accepted as ``deg``."""
