@@ -61,6 +61,8 @@ ROLLING_RESISTANCE_MODELS = ("type_1", "type_3", "none", "custom")
 ADHESION_MODELS = ("none", "constant", "linear", "JKR", "custom")
 RESTITUTION_MODELS = ("constant", "velocity_dependent")
 THERMAL_CORRECTION_MODELS = ("none", "morris_et_al_area", "morris_et_al_area_time")
+IMPACT_ENERGY_MODELS = ("default", "custom")
+SPH_THERMAL_MODELS = ("cleary", "custom")
 
 
 def _angular_velocity_rad_s(values: list[float], unit: str) -> tuple[float, float, float]:
@@ -2282,6 +2284,12 @@ async def rocky_set_contact_models(
     coarse_grain: bool | None = None,
     search_distance_multiplier: float | None = None,
     update_distance_multiplier: float | None = None,
+    impact_energy: str | None = None,
+    sph_thermal: str | None = None,
+    use_radl: bool | None = None,
+    exponent_limit: float | None = None,
+    volume_fraction_limit: float | None = None,
+    close_packing_volume_fraction: float | None = None,
 ) -> dict[str, Any]:
     """Set the Rocky contact models on the study physics.
 
@@ -2311,6 +2319,18 @@ async def rocky_set_contact_models(
         Multiplier on the neighbor-search distance.
     update_distance_multiplier : float | None, default: None
         Multiplier on the neighbor-list update distance.
+    impact_energy : str | None, default: None
+        One of ``default`` or ``custom``.
+    sph_thermal : str | None, default: None
+        SPH heat transfer. One of ``cleary`` or ``custom``.
+    use_radl : bool | None, default: None
+        Enable or disable the Radl et al. model.
+    exponent_limit : float | None, default: None
+        Exponent limit used by the contact model.
+    volume_fraction_limit : float | None, default: None
+        Volume-fraction limit.
+    close_packing_volume_fraction : float | None, default: None
+        Close-packing volume fraction.
 
     """
     session = get_session(ctx)
@@ -2341,6 +2361,15 @@ async def rocky_set_contact_models(
             f"Unknown thermal correction {thermal_correction!r}. "
             f"Expected one of {THERMAL_CORRECTION_MODELS}."
         )
+    if impact_energy is not None and impact_energy not in IMPACT_ENERGY_MODELS:
+        raise ToolError(
+            f"Unknown impact energy model {impact_energy!r}. "
+            f"Expected one of {IMPACT_ENERGY_MODELS}."
+        )
+    if sph_thermal is not None and sph_thermal not in SPH_THERMAL_MODELS:
+        raise ToolError(
+            f"Unknown SPH thermal model {sph_thermal!r}. Expected one of {SPH_THERMAL_MODELS}."
+        )
     try:
         physics = study.GetPhysics()
         if normal_force is not None:
@@ -2365,6 +2394,18 @@ async def rocky_set_contact_models(
             physics.SetSearchDistanceMultiplier(search_distance_multiplier)
         if update_distance_multiplier is not None:
             physics.SetUpdateDistanceMultiplier(update_distance_multiplier)
+        if impact_energy is not None:
+            physics.SetImpactEnergyModel(impact_energy)
+        if sph_thermal is not None:
+            physics.SetSphThermalTransferModel(sph_thermal)
+        if use_radl is not None:
+            physics.SetUseRadlEtAl(use_radl)
+        if exponent_limit is not None:
+            physics.SetExponentLimit(exponent_limit)
+        if volume_fraction_limit is not None:
+            physics.SetVolumeFractionLimit(volume_fraction_limit)
+        if close_packing_volume_fraction is not None:
+            physics.SetClosePackingVolumeFraction(close_packing_volume_fraction)
     except Exception as exc:
         raise ToolError(f"Could not set the contact models: {exc}") from exc
     return envelope(
@@ -2381,6 +2422,12 @@ async def rocky_set_contact_models(
         coarse_grain=bool(physics.GetEnableCoarseGrainModeling()),
         search_distance_multiplier=physics.GetSearchDistanceMultiplier(),
         update_distance_multiplier=physics.GetUpdateDistanceMultiplier(),
+        impact_energy=physics.GetImpactEnergyModel(),
+        sph_thermal=physics.GetSphThermalTransferModel(),
+        use_radl=bool(physics.GetUseRadlEtAl()),
+        exponent_limit=physics.GetExponentLimit(),
+        volume_fraction_limit=physics.GetVolumeFractionLimit(),
+        close_packing_volume_fraction=physics.GetClosePackingVolumeFraction(),
     )
 
 

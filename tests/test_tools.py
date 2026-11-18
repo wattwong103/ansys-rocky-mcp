@@ -357,6 +357,10 @@ async def test_domain_and_solver_settings_are_applied(study: Client) -> None:
             "numerical_softening_factor": 0.1,
             "coarse_grain": True,
             "search_distance_multiplier": 1.5,
+            "impact_energy": "custom",
+            "sph_thermal": "cleary",
+            "use_radl": True,
+            "volume_fraction_limit": 0.64,
         },
     )
     assert models.data["rolling_resistance"] == "type_3"
@@ -364,6 +368,10 @@ async def test_domain_and_solver_settings_are_applied(study: Client) -> None:
     assert models.data["numerical_softening_factor"] == pytest.approx(0.1)
     assert models.data["coarse_grain"] is True
     assert models.data["search_distance_multiplier"] == pytest.approx(1.5)
+    assert models.data["impact_energy"] == "custom"
+    assert models.data["sph_thermal"] == "cleary"
+    assert models.data["use_radl"] is True
+    assert models.data["volume_fraction_limit"] == pytest.approx(0.64)
     assert models.data["adhesion"] == "JKR"
     assert models.data["restitution_model"] == "velocity_dependent"
     assert models.data["thermal"] is True

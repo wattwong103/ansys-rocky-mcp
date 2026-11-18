@@ -2439,6 +2439,12 @@ class MockPhysics:
         self._coarse_grain = False
         self._search_distance = 1.0
         self._update_distance = 1.0
+        self._impact_energy = "default"
+        self._sph_thermal = "cleary"
+        self._use_radl = False
+        self._exponent_limit = 0.0
+        self._volume_fraction_limit = 0.0
+        self._close_packing = 0.0
 
     def _gravity_component(self, value: float, unit: str | None) -> float:
         """Store one gravity component. Rocky's token is ``m/s2``."""
@@ -2589,6 +2595,62 @@ class MockPhysics:
     def SetUpdateDistanceMultiplier(self, value: float) -> None:
         """Set the neighbor-list update distance multiplier."""
         self._update_distance = float(value)
+
+    def GetImpactEnergyModel(self) -> str:
+        """Return the impact energy model."""
+        return self._impact_energy
+
+    def SetImpactEnergyModel(self, value: str) -> None:
+        """Set the impact energy model."""
+        if value not in ("default", "custom"):
+            raise ValueError(
+                f"Unsupported impact energy model {value!r}. Expected 'default' or 'custom'."
+            )
+        self._impact_energy = value
+
+    def GetSphThermalTransferModel(self) -> str:
+        """Return the SPH thermal transfer model."""
+        return self._sph_thermal
+
+    def SetSphThermalTransferModel(self, value: str) -> None:
+        """Set the SPH thermal transfer model."""
+        if value not in ("cleary", "custom"):
+            raise ValueError(
+                f"Unsupported SPH thermal model {value!r}. Expected 'cleary' or 'custom'."
+            )
+        self._sph_thermal = value
+
+    def GetUseRadlEtAl(self) -> bool:
+        """Return whether the Radl et al. model is enabled."""
+        return self._use_radl
+
+    def SetUseRadlEtAl(self, value: bool) -> None:
+        """Enable or disable the Radl et al. model."""
+        self._use_radl = bool(value)
+
+    def GetExponentLimit(self) -> float:
+        """Return the exponent limit."""
+        return self._exponent_limit
+
+    def SetExponentLimit(self, value: float) -> None:
+        """Set the exponent limit."""
+        self._exponent_limit = float(value)
+
+    def GetVolumeFractionLimit(self) -> float:
+        """Return the volume-fraction limit."""
+        return self._volume_fraction_limit
+
+    def SetVolumeFractionLimit(self, value: float) -> None:
+        """Set the volume-fraction limit."""
+        self._volume_fraction_limit = float(value)
+
+    def GetClosePackingVolumeFraction(self) -> float:
+        """Return the close-packing volume fraction."""
+        return self._close_packing
+
+    def SetClosePackingVolumeFraction(self, value: float) -> None:
+        """Set the close-packing volume fraction."""
+        self._close_packing = float(value)
 
 
 class MockExportToolkit:
