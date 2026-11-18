@@ -352,6 +352,9 @@ async def test_domain_and_solver_settings_are_applied(study: Client) -> None:
             "refine_concave": True,
             "non_round_torque": True,
             "max_iterations": 30,
+            "mpi_processes": 4,
+            "mpi_hosts": "node01,node02",
+            "compressed_files": True,
         },
     )
     assert updated.data["curves_frequency"] == 5
@@ -371,6 +374,10 @@ async def test_domain_and_solver_settings_are_applied(study: Client) -> None:
     assert updated.data["refine_concave"] is True
     assert updated.data["non_round_torque"] is True
     assert updated.data["max_iterations"] == 30
+    assert updated.data["use_mpi"] is True
+    assert updated.data["mpi_processes"] == 4
+    assert updated.data["mpi_hosts"] == "node01,node02"
+    assert updated.data["compressed_files"] is True
     described = await study.call_tool("rocky_describe_study")
     assert described.data["study"]["solver"]["curves_frequency"] == 5
 

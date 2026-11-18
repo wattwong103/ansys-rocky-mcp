@@ -1776,6 +1776,14 @@ async def rocky_set_simulation_settings(
     disable_periodic_triangles: bool | None = None,
     max_iterations: int | None = None,
     over_relaxation: float | None = None,
+    mpi_processes: int | None = None,
+    mpi_threads: int | None = None,
+    mpi_hosts: str | None = None,
+    mpi_hostfile: str | None = None,
+    mpi_heterogeneous: bool | None = None,
+    mpi_within_scheduler: bool | None = None,
+    use_mpi: bool | None = None,
+    compressed_files: bool | None = None,
     unit: str = "s",
 ) -> dict[str, Any]:
     """Configure the Rocky solver settings.
@@ -1849,6 +1857,22 @@ async def rocky_set_simulation_settings(
         Maximum solver iterations.
     over_relaxation : float | None, default: None
         Over-relaxation coefficient.
+    mpi_processes : int | None, default: None
+        Number of MPI processes. Setting MPI details turns MPI on.
+    mpi_threads : int | None, default: None
+        Threads per MPI process.
+    mpi_hosts : str | None, default: None
+        Host list Rocky passes to MPI.
+    mpi_hostfile : str | None, default: None
+        Path of an MPI hostfile.
+    mpi_heterogeneous : bool | None, default: None
+        Allow MPI ranks with different hardware.
+    mpi_within_scheduler : bool | None, default: None
+        Let the scheduler place the MPI ranks.
+    use_mpi : bool | None, default: None
+        Turn MPI on or off. MPI details turn it on when this is omitted.
+    compressed_files : bool | None, default: None
+        Write compressed result files.
     breakage_delay : float | None, default: None
         Seconds after release before breakage can start. Rocky's token is ``s``.
     unit : str, default: "s"
@@ -1877,6 +1901,15 @@ async def rocky_set_simulation_settings(
         raise ToolError("loading_n_steps must be at least 1.")
     if max_iterations is not None and max_iterations < 1:
         raise ToolError("max_iterations must be at least 1.")
+    if mpi_processes is not None and mpi_processes < 1:
+        raise ToolError("mpi_processes must be at least 1.")
+    if mpi_threads is not None and mpi_threads < 1:
+        raise ToolError("mpi_threads must be at least 1.")
+    mpi_flag = use_mpi
+    if mpi_flag is None and any(
+        value is not None for value in (mpi_processes, mpi_threads, mpi_hosts, mpi_hostfile)
+    ):
+        mpi_flag = True
     if fixed_timestep is not None and timestep_model is None:
         timestep_model = "constant"
     solver = study.GetSolver()
@@ -1983,6 +2016,22 @@ async def rocky_set_simulation_settings(
             solver.SetMaximumNumberOfIterations(int(max_iterations))
         if over_relaxation is not None:
             solver.SetOverRelaxationCoefficient(over_relaxation)
+        if mpi_flag is not None:
+            solver.SetUseMpi(bool(mpi_flag))
+        if mpi_processes is not None:
+            solver.SetMpiNumberOfProcesses(int(mpi_processes))
+        if mpi_threads is not None:
+            solver.SetMpiNumberOfThreads(int(mpi_threads))
+        if mpi_hosts is not None:
+            solver.SetMpiHosts(mpi_hosts)
+        if mpi_hostfile is not None:
+            solver.SetMpiHostfile(mpi_hostfile)
+        if mpi_heterogeneous is not None:
+            solver.SetMpiHeterogeneous(mpi_heterogeneous)
+        if mpi_within_scheduler is not None:
+            solver.SetMpiWithinScheduler(mpi_within_scheduler)
+        if compressed_files is not None:
+            solver.SetUseCompressedFiles(compressed_files)
     except ToolError:
         raise
     except Exception as exc:
@@ -2028,6 +2077,14 @@ async def rocky_set_simulation_settings(
         disable_periodic_triangles=bool(solver.GetDisableTrianglesOnPeriodicBoundaries()),
         max_iterations=solver.GetMaximumNumberOfIterations(),
         over_relaxation=solver.GetOverRelaxationCoefficient(),
+        use_mpi=bool(solver.GetUseMpi()) if mpi_flag is not None else None,
+        mpi_processes=solver.GetMpiNumberOfProcesses(),
+        mpi_threads=solver.GetMpiNumberOfThreads(),
+        mpi_hosts=solver.GetMpiHosts(),
+        mpi_hostfile=solver.GetMpiHostfile(),
+        mpi_heterogeneous=bool(solver.GetMpiHeterogeneous()),
+        mpi_within_scheduler=bool(solver.GetMpiWithinScheduler()),
+        compressed_files=bool(solver.GetUseCompressedFiles()),
         processing_unit=solver.GetProcessingUnit(),
         local_processing_unit=_local_value(solver, "GetProcessingUnit"),
         target_gpus=list(solver.GetTargetGpus()),

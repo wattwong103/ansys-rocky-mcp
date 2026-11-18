@@ -2185,6 +2185,14 @@ class MockSimulatorRun:
         self._disable_periodic_triangles = False
         self._max_iterations = 1
         self._over_relaxation = 1.0
+        self._use_mpi = False
+        self._mpi_processes = 1
+        self._mpi_threads = 1
+        self._mpi_hosts = ""
+        self._mpi_hostfile = ""
+        self._mpi_heterogeneous = False
+        self._mpi_within_scheduler = False
+        self._compressed_files = False
         self._standard_outputs: dict[tuple[str, ...], bool] = {}
         self._module_outputs: dict[tuple[str, ...], bool] = {}
         self._processing_unit = "CPU"
@@ -2562,6 +2570,70 @@ class MockSimulatorRun:
     def SetOverRelaxationCoefficient(self, value: float) -> None:
         """Set the over-relaxation coefficient."""
         self._over_relaxation = float(value)
+
+    def GetUseMpi(self) -> bool:
+        """Return whether MPI is used."""
+        return self._use_mpi
+
+    def SetUseMpi(self, value: bool) -> None:
+        """Set whether MPI is used."""
+        self._use_mpi = bool(value)
+
+    def GetMpiNumberOfProcesses(self) -> int:
+        """Return the number of MPI processes."""
+        return self._mpi_processes
+
+    def SetMpiNumberOfProcesses(self, value: int) -> None:
+        """Set the number of MPI processes."""
+        self._mpi_processes = int(value)
+
+    def GetMpiNumberOfThreads(self) -> int:
+        """Return the threads per MPI process."""
+        return self._mpi_threads
+
+    def SetMpiNumberOfThreads(self, value: int) -> None:
+        """Set the threads per MPI process."""
+        self._mpi_threads = int(value)
+
+    def GetMpiHosts(self) -> str:
+        """Return the MPI host list."""
+        return self._mpi_hosts
+
+    def SetMpiHosts(self, value: str) -> None:
+        """Set the MPI host list."""
+        self._mpi_hosts = str(value)
+
+    def GetMpiHostfile(self) -> str:
+        """Return the MPI hostfile path."""
+        return self._mpi_hostfile
+
+    def SetMpiHostfile(self, value: str) -> None:
+        """Set the MPI hostfile path."""
+        self._mpi_hostfile = str(value)
+
+    def GetMpiHeterogeneous(self) -> bool:
+        """Return whether MPI ranks may use different hardware."""
+        return self._mpi_heterogeneous
+
+    def SetMpiHeterogeneous(self, value: bool) -> None:
+        """Set whether MPI ranks may use different hardware."""
+        self._mpi_heterogeneous = bool(value)
+
+    def GetMpiWithinScheduler(self) -> bool:
+        """Return whether the scheduler places the MPI ranks."""
+        return self._mpi_within_scheduler
+
+    def SetMpiWithinScheduler(self, value: bool) -> None:
+        """Set whether the scheduler places the MPI ranks."""
+        self._mpi_within_scheduler = bool(value)
+
+    def GetUseCompressedFiles(self) -> bool:
+        """Return whether result files are compressed."""
+        return self._compressed_files
+
+    def SetUseCompressedFiles(self, value: bool) -> None:
+        """Set whether result files are compressed."""
+        self._compressed_files = bool(value)
 
     @staticmethod
     def GetAvailableStandardOutputProperties() -> dict[str, list[str]]:
