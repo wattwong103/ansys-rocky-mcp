@@ -27,7 +27,7 @@ Rocky study, run it, and read the results.
 
 | | |
 |---|---|
-| **Tools** | 37 (session, project, setup, run control, results, Python escape hatch) |
+| **Tools** | 38 (session, project, setup, run control, results, Python escape hatch) |
 | **Transport** | `stdio` (default) and `http` |
 | **Verified** | Full workflow end-to-end over a real MCP stdio handshake, 42 automated tests |
 | **Requires** | Python ≥ 3.12, `ansys-common-mcp`, `ansys-rocky-core` |
@@ -173,6 +173,7 @@ startup_timeout_sec = 90
 | `rocky_import_wall` | Import a geometry file as a wall. |
 | `rocky_create_surface` | Create a circular or rectangular surface. |
 | `rocky_create_feed_conveyor` | Create a feed conveyor with belt speed, width, and incline. |
+| `rocky_create_receiving_conveyor` | Create a receiving conveyor with belt speed, width, and incline. |
 | `rocky_create_particle` | Create a particle definition (shape, sieve size). |
 | `rocky_set_size_distribution` | Set a particle's size distribution, minimum size, and surface energy. |
 | `rocky_create_material` | Create a solid material and assign it to a particle or a wall. |

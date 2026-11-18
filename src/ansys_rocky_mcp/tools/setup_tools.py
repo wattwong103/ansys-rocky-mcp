@@ -206,17 +206,32 @@ async def rocky_create_feed_conveyor(
         Conveyor name.
 
     """
+    return await _create_conveyor(ctx, "feed", belt_speed, belt_width, incline_deg, name)
+
+
+async def _create_conveyor(
+    ctx: Context,
+    kind: str,
+    belt_speed: float,
+    belt_width: float,
+    incline_deg: float,
+    name: str | None,
+) -> dict[str, Any]:
+    """Create a feed or receiving conveyor."""
     session = get_session(ctx)
     study = require_study(session)
     try:
-        conveyor = study.CreateFeedConveyor()
+        if kind == "receiving":
+            conveyor = study.CreateReceivingConveyor()
+        else:
+            conveyor = study.CreateFeedConveyor()
         conveyor.SetBeltSpeed(belt_speed, unit="m/s")
         conveyor.SetBeltWidth(belt_width, unit="m")
         conveyor.SetBeltInclineAngle(incline_deg, unit="deg")
         if name:
             conveyor.SetName(name)
     except Exception as exc:
-        raise ToolError(f"Could not create the feed conveyor: {exc}") from exc
+        raise ToolError(f"Could not create the {kind} conveyor: {exc}") from exc
     ident = session.registry.add(
         "conveyor",
         conveyor,
@@ -225,13 +240,28 @@ async def rocky_create_feed_conveyor(
     )
     return envelope(
         session,
-        message=f"Created feed conveyor {conveyor.GetName()}.",
+        message=f"Created {kind} conveyor {conveyor.GetName()}.",
+        kind=kind,
         conveyor_id=ident,
         name=conveyor.GetName(),
         belt_speed_m_s=conveyor.GetBeltSpeed("m/s"),
         belt_width_m=conveyor.GetBeltWidth("m"),
         incline_deg=conveyor.GetBeltInclineAngle("deg"),
     )
+
+
+async def rocky_create_receiving_conveyor(
+    ctx: Context,
+    belt_speed: float = 1.0,
+    belt_width: float = 1.0,
+    incline_deg: float = 0.0,
+    name: str | None = None,
+) -> dict[str, Any]:
+    """Create a Rocky receiving conveyor.
+
+    Parameters match ``rocky_create_feed_conveyor``.
+    """
+    return await _create_conveyor(ctx, "receiving", belt_speed, belt_width, incline_deg, name)
 
 
 async def rocky_create_particle(
@@ -969,6 +999,7 @@ def register(mcp: Any) -> None:
     mcp.tool()(rocky_import_wall)
     mcp.tool()(rocky_create_surface)
     mcp.tool()(rocky_create_feed_conveyor)
+    mcp.tool()(rocky_create_receiving_conveyor)
     mcp.tool()(rocky_create_particle)
     mcp.tool()(rocky_set_size_distribution)
     mcp.tool()(rocky_create_material)

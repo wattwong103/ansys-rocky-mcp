@@ -1304,7 +1304,15 @@ class MockStudy:
 
     def CreateFeedConveyor(self) -> MockFeedConveyor:
         """Create a feed conveyor."""
-        conveyor = MockFeedConveyor(f"Feed Conveyor {len(self._conveyors) + 1}")
+        return self._new_conveyor("Feed Conveyor")
+
+    def CreateReceivingConveyor(self) -> MockFeedConveyor:
+        """Create a receiving conveyor."""
+        return self._new_conveyor("Receiving Conveyor")
+
+    def _new_conveyor(self, label: str) -> MockFeedConveyor:
+        """Create a conveyor with the next index."""
+        conveyor = MockFeedConveyor(f"{label} {len(self._conveyors) + 1}")
         self._conveyors.append(conveyor)
         return conveyor
 

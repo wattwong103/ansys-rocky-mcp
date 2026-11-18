@@ -27,6 +27,7 @@ EXPECTED_TOOLS = {
     "rocky_import_wall",
     "rocky_create_surface",
     "rocky_create_feed_conveyor",
+    "rocky_create_receiving_conveyor",
     "rocky_create_particle",
     "rocky_set_size_distribution",
     "rocky_create_material",
