@@ -174,7 +174,7 @@ startup_timeout_sec = 90
 | `rocky_create_surface` | Create a circular or rectangular surface. |
 | `rocky_create_feed_conveyor` | Create a feed conveyor, including return-belt angle and out-of-plane offset. |
 | `rocky_create_receiving_conveyor` | Create a receiving conveyor with belt motion, profile, and alignment. |
-| `rocky_create_particle` | Create a particle, including size type and rolling resistance. |
+| `rocky_create_particle` | Create a particle, including size type, rolling resistance, and breakage. |
 | `rocky_set_size_distribution` | Set a particle's size distribution, minimum size, and surface energy. |
 | `rocky_create_material` | Create a solid material, including thermal properties, and assign it. |
 | `rocky_set_material_interaction` | Set friction, restitution, adhesion distance, and stiffness between two materials. |

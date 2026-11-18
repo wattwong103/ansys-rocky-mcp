@@ -459,6 +459,7 @@ async def test_particle_shape_dimensions_are_stored(study: Client) -> None:
             "edge_angle_deg": 30.0,
             "size_type": "equivalent_diameter",
             "rolling_resistance": 0.3,
+            "breakage_model": "ab_t10",
             "name": "flake",
         },
     )
@@ -470,6 +471,8 @@ async def test_particle_shape_dimensions_are_stored(study: Client) -> None:
     assert created.data["edge_angle_deg"] == pytest.approx(30.0)
     assert created.data["size_type"] == "equivalent_diameter"
     assert created.data["rolling_resistance"] == pytest.approx(0.3)
+    assert created.data["breakage_model"] == "ab_t10"
+    assert created.data["breakage_enabled"] is True
 
 
 async def test_particle_size_distribution_is_set(study: Client) -> None:

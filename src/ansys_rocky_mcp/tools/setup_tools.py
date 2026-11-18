@@ -19,6 +19,18 @@ CARTESIAN_PERIODIC = ("NONE", "X", "Y", "XY", "Z", "XZ", "YZ", "XYZ")
 CYLINDRICAL_PERIODIC = ("X", "Y", "Z")
 EXECUTION_MODES = ("local", "single_mpi", "multi_mpi")
 SIZE_DISTRIBUTIONS = ("gaudin_schumann", "incomplete_beta", "custom")
+BREAKAGE_MODELS = (
+    "none",
+    "ab_t10",
+    "professor_tavares",
+    "instantaneous_custom",
+    "griffith_surface_energy",
+    "shear_stress_criterion",
+    "tensile_stress_criterion",
+    "tensile_or_shear_criterion",
+    "von_mises_stress_criterion",
+    "discrete_custom",
+)
 PARTICLE_SHAPES = (
     "sphere",
     "polyhedron",
@@ -546,6 +558,7 @@ async def rocky_create_particle(
     edge_angle_deg: float | None = None,
     size_type: str | None = None,
     rolling_resistance: float | None = None,
+    breakage_model: str | None = None,
     name: str | None = None,
 ) -> dict[str, Any]:
     """Create a Rocky particle definition.
@@ -573,6 +586,8 @@ async def rocky_create_particle(
         ``sieve``, ``equivalent_diameter``, or ``original_size_scale``.
     rolling_resistance : float | None, default: None
         Particle rolling resistance coefficient.
+    breakage_model : str | None, default: None
+        One of Rocky's breakage models. Any value other than ``none`` enables breakage.
     name : str | None, default: None
         Name for the created particle.
 
@@ -582,6 +597,10 @@ async def rocky_create_particle(
     valid_sizes = ("sieve", "equivalent_diameter", "original_size_scale")
     if size_type is not None and size_type not in valid_sizes:
         raise ToolError(f"Unknown size type {size_type!r}. Expected one of {valid_sizes}.")
+    if breakage_model is not None and breakage_model not in BREAKAGE_MODELS:
+        raise ToolError(
+            f"Unknown breakage model {breakage_model!r}. Expected one of {BREAKAGE_MODELS}."
+        )
     session = get_session(ctx)
     study = require_study(session)
     particle = study.CreateParticle()
@@ -603,6 +622,8 @@ async def rocky_create_particle(
             particle.SetSizeType(size_type)
         if rolling_resistance is not None:
             particle.SetRollingResistance(rolling_resistance)
+        if breakage_model is not None:
+            particle.SetBreakageModel(breakage_model)
         if name:
             particle.SetName(name)
     except Exception as exc:
@@ -627,6 +648,8 @@ async def rocky_create_particle(
         edge_angle_deg=particle.GetEdgeAngle("dega"),
         size_type=particle.GetSizeType(),
         rolling_resistance=particle.GetRollingResistance(),
+        breakage_model=particle.GetBreakageModel(),
+        breakage_enabled=bool(particle.GetEnableBreakage()),
     )
 
 

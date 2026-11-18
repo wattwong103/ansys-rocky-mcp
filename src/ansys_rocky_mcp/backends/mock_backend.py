@@ -442,6 +442,8 @@ class MockParticle:
         self._minimum_size = DEFAULT_SIEVE_SIZE
         self._distribution = "gaudin_schumann"
         self._size_ratio = 1.0
+        self._breakage_model = "none"
+        self._breakage = False
         self._surface_energy = 0.0
         self._material: MockSolidMaterial | None = None
         self._horizontal_aspect = 1.0
@@ -570,6 +572,24 @@ class MockParticle:
     def SetMinimumSizeRatio(self, value: float) -> None:
         """Set the minimum size as a fraction of the maximum size."""
         self._size_ratio = float(value)
+
+    def GetBreakageModel(self) -> str:
+        """Return the breakage model."""
+        return self._breakage_model
+
+    def SetBreakageModel(self, value: str) -> None:
+        """Set the breakage model. Any model other than none enables breakage."""
+        self._breakage_model = value
+        if value != "none":
+            self._breakage = True
+
+    def GetEnableBreakage(self) -> bool:
+        """Return whether breakage is enabled."""
+        return self._breakage
+
+    def SetEnableBreakage(self, value: bool) -> None:
+        """Enable or disable breakage."""
+        self._breakage = bool(value)
 
     def GetSurfaceEnergy(self, unit: str | None = None) -> float:
         """Return the surface energy."""
