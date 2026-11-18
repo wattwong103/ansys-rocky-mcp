@@ -230,6 +230,8 @@ class MockSolidMaterial:
         self._density = 1000.0
         self._youngs = 1.0e8
         self._poisson = 0.25
+        self._specific_heat = 1000.0
+        self._conductivity = 1.0
 
     def GetName(self) -> str:
         """Return the material name."""
@@ -254,6 +256,30 @@ class MockSolidMaterial:
         if unit not in (None, "N/m2"):
             raise ValueError(f"Unsupported modulus unit {unit!r}. Expected 'N/m2'.")
         return self._youngs
+
+    def SetSpecificHeat(self, value: float, unit: str | None = None) -> None:
+        """Set specific heat. Rocky's token is ``J/kg.K``."""
+        if unit not in (None, "J/kg.K"):
+            raise ValueError(f"Unsupported specific heat unit {unit!r}. Expected 'J/kg.K'.")
+        self._specific_heat = float(value)
+
+    def GetSpecificHeat(self, unit: str | None = None) -> float:
+        """Return specific heat in J/kg.K."""
+        if unit not in (None, "J/kg.K"):
+            raise ValueError(f"Unsupported specific heat unit {unit!r}. Expected 'J/kg.K'.")
+        return self._specific_heat
+
+    def SetThermalConductivity(self, value: float, unit: str | None = None) -> None:
+        """Set thermal conductivity. Rocky's token is ``W/m.K``."""
+        if unit not in (None, "W/m.K"):
+            raise ValueError(f"Unsupported conductivity unit {unit!r}. Expected 'W/m.K'.")
+        self._conductivity = float(value)
+
+    def GetThermalConductivity(self, unit: str | None = None) -> float:
+        """Return thermal conductivity in W/m.K."""
+        if unit not in (None, "W/m.K"):
+            raise ValueError(f"Unsupported conductivity unit {unit!r}. Expected 'W/m.K'.")
+        return self._conductivity
 
     def SetPoissonRatio(self, value: float, unit: str | None = None) -> None:
         """Set Poisson's ratio."""

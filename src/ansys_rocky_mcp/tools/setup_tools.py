@@ -1091,6 +1091,8 @@ async def rocky_create_material(
     density: float | None = None,
     youngs_modulus: float | None = None,
     poisson_ratio: float | None = None,
+    specific_heat: float | None = None,
+    thermal_conductivity: float | None = None,
     particle_id: str | None = None,
     wall_id: str | None = None,
     conveyor_id: str | None = None,
@@ -1109,6 +1111,10 @@ async def rocky_create_material(
         Young's modulus.
     poisson_ratio : float | None, default: None
         Poisson's ratio.
+    specific_heat : float | None, default: None
+        Specific heat in ``J/kg.K``, Rocky's token.
+    thermal_conductivity : float | None, default: None
+        Thermal conductivity in ``W/m.K``, Rocky's token.
     particle_id : str | None, default: None
         Particle to assign the material to, for example ``particle_1``.
     wall_id : str | None, default: None
@@ -1132,6 +1138,10 @@ async def rocky_create_material(
             material.SetYoungsModulus(youngs_modulus, unit=_modulus_unit(modulus_unit))
         if poisson_ratio is not None:
             material.SetPoissonRatio(poisson_ratio)
+        if specific_heat is not None:
+            material.SetSpecificHeat(specific_heat, unit="J/kg.K")
+        if thermal_conductivity is not None:
+            material.SetThermalConductivity(thermal_conductivity, unit="W/m.K")
     except Exception as exc:
         raise ToolError(f"Could not create the material: {exc}") from exc
 
@@ -1176,6 +1186,8 @@ async def rocky_create_material(
         density=material.GetDensity("kg/m3"),
         youngs_modulus=material.GetYoungsModulus("N/m2"),
         poisson_ratio=material.GetPoissonRatio(),
+        specific_heat_j_kg_k=material.GetSpecificHeat("J/kg.K"),
+        thermal_conductivity_w_m_k=material.GetThermalConductivity("W/m.K"),
         particle_id=assigned,
         wall_id=assigned_wall,
         conveyor_id=assigned_conveyor,

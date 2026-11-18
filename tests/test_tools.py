@@ -171,12 +171,16 @@ async def test_material_can_be_assigned_to_a_particle(study: Client) -> None:
             "density": 2600.0,
             "youngs_modulus": 1.0e7,
             "poisson_ratio": 0.3,
+            "specific_heat": 800.0,
+            "thermal_conductivity": 0.3,
             "particle_id": particles[0],
         },
     )
     assert created.data["name"] == "sand"
     assert created.data["density"] == pytest.approx(2600.0)
     assert created.data["youngs_modulus"] == pytest.approx(1.0e7)
+    assert created.data["specific_heat_j_kg_k"] == pytest.approx(800.0)
+    assert created.data["thermal_conductivity_w_m_k"] == pytest.approx(0.3)
     assert created.data["particle_id"] == particles[0]
     as_pascals = await study.call_tool(
         "rocky_create_material",
