@@ -1282,6 +1282,7 @@ class MockWall:
         self._contact_angle_deg = 0.0
         self._wear_model = "none"
         self._wear_ratio = 0.0
+        self._thermal_boundary = "adiabatic"
 
     def GetName(self) -> str:
         """Return the wall name."""
@@ -1359,6 +1360,17 @@ class MockWall:
         if unit not in (None, "m3/J"):
             raise ValueError(f"Unsupported wear unit {unit!r}. Expected 'm3/J'.")
         self._wear_ratio = float(value)
+
+    def GetThermalBoundaryConditionType(self) -> str:
+        """Return the thermal boundary condition."""
+        return self._thermal_boundary
+
+    def SetThermalBoundaryConditionType(self, value: str) -> None:
+        """Set the thermal boundary condition."""
+        valid = ("adiabatic", "prescribed_temperature", "cfd_coupled_temperature")
+        if value not in valid:
+            raise ValueError(f"Unknown thermal boundary {value!r}. Expected one of {valid}.")
+        self._thermal_boundary = value
 
     def SetMaterial(self, value: Any) -> None:
         """Assign a solid material."""

@@ -2069,10 +2069,14 @@ async def rocky_set_material_interaction(
     )
 
 
+_THERMAL_BOUNDARIES = ("adiabatic", "prescribed_temperature", "cfd_coupled_temperature")
+
+
 async def rocky_set_temperature(
     ctx: Context,
     object_id: str,
     temperature: float,
+    thermal_boundary: str | None = None,
 ) -> dict[str, Any]:
     """Set a temperature in kelvin on a particle inlet, wall, or conveyor.
 
@@ -2082,11 +2086,19 @@ async def rocky_set_temperature(
         Identifier of a particle inlet, wall, or conveyor.
     temperature : float
         Temperature in kelvin. Rocky's token is ``K``.
+    thermal_boundary : str | None, default: None
+        For a wall: ``adiabatic``, ``prescribed_temperature``, or
+        ``cfd_coupled_temperature``. A wall temperature selects
+        ``prescribed_temperature``.
 
     """
     session = get_session(ctx)
     require_study(session)
     entry = session.registry.get(object_id)
+    if thermal_boundary is not None and thermal_boundary not in _THERMAL_BOUNDARIES:
+        raise ToolError(
+            f"Unknown thermal boundary {thermal_boundary!r}. Expected one of {_THERMAL_BOUNDARIES}."
+        )
     if entry is None:
         known = ", ".join(item["id"] for item in session.registry.list()) or "(none)"
         raise ToolError(f"Unknown object id {object_id!r}. Known ids: {known}.")
@@ -2100,6 +2112,11 @@ async def rocky_set_temperature(
         elif entry.category in ("wall", "conveyor"):
             entry.obj.SetTemperature(temperature, unit="K")
             stored = entry.obj.GetTemperature("K")
+            if entry.category == "wall":
+                boundary = thermal_boundary or "prescribed_temperature"
+                setter = getattr(entry.obj, "SetThermalBoundaryConditionType", None)
+                if setter is not None:
+                    setter(boundary)
         else:
             raise ToolError(
                 f"Object {object_id} is a {entry.category}. "
@@ -2115,6 +2132,7 @@ async def rocky_set_temperature(
         object_id=object_id,
         category=entry.category,
         temperature_k=stored,
+        thermal_boundary=getattr(entry.obj, "GetThermalBoundaryConditionType", lambda: None)(),
     )
 
 

@@ -802,6 +802,12 @@ async def test_import_wall_creates_identified_walls(study: Client, tmp_path) -> 
     )
     assert wear.data["wear_model"] == "archard"
     assert wear.data["volume_shear_work_ratio_m3_j"] == pytest.approx(1.0e-12)
+    heated_wall = await study.call_tool(
+        "rocky_set_temperature",
+        {"object_id": result.data["wall_ids"][0], "temperature": 350.0},
+    )
+    assert heated_wall.data["temperature_k"] == pytest.approx(350.0)
+    assert heated_wall.data["thermal_boundary"] == "prescribed_temperature"
     assert result.data["walls"][0]["id"] == result.data["wall_ids"][0]
 
 
