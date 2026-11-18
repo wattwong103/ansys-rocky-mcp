@@ -607,6 +607,10 @@ class MockParticleInlet:
         self._name = "Particle Inlet"
         self._properties = [MockParticleInletProperties(particle)]
         self._injection_duration = 0.0
+        self._start_time = 0.0
+        self._stop_time = 0.0
+        self._target_velocity = 0.0
+        self._use_target_velocity = False
 
     def GetName(self) -> str:
         """Return the inlet name."""
@@ -646,6 +650,50 @@ class MockParticleInlet:
     def SetInjectionDuration(self, value: float, unit: str | None = None) -> None:
         """Set the injection duration in seconds."""
         self._injection_duration = float(value)
+
+    def GetStartTime(self, unit: str | None = None) -> float:
+        """Return the inlet start time in seconds."""
+        if unit not in (None, "s"):
+            raise ValueError(f"Unsupported time unit {unit!r}. Expected 's'.")
+        return self._start_time
+
+    def SetStartTime(self, value: float, unit: str | None = None) -> None:
+        """Set the inlet start time in seconds."""
+        if unit not in (None, "s"):
+            raise ValueError(f"Unsupported time unit {unit!r}. Expected 's'.")
+        self._start_time = float(value)
+
+    def GetStopTime(self, unit: str | None = None) -> float:
+        """Return the inlet stop time in seconds."""
+        if unit not in (None, "s"):
+            raise ValueError(f"Unsupported time unit {unit!r}. Expected 's'.")
+        return self._stop_time
+
+    def SetStopTime(self, value: float, unit: str | None = None) -> None:
+        """Set the inlet stop time in seconds."""
+        if unit not in (None, "s"):
+            raise ValueError(f"Unsupported time unit {unit!r}. Expected 's'.")
+        self._stop_time = float(value)
+
+    def GetTargetNormalVelocity(self, unit: str | None = None) -> float:
+        """Return the target injection speed in meters per second."""
+        if unit not in (None, "m/s"):
+            raise ValueError(f"Unsupported velocity unit {unit!r}. Expected 'm/s'.")
+        return self._target_velocity
+
+    def SetTargetNormalVelocity(self, value: float, unit: str | None = None) -> None:
+        """Set the target injection speed in meters per second."""
+        if unit not in (None, "m/s"):
+            raise ValueError(f"Unsupported velocity unit {unit!r}. Expected 'm/s'.")
+        self._target_velocity = float(value)
+
+    def SetUseTargetNormalVelocity(self, value: bool) -> None:
+        """Enable or disable the target injection speed."""
+        self._use_target_velocity = bool(value)
+
+    def GetUseTargetNormalVelocity(self) -> bool:
+        """Return whether the target injection speed is used."""
+        return self._use_target_velocity
 
 
 class MockVolumetricInlet:

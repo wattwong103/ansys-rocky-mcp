@@ -622,6 +622,9 @@ async def rocky_create_inlet(
     unit: str = "t/h",
     injection_duration: float | None = None,
     duration_unit: str = "s",
+    start_time: float | None = None,
+    stop_time: float | None = None,
+    target_velocity: float | None = None,
 ) -> dict[str, Any]:
     """Create a particle inlet on a surface or a feed conveyor.
 
@@ -642,6 +645,12 @@ async def rocky_create_inlet(
         How long the inlet feeds particles. Omit it to leave Rocky's duration.
     duration_unit : str, default: "s"
         Unit of ``injection_duration``.
+    start_time : float | None, default: None
+        Time in seconds when the inlet starts. Rocky's token is ``s``.
+    stop_time : float | None, default: None
+        Time in seconds when the inlet stops.
+    target_velocity : float | None, default: None
+        Injection speed normal to the inlet, in meters per second.
 
     """
     session = get_session(ctx)
@@ -670,6 +679,13 @@ async def rocky_create_inlet(
         properties[0].SetMassFlowRate(mass_flow_rate, unit=unit)
         if injection_duration is not None:
             inlet.SetInjectionDuration(injection_duration, unit=duration_unit)
+        if start_time is not None:
+            inlet.SetStartTime(start_time, unit="s")
+        if stop_time is not None:
+            inlet.SetStopTime(stop_time, unit="s")
+        if target_velocity is not None:
+            inlet.SetTargetNormalVelocity(target_velocity, unit="m/s")
+            inlet.SetUseTargetNormalVelocity(True)
     except ToolError:
         raise
     except Exception as exc:
@@ -691,6 +707,9 @@ async def rocky_create_inlet(
         mass_flow_rate=mass_flow_rate,
         unit=unit,
         injection_duration_s=inlet.GetInjectionDuration("s"),
+        start_time_s=inlet.GetStartTime("s"),
+        stop_time_s=inlet.GetStopTime("s"),
+        target_velocity_m_s=inlet.GetTargetNormalVelocity("m/s"),
     )
 
 
