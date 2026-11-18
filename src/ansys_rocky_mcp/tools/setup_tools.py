@@ -581,6 +581,8 @@ async def rocky_create_particle(
     elastic_ratio_torsion: float | None = None,
     element_damping_ratio: float | None = None,
     joint_damping_ratio: float | None = None,
+    with_failure: bool | None = None,
+    failure_ratio: float | None = None,
     name: str | None = None,
 ) -> dict[str, Any]:
     """Create a Rocky particle definition.
@@ -654,6 +656,10 @@ async def rocky_create_particle(
         Damping inside each fiber element.
     joint_damping_ratio : float | None, default: None
         Damping at the joints between fiber elements.
+    with_failure : bool | None, default: None
+        Allow a flexible particle to break. A failure ratio turns this on.
+    failure_ratio : float | None, default: None
+        Strain ratio at which a flexible particle breaks.
     name : str | None, default: None
         Name for the created particle.
 
@@ -734,6 +740,8 @@ async def rocky_create_particle(
             or elastic_ratio_torsion is not None
             or element_damping_ratio is not None
             or joint_damping_ratio is not None
+            or with_failure is not None
+            or failure_ratio is not None
         ):
             flexible = True
         if flexible is not None:
@@ -754,6 +762,12 @@ async def rocky_create_particle(
             particle.SetElementDampingRatio(element_damping_ratio)
         if joint_damping_ratio is not None:
             particle.SetJointDampingRatio(joint_damping_ratio)
+        if failure_ratio is not None and with_failure is None:
+            with_failure = True
+        if with_failure is not None:
+            particle.SetWithFailure(with_failure)
+        if failure_ratio is not None:
+            particle.SetFailureRatio(failure_ratio)
         if name:
             particle.SetName(name)
     except Exception as exc:
@@ -801,6 +815,8 @@ async def rocky_create_particle(
         elastic_ratio_torsion=particle.GetElasticRatioTorsion(),
         element_damping_ratio=particle.GetElementDampingRatio(),
         joint_damping_ratio=particle.GetJointDampingRatio(),
+        with_failure=bool(particle.GetWithFailure()),
+        failure_ratio=particle.GetFailureRatio(),
     )
 
 

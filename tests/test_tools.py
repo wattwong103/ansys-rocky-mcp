@@ -477,6 +477,7 @@ async def test_particle_shape_dimensions_are_stored(study: Client) -> None:
             "elastic_ratio_torsion": 0.2,
             "element_damping_ratio": 0.1,
             "joint_damping_ratio": 0.05,
+            "failure_ratio": 0.15,
             "name": "flake",
         },
     )
@@ -507,6 +508,8 @@ async def test_particle_shape_dimensions_are_stored(study: Client) -> None:
     assert created.data["elastic_ratio_torsion"] == pytest.approx(0.2)
     assert created.data["element_damping_ratio"] == pytest.approx(0.1)
     assert created.data["joint_damping_ratio"] == pytest.approx(0.05)
+    assert created.data["failure_ratio"] == pytest.approx(0.15)
+    assert created.data["with_failure"] is True
 
 
 async def test_particle_size_distribution_is_set(study: Client) -> None:

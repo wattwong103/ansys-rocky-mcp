@@ -465,6 +465,8 @@ class MockParticle:
         self._ratio_torsion = 1.0
         self._element_damping = 0.0
         self._joint_damping = 0.0
+        self._with_failure = False
+        self._failure_ratio = 1.0
         self._surface_energy = 0.0
         self._material: MockSolidMaterial | None = None
         self._horizontal_aspect = 1.0
@@ -833,6 +835,22 @@ class MockParticle:
     def SetJointDampingRatio(self, value: float) -> None:
         """Set the joint damping ratio."""
         self._joint_damping = float(value)
+
+    def GetWithFailure(self) -> bool:
+        """Return whether the fiber can fail."""
+        return self._with_failure
+
+    def SetWithFailure(self, value: bool) -> None:
+        """Set whether the fiber can fail."""
+        self._with_failure = bool(value)
+
+    def GetFailureRatio(self) -> float:
+        """Return the failure ratio."""
+        return self._failure_ratio
+
+    def SetFailureRatio(self, value: float) -> None:
+        """Set the failure ratio."""
+        self._failure_ratio = float(value)
 
     def GetSurfaceEnergy(self, unit: str | None = None) -> float:
         """Return the surface energy."""
