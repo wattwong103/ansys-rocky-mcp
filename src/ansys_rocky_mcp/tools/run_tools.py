@@ -123,6 +123,22 @@ async def rocky_wait_for_completion(
     )
 
 
+async def rocky_delete_results(ctx: Context) -> dict[str, Any]:
+    """Delete the results of the current study so the next run starts clean."""
+    session = get_session(ctx)
+    study = require_study(session)
+    try:
+        study.DeleteResults()
+    except Exception as exc:
+        raise ToolError(f"Could not delete the results: {exc}") from exc
+    return envelope(
+        session,
+        message="Simulation results deleted.",
+        has_results=bool(study.HasResults()),
+        progress_percent=study.GetProgress(),
+    )
+
+
 async def rocky_stop_simulation(ctx: Context) -> dict[str, Any]:
     """Stop a running Rocky simulation.
 
@@ -149,3 +165,4 @@ def register(mcp: Any) -> None:
     mcp.tool()(rocky_simulation_status)
     mcp.tool()(rocky_wait_for_completion)
     mcp.tool()(rocky_stop_simulation)
+    mcp.tool()(rocky_delete_results)

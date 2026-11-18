@@ -57,6 +57,15 @@ async def test_a_running_simulation_can_be_stopped(study: Client) -> None:
     assert stopped.data["simulating"] is False
 
 
+async def test_results_can_be_deleted(study: Client) -> None:
+    """Deleting results clears the finished run."""
+    await study.call_tool("rocky_run_simulation", {"non_blocking": False})
+    deleted = await study.call_tool("rocky_delete_results")
+    assert deleted.data["has_results"] is False
+    status = await study.call_tool("rocky_simulation_status")
+    assert status.data["has_results"] is False
+
+
 async def test_curves_are_requested_before_the_run(study: Client) -> None:
     """Requesting a curve before the simulation reports the missing step."""
     with pytest.raises(ToolError, match="rocky_run_simulation"):
