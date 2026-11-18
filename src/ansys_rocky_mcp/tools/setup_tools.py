@@ -1763,6 +1763,7 @@ async def rocky_set_motion(
     angular_acceleration: list[float] | None = None,
     acceleration_unit: str = "rad/s2",
     linear_velocity: list[float] | None = None,
+    linear_acceleration: list[float] | None = None,
     unit: str = "rad/s",
     start_time: float = 0.0,
     stop_time: float = 1000.0,
@@ -1786,6 +1787,8 @@ async def rocky_set_motion(
         Unit of ``angular_acceleration``.
     linear_velocity : list[float] | None, default: None
         Linear velocity vector as ``[vx, vy, vz]``. Required for a translation.
+    linear_acceleration : list[float] | None, default: None
+        Linear acceleration ``[ax, ay, az]`` in meters per second squared.
     unit : str, default: "rad/s"
         Unit of the angular velocity. Rocky stores ``rad/s``. ``deg/s`` and
         ``dega/s`` are converted before the call. Translations always use ``m/s``.
@@ -1832,10 +1835,18 @@ async def rocky_set_motion(
         else:
             if linear_velocity is None:
                 raise ToolError("A translation requires 'linear_velocity'.")
+            if linear_acceleration is not None:
+                if len(linear_acceleration) != 3:
+                    raise ToolError("linear_acceleration must be three numbers.")
+                acceleration = tuple(float(value) for value in linear_acceleration)
             frame.AddTranslationMotion(
                 start_time=(start_time, "s"),
                 stop_time=(stop_time, "s"),
                 velocity=(tuple(linear_velocity), "m/s"),
+                acceleration=(
+                    acceleration if acceleration is not None else (0.0, 0.0, 0.0),
+                    "m/s2",
+                ),
             )
         if period is not None:
             frame.SetPeriodicMotionPeriod(period, unit="s")
@@ -1866,7 +1877,12 @@ async def rocky_set_motion(
         kind=kind,
         targets=applied,
         angular_velocity_rad_s=list(radians) if kind == "rotation" else None,
-        angular_acceleration_rad_s2=list(acceleration) if acceleration is not None else None,
+        angular_acceleration_rad_s2=(
+            list(acceleration) if kind == "rotation" and acceleration is not None else None
+        ),
+        linear_acceleration_m_s2=(
+            list(acceleration) if kind == "translation" and acceleration is not None else None
+        ),
         period_s=frame.GetPeriodicMotionPeriod("s"),
     )
 

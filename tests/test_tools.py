@@ -734,6 +734,16 @@ async def test_motion_is_applied_to_the_targets(study: Client) -> None:
     )
     assert in_degrees.data["angular_velocity_rad_s"] == pytest.approx([0.0, math.pi, 0.0])
     assert in_degrees.data["angular_acceleration_rad_s2"] == pytest.approx([0.0, math.pi, 0.0])
+    sliding = await study.call_tool(
+        "rocky_set_motion",
+        {
+            "kind": "translation",
+            "targets": [surfaces[0]],
+            "linear_velocity": [0.1, 0.0, 0.0],
+            "linear_acceleration": [0.0, 0.0, -9.81],
+        },
+    )
+    assert sliding.data["linear_acceleration_m_s2"] == pytest.approx([0.0, 0.0, -9.81])
     assert motion.data["kind"] == "rotation"
     assert motion.data["targets"] == [surfaces[0]]
 

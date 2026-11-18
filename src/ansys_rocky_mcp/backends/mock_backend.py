@@ -1950,6 +1950,15 @@ class MockMotionFrame:
         **kwargs: Any,
     ) -> dict[str, Any]:
         """Add a translation motion to the frame."""
+        if (
+            isinstance(acceleration, tuple)
+            and len(acceleration) == 2
+            and isinstance(acceleration[1], str)
+            and acceleration[1] != "m/s2"
+        ):
+            raise ValueError(
+                f"Unsupported linear acceleration unit {acceleration[1]!r}. Expected 'm/s2'."
+            )
         motion = {
             "kind": "translation",
             "start_time": list(start_time) if isinstance(start_time, tuple) else start_time,
