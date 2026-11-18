@@ -31,6 +31,7 @@ EXPECTED_TOOLS = {
     "rocky_create_outlet",
     "rocky_set_domain",
     "rocky_set_simulation_settings",
+    "rocky_set_gravity",
     "rocky_set_motion",
     "rocky_run_simulation",
     "rocky_simulation_status",

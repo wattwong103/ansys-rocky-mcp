@@ -118,6 +118,11 @@ async def test_domain_and_solver_settings_are_applied(study: Client) -> None:
     assert description.data["study"]["solver"]["duration_s"] == pytest.approx(4.0)
     assert description.data["study"]["solver"]["time_interval_s"] == pytest.approx(0.2)
 
+    gravity = await study.call_tool("rocky_set_gravity", {"gravity": [0.0, -9.81, 0.0]})
+    assert gravity.data["gravity_m_s2"] == pytest.approx([0.0, -9.81, 0.0])
+    described = await study.call_tool("rocky_describe_study")
+    assert described.data["study"]["gravity_m_s2"] == pytest.approx([0.0, -9.81, 0.0])
+
 
 async def test_motion_is_applied_to_the_targets(study: Client) -> None:
     """A rotation motion is attached to the requested surface."""

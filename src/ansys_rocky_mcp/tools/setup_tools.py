@@ -481,6 +481,40 @@ async def rocky_set_motion(
     )
 
 
+async def rocky_set_gravity(
+    ctx: Context,
+    gravity: list[float],
+    unit: str = "m/s2",
+) -> dict[str, Any]:
+    """Set the gravity vector on the study physics.
+
+    Parameters
+    ----------
+    gravity : list[float]
+        Gravity as ``[x, y, z]``.
+    unit : str, default: "m/s2"
+        Unit of the gravity components.
+
+    """
+    session = get_session(ctx)
+    study = require_study(session)
+    if len(gravity) != 3:
+        raise ToolError("Gravity requires three components [x, y, z].")
+    try:
+        physics = study.GetPhysics()
+        physics.SetGravityXDirection(gravity[0], unit=unit)
+        physics.SetGravityYDirection(gravity[1], unit=unit)
+        physics.SetGravityZDirection(gravity[2], unit=unit)
+        applied = [
+            physics.GetGravityXDirection("m/s2"),
+            physics.GetGravityYDirection("m/s2"),
+            physics.GetGravityZDirection("m/s2"),
+        ]
+    except Exception as exc:
+        raise ToolError(f"Could not set gravity: {exc}") from exc
+    return envelope(session, message="Gravity updated.", gravity_m_s2=applied, unit=unit)
+
+
 def register(mcp: Any) -> None:
     """Register the setup tools on the MCP server."""
     mcp.tool()(rocky_import_wall)
@@ -490,4 +524,5 @@ def register(mcp: Any) -> None:
     mcp.tool()(rocky_create_outlet)
     mcp.tool()(rocky_set_domain)
     mcp.tool()(rocky_set_simulation_settings)
+    mcp.tool()(rocky_set_gravity)
     mcp.tool()(rocky_set_motion)

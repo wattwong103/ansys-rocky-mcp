@@ -834,6 +834,38 @@ class MockCubeProcess(MockSelectionProcess):
         self._study: MockStudy | None = None
 
 
+class MockPhysics:
+    """Stand-in for Rocky physics, including the gravity vector."""
+
+    def __init__(self) -> None:
+        """Initialize gravity at rest."""
+        self._gravity = [0.0, 0.0, 0.0]
+
+    def GetGravityXDirection(self, unit: str | None = None) -> float:
+        """Return the X component of gravity."""
+        return self._gravity[0]
+
+    def SetGravityXDirection(self, value: float, unit: str | None = None) -> None:
+        """Set the X component of gravity."""
+        self._gravity[0] = float(value)
+
+    def GetGravityYDirection(self, unit: str | None = None) -> float:
+        """Return the Y component of gravity."""
+        return self._gravity[1]
+
+    def SetGravityYDirection(self, value: float, unit: str | None = None) -> None:
+        """Set the Y component of gravity."""
+        self._gravity[1] = float(value)
+
+    def GetGravityZDirection(self, unit: str | None = None) -> float:
+        """Return the Z component of gravity."""
+        return self._gravity[2]
+
+    def SetGravityZDirection(self, value: float, unit: str | None = None) -> None:
+        """Set the Z component of gravity."""
+        self._gravity[2] = float(value)
+
+
 class MockStudy:
     """Stand-in for a Rocky study, the container of a DEM simulation."""
 
@@ -847,6 +879,7 @@ class MockStudy:
         self._walls: list[MockWall] = []
         self._selections: list[MockSelectionProcess] = []
         self._domain = MockDomainSettings()
+        self._physics = MockPhysics()
         self._solver = MockSimulatorRun()
         self._motion_source = MockMotionFrameSource()
         self._processes = MockUserProcessCollection(self)
@@ -940,6 +973,10 @@ class MockStudy:
     def GetDomainSettings(self) -> MockDomainSettings:
         """Return the domain settings."""
         return self._domain
+
+    def GetPhysics(self) -> MockPhysics:
+        """Return the physics settings."""
+        return self._physics
 
     def GetSolver(self) -> MockSimulatorRun:
         """Return the solver."""

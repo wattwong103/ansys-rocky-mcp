@@ -72,6 +72,7 @@ def describe_study(session: Any) -> dict[str, Any]:
         elements.append(_describe_element(element))
 
     domain = _safe(study.GetDomainSettings)
+    physics = _safe(study.GetPhysics)
     solver = _safe(study.GetSolver)
     processes = _safe(study.GetUserProcessCollection)
     process_names = _safe(lambda: list(processes.GetProcessNames()), []) or [] if processes else []
@@ -96,6 +97,13 @@ def describe_study(session: Any) -> dict[str, Any]:
             }
             if domain is not None
             else {},
+            "gravity_m_s2": [
+                _safe(lambda: physics.GetGravityXDirection("m/s2")),
+                _safe(lambda: physics.GetGravityYDirection("m/s2")),
+                _safe(lambda: physics.GetGravityZDirection("m/s2")),
+            ]
+            if physics is not None
+            else [],
             "solver": {
                 "duration_s": _safe(lambda: solver.GetSimulationDuration("s")),
                 "time_interval_s": _safe(lambda: solver.GetTimeInterval("s")),
