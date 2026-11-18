@@ -1289,6 +1289,7 @@ class MockWall:
         self._triangle_size = 0.0
         self._translation = (0.0, 0.0, 0.0)
         self._rotation = (0.0, 0.0, 0.0)
+        self._periodic_replication = False
 
     def GetName(self) -> str:
         """Return the wall name."""
@@ -1461,6 +1462,14 @@ class MockWall:
         if len(rotation) != 3:
             raise ValueError("Orientation must have three numbers.")
         self._rotation = tuple(float(value) for value in rotation)
+
+    def GetPeriodicReplication(self) -> bool:
+        """Return whether the wall is copied across periodic boundaries."""
+        return self._periodic_replication
+
+    def SetPeriodicReplication(self, value: bool) -> None:
+        """Set whether the wall is copied across periodic boundaries."""
+        self._periodic_replication = bool(value)
 
     def SetMaterial(self, value: Any) -> None:
         """Assign a solid material."""

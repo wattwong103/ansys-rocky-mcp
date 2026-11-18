@@ -782,6 +782,7 @@ async def test_import_wall_creates_identified_walls(study: Client, tmp_path) -> 
             "triangle_size": 0.01,
             "translation": [1.0, 0.0, 0.5],
             "rotation_deg": [0.0, 90.0, 0.0],
+            "periodic_replication": True,
         },
     )
     assert result.data["wall_ids"]
@@ -792,6 +793,7 @@ async def test_import_wall_creates_identified_walls(study: Client, tmp_path) -> 
     assert result.data["triangle_size_m"] == pytest.approx(0.01)
     assert result.data["translation_m"] == pytest.approx([1.0, 0.0, 0.5])
     assert result.data["rotation_deg"] == pytest.approx([0.0, 90.0, 0.0])
+    assert result.data["periodic_replication"] is True
     boundary = await study.call_tool(
         "rocky_set_sph_boundary",
         {

@@ -107,6 +107,7 @@ async def rocky_import_wall(
     triangle_size: float | None = None,
     translation: list[float] | None = None,
     rotation_deg: list[float] | None = None,
+    periodic_replication: bool | None = None,
 ) -> dict[str, Any]:
     """Import a geometry file as a Rocky wall.
 
@@ -132,6 +133,8 @@ async def rocky_import_wall(
         Move the imported walls by ``[x, y, z]`` in meters.
     rotation_deg : list[float] | None, default: None
         Rotate the imported walls by ``[x, y, z]`` in degrees. Rocky's token is ``dega``.
+    periodic_replication : bool | None, default: None
+        Copy the wall across a periodic domain boundary.
 
     """
     session = get_session(ctx)
@@ -174,6 +177,9 @@ async def rocky_import_wall(
     if angles is not None:
         for wall in walls:
             wall.SetOrientationFromAngles(angles, unit="dega")
+    if periodic_replication is not None:
+        for wall in walls:
+            wall.SetPeriodicReplication(periodic_replication)
     ids = [session.registry.add("wall", wall, label=f"Wall from {target.name}") for wall in walls]
     return envelope(
         session,
@@ -190,6 +196,9 @@ async def rocky_import_wall(
         triangle_size_m=walls[0].GetTriangleSize("m") if walls else triangle_size,
         translation_m=walls[0].GetTranslation("m") if walls else translation,
         rotation_deg=walls[0].GetOrientation("dega") if walls else rotation_deg,
+        periodic_replication=(
+            bool(walls[0].GetPeriodicReplication()) if walls else periodic_replication
+        ),
         walls=[
             {"id": ident, "name": getattr(wall, "GetName", lambda: "")()}
             for ident, wall in zip(ids, walls, strict=True)
