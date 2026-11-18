@@ -555,6 +555,13 @@ class MockParticle:
         self._thickness = 0.0
         self._corners = 4
         self._edge_deg = 0.0
+        self._side_angle = 0.0
+        self._smoothness = 0.0
+        self._superquadric = 2.0
+        self._rotations = True
+        self._rotational_deformations = False
+        self._remesh = False
+        self._second_bending_deg = 0.0
         self._rolling_resistance = 0.0
         self._size_rows = MockSizeDistributionList(self)
 
@@ -637,6 +644,66 @@ class MockParticle:
         if unit not in (None, "dega"):
             raise ValueError(f"Unsupported angle unit {unit!r}. Expected 'dega'.")
         self._edge_deg = float(value)
+
+    def GetSideAngle(self) -> float:
+        """Return the side angle as Rocky stores it, with no unit."""
+        return self._side_angle
+
+    def SetSideAngle(self, value: float) -> None:
+        """Set the side angle. Rocky takes a plain number."""
+        self._side_angle = float(value)
+
+    def GetSmoothness(self) -> float:
+        """Return the shape smoothness."""
+        return self._smoothness
+
+    def SetSmoothness(self, value: float) -> None:
+        """Set the shape smoothness."""
+        self._smoothness = float(value)
+
+    def GetSuperquadricDegree(self) -> float:
+        """Return the superquadric degree."""
+        return self._superquadric
+
+    def SetSuperquadricDegree(self, value: float) -> None:
+        """Set the superquadric degree."""
+        self._superquadric = float(value)
+
+    def GetEnableRotations(self) -> bool:
+        """Return whether the particle can rotate."""
+        return self._rotations
+
+    def SetEnableRotations(self, value: bool) -> None:
+        """Set whether the particle can rotate."""
+        self._rotations = bool(value)
+
+    def GetIncludeRotationalDeformations(self) -> bool:
+        """Return whether rotational deformation is included."""
+        return self._rotational_deformations
+
+    def SetIncludeRotationalDeformations(self, value: bool) -> None:
+        """Set whether rotational deformation is included."""
+        self._rotational_deformations = bool(value)
+
+    def GetRemeshToTarget(self) -> bool:
+        """Return whether the particle is remeshed to the target count."""
+        return self._remesh
+
+    def SetRemeshToTarget(self, value: bool) -> None:
+        """Set whether the particle is remeshed to the target count."""
+        self._remesh = bool(value)
+
+    def GetSecondBendingAngleLimit(self, unit: str | None = None) -> float:
+        """Return the second bending limit in degrees."""
+        if unit not in (None, "dega"):
+            raise ValueError(f"Unsupported angle unit {unit!r}. Expected 'dega'.")
+        return self._second_bending_deg
+
+    def SetSecondBendingAngleLimit(self, value: float, unit: str | None = None) -> None:
+        """Set the second bending limit. Rocky's token is ``dega``."""
+        if unit not in (None, "dega"):
+            raise ValueError(f"Unsupported angle unit {unit!r}. Expected 'dega'.")
+        self._second_bending_deg = float(value)
 
     def GetSizeType(self) -> str:
         """Return the particle size type."""

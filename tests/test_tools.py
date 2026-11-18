@@ -478,6 +478,11 @@ async def test_particle_shape_dimensions_are_stored(study: Client) -> None:
             "thickness": 0.01,
             "number_of_corners": 6,
             "edge_angle_deg": 30.0,
+            "side_angle": 45.0,
+            "smoothness": 0.6,
+            "superquadric_degree": 4.0,
+            "enable_rotations": False,
+            "second_bending_angle_deg": 20.0,
             "size_type": "equivalent_diameter",
             "rolling_resistance": 0.3,
             "breakage_model": "ab_t10",
@@ -518,6 +523,11 @@ async def test_particle_shape_dimensions_are_stored(study: Client) -> None:
     assert created.data["thickness_m"] == pytest.approx(0.01)
     assert created.data["number_of_corners"] == 6
     assert created.data["edge_angle_deg"] == pytest.approx(30.0)
+    assert created.data["side_angle"] == pytest.approx(45.0)
+    assert created.data["smoothness"] == pytest.approx(0.6)
+    assert created.data["superquadric_degree"] == pytest.approx(4.0)
+    assert created.data["enable_rotations"] is False
+    assert created.data["second_bending_angle_deg"] == pytest.approx(20.0)
     assert created.data["size_type"] == "equivalent_diameter"
     assert created.data["rolling_resistance"] == pytest.approx(0.3)
     assert created.data["breakage_model"] == "ab_t10"

@@ -650,6 +650,13 @@ async def rocky_create_particle(
     thickness: float | None = None,
     number_of_corners: int | None = None,
     edge_angle_deg: float | None = None,
+    side_angle: float | None = None,
+    smoothness: float | None = None,
+    superquadric_degree: float | None = None,
+    enable_rotations: bool | None = None,
+    include_rotational_deformations: bool | None = None,
+    remesh_to_target: bool | None = None,
+    second_bending_angle_deg: float | None = None,
     size_type: str | None = None,
     rolling_resistance: float | None = None,
     breakage_model: str | None = None,
@@ -717,6 +724,20 @@ async def rocky_create_particle(
         Particle thickness. Rocky stores this in meters.
     number_of_corners : int | None, default: None
         Number of corners for a faceted particle.
+    side_angle : float | None, default: None
+        Side angle. Rocky stores this as a plain number, with no unit token.
+    smoothness : float | None, default: None
+        Shape smoothness.
+    superquadric_degree : float | None, default: None
+        Superquadric degree.
+    enable_rotations : bool | None, default: None
+        Allow the particle to rotate.
+    include_rotational_deformations : bool | None, default: None
+        Include rotational deformation of a flexible particle.
+    remesh_to_target : bool | None, default: None
+        Remesh a flexible particle to the target element count.
+    second_bending_angle_deg : float | None, default: None
+        Second bending limit in degrees. Rocky's token is ``dega``.
     edge_angle_deg : float | None, default: None
         Edge angle in degrees. Rocky's token is ``dega``.
     size_type : str | None, default: None
@@ -857,6 +878,20 @@ async def rocky_create_particle(
             particle.SetNumberOfCorners(number_of_corners)
         if edge_angle_deg is not None:
             particle.SetEdgeAngle(edge_angle_deg, unit="dega")
+        if side_angle is not None:
+            particle.SetSideAngle(side_angle)
+        if smoothness is not None:
+            particle.SetSmoothness(smoothness)
+        if superquadric_degree is not None:
+            particle.SetSuperquadricDegree(superquadric_degree)
+        if enable_rotations is not None:
+            particle.SetEnableRotations(enable_rotations)
+        if include_rotational_deformations is not None:
+            particle.SetIncludeRotationalDeformations(include_rotational_deformations)
+        if remesh_to_target is not None:
+            particle.SetRemeshToTarget(remesh_to_target)
+        if second_bending_angle_deg is not None:
+            particle.SetSecondBendingAngleLimit(second_bending_angle_deg, unit="dega")
         if size_type is not None:
             particle.SetSizeType(size_type)
         if rolling_resistance is not None:
@@ -995,6 +1030,13 @@ async def rocky_create_particle(
         thickness_m=particle.GetThickness("m"),
         number_of_corners=particle.GetNumberOfCorners(),
         edge_angle_deg=particle.GetEdgeAngle("dega"),
+        side_angle=particle.GetSideAngle(),
+        smoothness=particle.GetSmoothness(),
+        superquadric_degree=particle.GetSuperquadricDegree(),
+        enable_rotations=bool(particle.GetEnableRotations()),
+        include_rotational_deformations=bool(particle.GetIncludeRotationalDeformations()),
+        remesh_to_target=bool(particle.GetRemeshToTarget()),
+        second_bending_angle_deg=particle.GetSecondBendingAngleLimit("dega"),
         size_type=particle.GetSizeType(),
         rolling_resistance=particle.GetRollingResistance(),
         breakage_model=particle.GetBreakageModel(),
