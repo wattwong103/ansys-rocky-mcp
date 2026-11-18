@@ -98,6 +98,13 @@ def describe_study(session: Any) -> dict[str, Any]:
                 "cartesian_periodic_directions": _safe(domain.GetCartesianPeriodicDirections),
                 "cylindrical_periodic_directions": _safe(domain.GetCylindricalPeriodicDirections),
                 "number_of_divisions": _safe(domain.GetNumberOfDivisions),
+                "periodic_min_m": _safe(
+                    lambda: list(domain.GetPeriodicLimitsMinCoordinates("m")), []
+                ),
+                "periodic_max_m": _safe(
+                    lambda: list(domain.GetPeriodicLimitsMaxCoordinates("m")), []
+                ),
+                "periodic_at_geometry_limits": _safe(domain.GetPeriodicAtGeometryLimits),
             }
             if domain is not None
             else {},
