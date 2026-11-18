@@ -191,6 +191,9 @@ async def rocky_create_feed_conveyor(
     belt_width: float = 1.0,
     incline_deg: float = 0.0,
     loading_length: float | None = None,
+    drop_length: float | None = None,
+    drop_width: float | None = None,
+    drop_height: float | None = None,
     name: str | None = None,
 ) -> dict[str, Any]:
     """Create a Rocky feed conveyor.
@@ -205,12 +208,27 @@ async def rocky_create_feed_conveyor(
         Belt incline in degrees.
     loading_length : float | None, default: None
         Length of the loading section in meters. Feed conveyors only.
+    drop_length : float | None, default: None
+        Drop box length in meters. Feed conveyors only.
+    drop_width : float | None, default: None
+        Drop box width in meters. Feed conveyors only.
+    drop_height : float | None, default: None
+        Drop box height in meters. Feed conveyors only.
     name : str | None, default: None
         Conveyor name.
 
     """
     return await _create_conveyor(
-        ctx, "feed", belt_speed, belt_width, incline_deg, name, loading_length
+        ctx,
+        "feed",
+        belt_speed,
+        belt_width,
+        incline_deg,
+        name,
+        loading_length,
+        drop_length,
+        drop_width,
+        drop_height,
     )
 
 
@@ -222,6 +240,9 @@ async def _create_conveyor(
     incline_deg: float,
     name: str | None,
     loading_length: float | None = None,
+    drop_length: float | None = None,
+    drop_width: float | None = None,
+    drop_height: float | None = None,
 ) -> dict[str, Any]:
     """Create a feed or receiving conveyor."""
     session = get_session(ctx)
@@ -238,6 +259,12 @@ async def _create_conveyor(
             conveyor.SetName(name)
         if loading_length is not None:
             conveyor.SetLoadingLength(loading_length, unit="m")
+        if drop_length is not None:
+            conveyor.SetDropBoxLength(drop_length, unit="m")
+        if drop_width is not None:
+            conveyor.SetDropBoxWidth(drop_width, unit="m")
+        if drop_height is not None:
+            conveyor.SetDropBoxHeight(drop_height, unit="m")
     except Exception as exc:
         raise ToolError(f"Could not create the {kind} conveyor: {exc}") from exc
     ident = session.registry.add(
@@ -256,6 +283,11 @@ async def _create_conveyor(
         belt_width_m=conveyor.GetBeltWidth("m"),
         incline_deg=conveyor.GetBeltInclineAngle("deg"),
         loading_length_m=conveyor.GetLoadingLength("m"),
+        drop_box_m=[
+            conveyor.GetDropBoxLength("m"),
+            conveyor.GetDropBoxWidth("m"),
+            conveyor.GetDropBoxHeight("m"),
+        ],
     )
 
 

@@ -172,7 +172,7 @@ startup_timeout_sec = 90
 |---|---|
 | `rocky_import_wall` | Import a geometry file as a wall. |
 | `rocky_create_surface` | Create a circular or rectangular surface. |
-| `rocky_create_feed_conveyor` | Create a feed conveyor with belt speed, width, incline, and loading length. |
+| `rocky_create_feed_conveyor` | Create a feed conveyor with belt speed, width, incline, loading length, and drop box. |
 | `rocky_create_receiving_conveyor` | Create a receiving conveyor with belt speed, width, and incline. |
 | `rocky_create_particle` | Create a particle definition (shape, sieve size). |
 | `rocky_set_size_distribution` | Set a particle's size distribution, minimum size, and surface energy. |

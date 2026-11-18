@@ -300,11 +300,15 @@ async def test_a_feed_conveyor_records_belt_speed(study: Client) -> None:
             "belt_width": 0.8,
             "incline_deg": 12.0,
             "loading_length": 6.0,
+            "drop_length": 1.2,
+            "drop_width": 0.8,
+            "drop_height": 0.5,
             "name": "feed",
         },
     )
     assert created.data["name"] == "feed"
     assert created.data["loading_length_m"] == pytest.approx(6.0)
+    assert created.data["drop_box_m"] == pytest.approx([1.2, 0.8, 0.5])
     assert created.data["belt_speed_m_s"] == pytest.approx(2.5)
     assert created.data["belt_width_m"] == pytest.approx(0.8)
     assert created.data["incline_deg"] == pytest.approx(12.0)

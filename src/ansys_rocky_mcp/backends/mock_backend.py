@@ -1220,6 +1220,7 @@ class MockFeedConveyor:
         self._speed = 0.0
         self._width = 1.0
         self._loading_length = 0.0
+        self._drop = [0.0, 0.0, 0.0]
         self._incline_rad = 0.0
         self._material: Any = None
 
@@ -1254,6 +1255,30 @@ class MockFeedConveyor:
     def GetLoadingLength(self, unit: str | None = None) -> float:
         """Return the loading length in meters."""
         return self._loading_length
+
+    def SetDropBoxLength(self, value: float, unit: str | None = None) -> None:
+        """Set the drop box length in meters."""
+        self._drop[0] = float(value)
+
+    def GetDropBoxLength(self, unit: str | None = None) -> float:
+        """Return the drop box length in meters."""
+        return self._drop[0]
+
+    def SetDropBoxWidth(self, value: float, unit: str | None = None) -> None:
+        """Set the drop box width in meters."""
+        self._drop[1] = float(value)
+
+    def GetDropBoxWidth(self, unit: str | None = None) -> float:
+        """Return the drop box width in meters."""
+        return self._drop[1]
+
+    def SetDropBoxHeight(self, value: float, unit: str | None = None) -> None:
+        """Set the drop box height in meters."""
+        self._drop[2] = float(value)
+
+    def GetDropBoxHeight(self, unit: str | None = None) -> float:
+        """Return the drop box height in meters."""
+        return self._drop[2]
 
     def SetBeltInclineAngle(self, value: float, unit: str | None = None) -> None:
         """Set the belt incline. Degrees are accepted as ``deg``."""
