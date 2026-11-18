@@ -277,6 +277,12 @@ async def test_domain_and_solver_settings_are_applied(study: Client) -> None:
     assert again.data["study"]["contact_models"]["normal_force"] == "damped_hertzian"
 
 
+async def test_unknown_particle_shape_is_rejected(study: Client) -> None:
+    """A shape Rocky does not define is rejected before the solver call."""
+    with pytest.raises(ToolError, match="sphere"):
+        await study.call_tool("rocky_create_particle", {"shape": "cube"})
+
+
 async def test_particle_size_distribution_is_set(study: Client) -> None:
     """A particle can use one of Rocky's size distribution models."""
     objects = await study.call_tool("rocky_list_processes")

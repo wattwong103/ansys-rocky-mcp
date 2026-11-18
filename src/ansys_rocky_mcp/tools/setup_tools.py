@@ -18,6 +18,20 @@ CARTESIAN_PERIODIC = ("NONE", "X", "Y", "XY", "Z", "XZ", "YZ", "XYZ")
 CYLINDRICAL_PERIODIC = ("X", "Y", "Z")
 EXECUTION_MODES = ("local", "single_mpi", "multi_mpi")
 SIZE_DISTRIBUTIONS = ("gaudin_schumann", "incomplete_beta", "custom")
+PARTICLE_SHAPES = (
+    "sphere",
+    "polyhedron",
+    "sphero_cylinder",
+    "sphero_polygon",
+    "sphero_polyhedron",
+    "briquete",
+    "faceted_cylinder",
+    "assembly",
+    "straight_fiber",
+    "custom_fiber",
+    "custom_shell",
+    "custom_polyhedron",
+)
 NORMAL_FORCE_MODELS = (
     "linear_hysteresis",
     "linear_elastic_viscous",
@@ -183,7 +197,7 @@ async def rocky_create_particle(
     Parameters
     ----------
     shape : str, default: "sphere"
-        Particle shape, for example ``"sphere"`` or ``"sphero_cylinder"``.
+        One of Rocky's particle shapes, for example ``sphere`` or ``sphero_cylinder``.
     sieve_size : float | None, default: None
         Sieve size of the particle. This sets the particle mass and therefore
         the particle throughput for a given mass flow.
@@ -193,6 +207,8 @@ async def rocky_create_particle(
         Name for the created particle.
 
     """
+    if shape not in PARTICLE_SHAPES:
+        raise ToolError(f"Unknown particle shape {shape!r}. Expected one of {PARTICLE_SHAPES}.")
     session = get_session(ctx)
     study = require_study(session)
     particle = study.CreateParticle()
