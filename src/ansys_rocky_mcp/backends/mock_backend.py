@@ -1902,8 +1902,15 @@ class MockMotionFrame:
         self._period = 0.0
         self._period_start = 0.0
         self._period_stop = 0.0
+        self._periodic = False
         self._origin = (0.0, 0.0, 0.0)
         self._orientation = (0.0, 0.0, 0.0)
+        self._linear_limits = False
+        self._angular_limits = False
+        self._min_linear = (0.0, 0.0, 0.0)
+        self._max_linear = (0.0, 0.0, 0.0)
+        self._min_angular = (0.0, 0.0, 0.0)
+        self._max_angular = (0.0, 0.0, 0.0)
 
     def AddRotationMotion(
         self,
@@ -2020,6 +2027,80 @@ class MockMotionFrame:
         if unit not in (None, "s"):
             raise ValueError(f"Unsupported time unit {unit!r}. Expected 's'.")
         self._period_stop = float(value)
+
+    def GetEnablePeriodicMotion(self) -> bool:
+        """Return whether Rocky will repeat the motion."""
+        return self._periodic
+
+    def SetEnablePeriodicMotion(self, value: bool) -> None:
+        """Set whether Rocky will repeat the motion."""
+        self._periodic = bool(value)
+
+    def GetEnableFbmLinearLimits(self) -> bool:
+        """Return whether free-body travel is limited."""
+        return self._linear_limits
+
+    def SetEnableFbmLinearLimits(self, value: bool) -> None:
+        """Set whether free-body travel is limited."""
+        self._linear_limits = bool(value)
+
+    def GetEnableFbmAngularLimits(self) -> bool:
+        """Return whether free-body rotation is limited."""
+        return self._angular_limits
+
+    def SetEnableFbmAngularLimits(self, value: bool) -> None:
+        """Set whether free-body rotation is limited."""
+        self._angular_limits = bool(value)
+
+    def _limit_vector(
+        self, values: list[float], unit: str | None, allowed: str
+    ) -> tuple[float, ...]:
+        """Store a three-component limit in Rocky's unit."""
+        if unit not in (None, allowed):
+            raise ValueError(f"Unsupported limit unit {unit!r}. Expected {allowed!r}.")
+        if len(values) != 3:
+            raise ValueError("A free-body limit must have three numbers.")
+        return tuple(float(value) for value in values)
+
+    def GetFbmMinLinearLimits(self, unit: str | None = None) -> list[float]:
+        """Return the minimum free-body travel in meters."""
+        if unit not in (None, "m"):
+            raise ValueError(f"Unsupported length unit {unit!r}. Expected 'm'.")
+        return list(self._min_linear)
+
+    def SetFbmMinLinearLimits(self, values: list[float], unit: str | None = None) -> None:
+        """Set the minimum free-body travel. Rocky's token is ``m``."""
+        self._min_linear = self._limit_vector(values, unit, "m")
+
+    def GetFbmMaxLinearLimits(self, unit: str | None = None) -> list[float]:
+        """Return the maximum free-body travel in meters."""
+        if unit not in (None, "m"):
+            raise ValueError(f"Unsupported length unit {unit!r}. Expected 'm'.")
+        return list(self._max_linear)
+
+    def SetFbmMaxLinearLimits(self, values: list[float], unit: str | None = None) -> None:
+        """Set the maximum free-body travel. Rocky's token is ``m``."""
+        self._max_linear = self._limit_vector(values, unit, "m")
+
+    def GetFbmMinAngularLimits(self, unit: str | None = None) -> list[float]:
+        """Return the minimum free-body angles in degrees."""
+        if unit not in (None, "dega"):
+            raise ValueError(f"Unsupported angle unit {unit!r}. Expected 'dega'.")
+        return list(self._min_angular)
+
+    def SetFbmMinAngularLimits(self, values: list[float], unit: str | None = None) -> None:
+        """Set the minimum free-body angles. Rocky's token is ``dega``."""
+        self._min_angular = self._limit_vector(values, unit, "dega")
+
+    def GetFbmMaxAngularLimits(self, unit: str | None = None) -> list[float]:
+        """Return the maximum free-body angles in degrees."""
+        if unit not in (None, "dega"):
+            raise ValueError(f"Unsupported angle unit {unit!r}. Expected 'dega'.")
+        return list(self._max_angular)
+
+    def SetFbmMaxAngularLimits(self, values: list[float], unit: str | None = None) -> None:
+        """Set the maximum free-body angles. Rocky's token is ``dega``."""
+        self._max_angular = self._limit_vector(values, unit, "dega")
 
     def GetRelativePosition(self, unit: str | None = None) -> list[float]:
         """Return the frame position in meters."""

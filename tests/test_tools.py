@@ -721,8 +721,15 @@ async def test_motion_is_applied_to_the_targets(study: Client) -> None:
             "period_stop": 5.0,
             "origin": [1.0, 0.0, 0.0],
             "orientation_deg": [0.0, 90.0, 0.0],
+            "min_linear_m": [-0.1, -0.1, 0.0],
+            "max_angular_deg": [0.0, 45.0, 0.0],
         },
     )
+    assert motion.data["periodic"] is True
+    assert motion.data["linear_limits"] is True
+    assert motion.data["angular_limits"] is True
+    assert motion.data["min_linear_m"] == pytest.approx([-0.1, -0.1, 0.0])
+    assert motion.data["max_angular_deg"] == pytest.approx([0.0, 45.0, 0.0])
     assert motion.data["period_s"] == pytest.approx(2.0)
     assert motion.data["period_start_s"] == pytest.approx(1.0)
     assert motion.data["period_stop_s"] == pytest.approx(5.0)

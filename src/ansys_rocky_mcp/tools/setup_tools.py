@@ -1814,6 +1814,13 @@ async def rocky_set_motion(
     period: float | None = None,
     period_start: float | None = None,
     period_stop: float | None = None,
+    periodic: bool | None = None,
+    linear_limits: bool | None = None,
+    angular_limits: bool | None = None,
+    min_linear_m: list[float] | None = None,
+    max_linear_m: list[float] | None = None,
+    min_angular_deg: list[float] | None = None,
+    max_angular_deg: list[float] | None = None,
     frequency_hz: float | None = None,
     amplitude: float | None = None,
     direction: list[float] | None = None,
@@ -1867,6 +1874,21 @@ async def rocky_set_motion(
         Time in seconds when the repeating motion starts.
     period_stop : float | None, default: None
         Time in seconds when the repeating motion stops.
+    periodic : bool | None, default: None
+        Turn Rocky's periodic motion on or off. A period or a repeat window
+        turns it on when this is omitted, so Rocky does not ignore the times.
+    linear_limits : bool | None, default: None
+        Enable free-body travel limits. A linear limit turns this on when omitted.
+    angular_limits : bool | None, default: None
+        Enable free-body angle limits. An angular limit turns this on when omitted.
+    min_linear_m : list[float] | None, default: None
+        Minimum free-body travel ``[x, y, z]`` in meters.
+    max_linear_m : list[float] | None, default: None
+        Maximum free-body travel ``[x, y, z]`` in meters.
+    min_angular_deg : list[float] | None, default: None
+        Minimum free-body angles ``[x, y, z]``. Rocky's token is ``dega``.
+    max_angular_deg : list[float] | None, default: None
+        Maximum free-body angles ``[x, y, z]``. Rocky's token is ``dega``.
     frequency_hz : float | None, default: None
         Frequency in hertz. Required for a vibration or a pendulum.
     amplitude : float | None, default: None
@@ -1905,6 +1927,21 @@ async def rocky_set_motion(
     placed = _three_vector(origin, "origin")
     angles = _three_vector(orientation_deg, "orientation_deg")
     axis = _three_vector(direction, "direction")
+    min_linear = _three_vector(min_linear_m, "min_linear_m")
+    max_linear = _three_vector(max_linear_m, "max_linear_m")
+    min_angular = _three_vector(min_angular_deg, "min_angular_deg")
+    max_angular = _three_vector(max_angular_deg, "max_angular_deg")
+    repeat = periodic
+    if repeat is None and (
+        period is not None or period_start is not None or period_stop is not None
+    ):
+        repeat = True
+    use_linear = linear_limits
+    if use_linear is None and (min_linear is not None or max_linear is not None):
+        use_linear = True
+    use_angular = angular_limits
+    if use_angular is None and (min_angular is not None or max_angular is not None):
+        use_angular = True
     amplitude_rad: float | None = None
     phase_rad: float | None = None
     amplitude_rate_rad_s: float | None = None
@@ -1998,6 +2035,20 @@ async def rocky_set_motion(
             frame.SetPeriodicMotionStartTime(period_start, unit="s")
         if period_stop is not None:
             frame.SetPeriodicMotionStopTime(period_stop, unit="s")
+        if repeat is not None:
+            frame.SetEnablePeriodicMotion(bool(repeat))
+        if use_linear is not None:
+            frame.SetEnableFbmLinearLimits(bool(use_linear))
+        if min_linear is not None:
+            frame.SetFbmMinLinearLimits(min_linear, unit="m")
+        if max_linear is not None:
+            frame.SetFbmMaxLinearLimits(max_linear, unit="m")
+        if use_angular is not None:
+            frame.SetEnableFbmAngularLimits(bool(use_angular))
+        if min_angular is not None:
+            frame.SetFbmMinAngularLimits(min_angular, unit="dega")
+        if max_angular is not None:
+            frame.SetFbmMaxAngularLimits(max_angular, unit="dega")
     except ToolError:
         raise
     except Exception as exc:
@@ -2035,6 +2086,13 @@ async def rocky_set_motion(
         origin_m=frame.GetRelativePosition("m") if placed is not None else None,
         orientation_deg=frame.GetOrientationFromAngles("dega") if angles is not None else None,
         period_s=frame.GetPeriodicMotionPeriod("s"),
+        periodic=frame.GetEnablePeriodicMotion() if repeat is not None else None,
+        linear_limits=frame.GetEnableFbmLinearLimits() if use_linear is not None else None,
+        angular_limits=frame.GetEnableFbmAngularLimits() if use_angular is not None else None,
+        min_linear_m=frame.GetFbmMinLinearLimits("m") if min_linear is not None else None,
+        max_linear_m=frame.GetFbmMaxLinearLimits("m") if max_linear is not None else None,
+        min_angular_deg=(frame.GetFbmMinAngularLimits("dega") if min_angular is not None else None),
+        max_angular_deg=(frame.GetFbmMaxAngularLimits("dega") if max_angular is not None else None),
         period_start_s=frame.GetPeriodicMotionStartTime("s") if period_start is not None else None,
         period_stop_s=frame.GetPeriodicMotionStopTime("s") if period_stop is not None else None,
         frequency_hz=frequency_hz if kind in ("vibration", "pendulum") else None,
