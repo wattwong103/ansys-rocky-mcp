@@ -206,6 +206,7 @@ async def rocky_create_feed_conveyor(
     idler_diameter: float | None = None,
     wall_thickness: float | None = None,
     face_width: float | None = None,
+    alignment_deg: float | None = None,
     name: str | None = None,
 ) -> dict[str, Any]:
     """Create a Rocky feed conveyor.
@@ -250,6 +251,8 @@ async def rocky_create_feed_conveyor(
         Side wall thickness in meters. Feed conveyors only.
     face_width : float | None, default: None
         Pulley face width in meters. Feed conveyors only.
+    alignment_deg : float | None, default: None
+        Alignment angle in degrees. Rocky stores this angle as ``dega``.
     name : str | None, default: None
         Conveyor name.
 
@@ -277,6 +280,7 @@ async def rocky_create_feed_conveyor(
         idler_diameter=idler_diameter,
         wall_thickness=wall_thickness,
         face_width=face_width,
+        alignment_deg=alignment_deg,
     )
 
 
@@ -303,6 +307,7 @@ async def _create_conveyor(
     idler_diameter: float | None = None,
     wall_thickness: float | None = None,
     face_width: float | None = None,
+    alignment_deg: float | None = None,
 ) -> dict[str, Any]:
     """Create a feed or receiving conveyor."""
     session = get_session(ctx)
@@ -314,7 +319,7 @@ async def _create_conveyor(
             conveyor = study.CreateFeedConveyor()
         conveyor.SetBeltSpeed(belt_speed, unit="m/s")
         conveyor.SetBeltWidth(belt_width, unit="m")
-        conveyor.SetBeltInclineAngle(incline_deg, unit="deg")
+        conveyor.SetBeltInclineAngle(incline_deg, unit="dega")
         if start_time is not None:
             conveyor.SetBeginningStartTime(start_time, unit="s")
         if acceleration_period is not None:
@@ -352,6 +357,8 @@ async def _create_conveyor(
             conveyor.SetWallThickness(wall_thickness, unit="m")
         if face_width is not None:
             conveyor.SetFaceWidth(face_width, unit="m")
+        if alignment_deg is not None:
+            conveyor.SetAlignmentAngle(alignment_deg, unit="dega")
     except ToolError:
         raise
     except Exception as exc:
@@ -370,7 +377,8 @@ async def _create_conveyor(
         name=conveyor.GetName(),
         belt_speed_m_s=conveyor.GetBeltSpeed("m/s"),
         belt_width_m=conveyor.GetBeltWidth("m"),
-        incline_deg=conveyor.GetBeltInclineAngle("deg"),
+        incline_deg=conveyor.GetBeltInclineAngle("dega"),
+        alignment_deg=conveyor.GetAlignmentAngle("dega"),
         start_time_s=conveyor.GetBeginningStartTime("s"),
         acceleration_period_s=conveyor.GetAccelerationPeriod("s"),
         stop_time_s=conveyor.GetBeginningStopTime("s"),
@@ -404,6 +412,7 @@ async def rocky_create_receiving_conveyor(
     belt_profile: str | None = None,
     triangle_size: float | None = None,
     belt_thickness: float | None = None,
+    alignment_deg: float | None = None,
     name: str | None = None,
 ) -> dict[str, Any]:
     """Create a Rocky receiving conveyor.
@@ -424,6 +433,7 @@ async def rocky_create_receiving_conveyor(
         belt_profile=belt_profile,
         triangle_size=triangle_size,
         belt_thickness=belt_thickness,
+        alignment_deg=alignment_deg,
     )
 
 

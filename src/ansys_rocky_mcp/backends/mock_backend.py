@@ -1233,6 +1233,7 @@ class MockFeedConveyor:
         self._diameter = 0.3
         self._wall_thickness = 0.01
         self._face_width = 0.3
+        self._alignment_rad = 0.0
         self._incline_rad = 0.0
         self._material: Any = None
 
@@ -1397,6 +1398,21 @@ class MockFeedConveyor:
     def GetFaceWidth(self, unit: str | None = None) -> float:
         """Return the pulley face width in meters."""
         return self._face_width
+
+    def SetAlignmentAngle(self, value: float, unit: str | None = None) -> None:
+        """Set the conveyor alignment angle. Degrees use Rocky's ``dega`` token."""
+        angle = float(value)
+        if unit in ("deg", "dega"):
+            angle = math.radians(angle)
+        elif unit not in (None, "rad"):
+            raise ValueError(f"Unsupported angle unit {unit!r}.")
+        self._alignment_rad = angle
+
+    def GetAlignmentAngle(self, unit: str | None = None) -> float:
+        """Return the alignment angle in radians, or degrees when asked."""
+        if unit in ("deg", "dega"):
+            return math.degrees(self._alignment_rad)
+        return self._alignment_rad
 
     def SetBeltInclineAngle(self, value: float, unit: str | None = None) -> None:
         """Set the belt incline. Degrees are accepted as ``deg``."""

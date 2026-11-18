@@ -308,6 +308,7 @@ async def test_a_feed_conveyor_records_belt_speed(study: Client) -> None:
             "idler_diameter": 0.4,
             "wall_thickness": 0.008,
             "face_width": 0.35,
+            "alignment_deg": 15.0,
             "name": "feed",
         },
     )
@@ -322,6 +323,7 @@ async def test_a_feed_conveyor_records_belt_speed(study: Client) -> None:
     assert created.data["belt_speed_m_s"] == pytest.approx(2.5)
     assert created.data["belt_width_m"] == pytest.approx(0.8)
     assert created.data["incline_deg"] == pytest.approx(12.0)
+    assert created.data["alignment_deg"] == pytest.approx(15.0)
     receiving = await study.call_tool(
         "rocky_create_receiving_conveyor",
         {
@@ -333,10 +335,12 @@ async def test_a_feed_conveyor_records_belt_speed(study: Client) -> None:
             "belt_profile": "Five Rolls",
             "triangle_size": 0.02,
             "belt_thickness": 0.012,
+            "alignment_deg": -8.0,
             "name": "discharge",
         },
     )
     assert receiving.data["kind"] == "receiving"
+    assert receiving.data["alignment_deg"] == pytest.approx(-8.0)
     assert receiving.data["start_time_s"] == pytest.approx(3.0)
     assert receiving.data["acceleration_period_s"] == pytest.approx(1.5)
     assert receiving.data["stop_time_s"] == pytest.approx(20.0)
