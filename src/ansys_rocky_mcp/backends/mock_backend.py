@@ -2432,30 +2432,70 @@ class MockPhysics:
         self._adhesion = "none"
         self._restitution_model = "constant"
         self._thermal = False
+        self._gravity_start = 0.0
+        self._gravity_stop = 0.0
+        self._thermal_correction = "none"
+        self._softening = 1.0
+        self._coarse_grain = False
+        self._search_distance = 1.0
+        self._update_distance = 1.0
+
+    def _gravity_component(self, value: float, unit: str | None) -> float:
+        """Store one gravity component. Rocky's token is ``m/s2``."""
+        if unit not in (None, "m/s2"):
+            raise ValueError(f"Unsupported gravity unit {unit!r}. Expected 'm/s2'.")
+        return float(value)
 
     def GetGravityXDirection(self, unit: str | None = None) -> float:
         """Return the X component of gravity."""
+        self._gravity_component(0.0, unit)
         return self._gravity[0]
 
     def SetGravityXDirection(self, value: float, unit: str | None = None) -> None:
         """Set the X component of gravity."""
-        self._gravity[0] = float(value)
+        self._gravity[0] = self._gravity_component(value, unit)
 
     def GetGravityYDirection(self, unit: str | None = None) -> float:
         """Return the Y component of gravity."""
+        self._gravity_component(0.0, unit)
         return self._gravity[1]
 
     def SetGravityYDirection(self, value: float, unit: str | None = None) -> None:
         """Set the Y component of gravity."""
-        self._gravity[1] = float(value)
+        self._gravity[1] = self._gravity_component(value, unit)
 
     def GetGravityZDirection(self, unit: str | None = None) -> float:
         """Return the Z component of gravity."""
+        self._gravity_component(0.0, unit)
         return self._gravity[2]
 
     def SetGravityZDirection(self, value: float, unit: str | None = None) -> None:
         """Set the Z component of gravity."""
-        self._gravity[2] = float(value)
+        self._gravity[2] = self._gravity_component(value, unit)
+
+    def GetGravityStartTime(self, unit: str | None = None) -> float:
+        """Return when gravity starts, in seconds."""
+        if unit not in (None, "s"):
+            raise ValueError(f"Unsupported time unit {unit!r}. Expected 's'.")
+        return self._gravity_start
+
+    def SetGravityStartTime(self, value: float, unit: str | None = None) -> None:
+        """Set when gravity starts. Rocky's token is ``s``."""
+        if unit not in (None, "s"):
+            raise ValueError(f"Unsupported time unit {unit!r}. Expected 's'.")
+        self._gravity_start = float(value)
+
+    def GetGravityStopTime(self, unit: str | None = None) -> float:
+        """Return when gravity stops, in seconds."""
+        if unit not in (None, "s"):
+            raise ValueError(f"Unsupported time unit {unit!r}. Expected 's'.")
+        return self._gravity_stop
+
+    def SetGravityStopTime(self, value: float, unit: str | None = None) -> None:
+        """Set when gravity stops. Rocky's token is ``s``."""
+        if unit not in (None, "s"):
+            raise ValueError(f"Unsupported time unit {unit!r}. Expected 's'.")
+        self._gravity_stop = float(value)
 
     def GetNormalForceModel(self) -> str:
         """Return the normal force model."""
@@ -2504,6 +2544,51 @@ class MockPhysics:
     def SetEnableThermalModel(self, value: bool) -> None:
         """Enable or disable the thermal model."""
         self._thermal = bool(value)
+
+    def GetThermalCorrectionModel(self) -> str:
+        """Return the thermal correction model."""
+        return self._thermal_correction
+
+    def SetThermalCorrectionModel(self, value: str) -> None:
+        """Set the thermal correction model."""
+        if value not in ("none", "morris_et_al_area", "morris_et_al_area_time"):
+            raise ValueError(
+                f"Unsupported thermal correction {value!r}. "
+                "Expected 'none', 'morris_et_al_area', or 'morris_et_al_area_time'."
+            )
+        self._thermal_correction = value
+
+    def GetNumericalSofteningFactor(self) -> float:
+        """Return the numerical softening factor."""
+        return self._softening
+
+    def SetNumericalSofteningFactor(self, value: float) -> None:
+        """Set the numerical softening factor."""
+        self._softening = float(value)
+
+    def GetEnableCoarseGrainModeling(self) -> bool:
+        """Return whether coarse-grain modeling is enabled."""
+        return self._coarse_grain
+
+    def SetEnableCoarseGrainModeling(self, value: bool) -> None:
+        """Enable or disable coarse-grain modeling."""
+        self._coarse_grain = bool(value)
+
+    def GetSearchDistanceMultiplier(self) -> float:
+        """Return the neighbor-search distance multiplier."""
+        return self._search_distance
+
+    def SetSearchDistanceMultiplier(self, value: float) -> None:
+        """Set the neighbor-search distance multiplier."""
+        self._search_distance = float(value)
+
+    def GetUpdateDistanceMultiplier(self) -> float:
+        """Return the neighbor-list update distance multiplier."""
+        return self._update_distance
+
+    def SetUpdateDistanceMultiplier(self, value: float) -> None:
+        """Set the neighbor-list update distance multiplier."""
+        self._update_distance = float(value)
 
 
 class MockExportToolkit:

@@ -334,8 +334,13 @@ async def test_domain_and_solver_settings_are_applied(study: Client) -> None:
     described = await study.call_tool("rocky_describe_study")
     assert described.data["study"]["solver"]["curves_frequency"] == 5
 
-    gravity = await study.call_tool("rocky_set_gravity", {"gravity": [0.0, -9.81, 0.0]})
+    gravity = await study.call_tool(
+        "rocky_set_gravity",
+        {"gravity": [0.0, -9.81, 0.0], "start_time": 0.5, "stop_time": 4.0},
+    )
     assert gravity.data["gravity_m_s2"] == pytest.approx([0.0, -9.81, 0.0])
+    assert gravity.data["start_time_s"] == pytest.approx(0.5)
+    assert gravity.data["stop_time_s"] == pytest.approx(4.0)
     described = await study.call_tool("rocky_describe_study")
     assert described.data["study"]["gravity_m_s2"] == pytest.approx([0.0, -9.81, 0.0])
 
@@ -348,9 +353,17 @@ async def test_domain_and_solver_settings_are_applied(study: Client) -> None:
             "adhesion": "JKR",
             "restitution_model": "velocity_dependent",
             "thermal": True,
+            "thermal_correction": "morris_et_al_area",
+            "numerical_softening_factor": 0.1,
+            "coarse_grain": True,
+            "search_distance_multiplier": 1.5,
         },
     )
     assert models.data["rolling_resistance"] == "type_3"
+    assert models.data["thermal_correction"] == "morris_et_al_area"
+    assert models.data["numerical_softening_factor"] == pytest.approx(0.1)
+    assert models.data["coarse_grain"] is True
+    assert models.data["search_distance_multiplier"] == pytest.approx(1.5)
     assert models.data["adhesion"] == "JKR"
     assert models.data["restitution_model"] == "velocity_dependent"
     assert models.data["thermal"] is True

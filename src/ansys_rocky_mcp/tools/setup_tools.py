@@ -60,6 +60,7 @@ TANGENTIAL_FORCE_MODELS = (
 ROLLING_RESISTANCE_MODELS = ("type_1", "type_3", "none", "custom")
 ADHESION_MODELS = ("none", "constant", "linear", "JKR", "custom")
 RESTITUTION_MODELS = ("constant", "velocity_dependent")
+THERMAL_CORRECTION_MODELS = ("none", "morris_et_al_area", "morris_et_al_area_time")
 
 
 def _angular_velocity_rad_s(values: list[float], unit: str) -> tuple[float, float, float]:
@@ -2108,6 +2109,8 @@ async def rocky_set_gravity(
     ctx: Context,
     gravity: list[float],
     unit: str = "m/s2",
+    start_time: float | None = None,
+    stop_time: float | None = None,
 ) -> dict[str, Any]:
     """Set the gravity vector on the study physics.
 
@@ -2116,26 +2119,45 @@ async def rocky_set_gravity(
     gravity : list[float]
         Gravity as ``[x, y, z]``.
     unit : str, default: "m/s2"
-        Unit of the gravity components.
+        Unit of the gravity components. Rocky's token is ``m/s2``.
+    start_time : float | None, default: None
+        Time in seconds when gravity starts. Rocky's token is ``s``.
+    stop_time : float | None, default: None
+        Time in seconds when gravity stops. Rocky's token is ``s``.
 
     """
     session = get_session(ctx)
     study = require_study(session)
     if len(gravity) != 3:
         raise ToolError("Gravity requires three components [x, y, z].")
+    if unit != "m/s2":
+        raise ToolError(f"Unknown gravity unit {unit!r}. Expected 'm/s2'.")
     try:
         physics = study.GetPhysics()
-        physics.SetGravityXDirection(gravity[0], unit=unit)
-        physics.SetGravityYDirection(gravity[1], unit=unit)
-        physics.SetGravityZDirection(gravity[2], unit=unit)
+        physics.SetGravityXDirection(gravity[0], unit="m/s2")
+        physics.SetGravityYDirection(gravity[1], unit="m/s2")
+        physics.SetGravityZDirection(gravity[2], unit="m/s2")
+        if start_time is not None:
+            physics.SetGravityStartTime(start_time, unit="s")
+        if stop_time is not None:
+            physics.SetGravityStopTime(stop_time, unit="s")
         applied = [
             physics.GetGravityXDirection("m/s2"),
             physics.GetGravityYDirection("m/s2"),
             physics.GetGravityZDirection("m/s2"),
         ]
+    except ToolError:
+        raise
     except Exception as exc:
         raise ToolError(f"Could not set gravity: {exc}") from exc
-    return envelope(session, message="Gravity updated.", gravity_m_s2=applied, unit=unit)
+    return envelope(
+        session,
+        message="Gravity updated.",
+        gravity_m_s2=applied,
+        unit="m/s2",
+        start_time_s=physics.GetGravityStartTime("s") if start_time is not None else None,
+        stop_time_s=physics.GetGravityStopTime("s") if stop_time is not None else None,
+    )
 
 
 async def rocky_create_material(
@@ -2255,6 +2277,11 @@ async def rocky_set_contact_models(
     adhesion: str | None = None,
     restitution_model: str | None = None,
     thermal: bool | None = None,
+    thermal_correction: str | None = None,
+    numerical_softening_factor: float | None = None,
+    coarse_grain: bool | None = None,
+    search_distance_multiplier: float | None = None,
+    update_distance_multiplier: float | None = None,
 ) -> dict[str, Any]:
     """Set the Rocky contact models on the study physics.
 
@@ -2274,6 +2301,16 @@ async def rocky_set_contact_models(
         One of ``constant`` or ``velocity_dependent``.
     thermal : bool | None, default: None
         Enable or disable Rocky's thermal model.
+    thermal_correction : str | None, default: None
+        One of ``none``, ``morris_et_al_area``, or ``morris_et_al_area_time``.
+    numerical_softening_factor : float | None, default: None
+        Softens the contact stiffness used by the timestep.
+    coarse_grain : bool | None, default: None
+        Enable or disable coarse-grain modeling.
+    search_distance_multiplier : float | None, default: None
+        Multiplier on the neighbor-search distance.
+    update_distance_multiplier : float | None, default: None
+        Multiplier on the neighbor-list update distance.
 
     """
     session = get_session(ctx)
@@ -2299,6 +2336,11 @@ async def rocky_set_contact_models(
             f"Unknown rolling resistance model {rolling_resistance!r}. "
             f"Expected one of {ROLLING_RESISTANCE_MODELS}."
         )
+    if thermal_correction is not None and thermal_correction not in THERMAL_CORRECTION_MODELS:
+        raise ToolError(
+            f"Unknown thermal correction {thermal_correction!r}. "
+            f"Expected one of {THERMAL_CORRECTION_MODELS}."
+        )
     try:
         physics = study.GetPhysics()
         if normal_force is not None:
@@ -2313,6 +2355,16 @@ async def rocky_set_contact_models(
             physics.SetRestitutionModel(restitution_model)
         if thermal is not None:
             physics.SetEnableThermalModel(thermal)
+        if thermal_correction is not None:
+            physics.SetThermalCorrectionModel(thermal_correction)
+        if numerical_softening_factor is not None:
+            physics.SetNumericalSofteningFactor(numerical_softening_factor)
+        if coarse_grain is not None:
+            physics.SetEnableCoarseGrainModeling(coarse_grain)
+        if search_distance_multiplier is not None:
+            physics.SetSearchDistanceMultiplier(search_distance_multiplier)
+        if update_distance_multiplier is not None:
+            physics.SetUpdateDistanceMultiplier(update_distance_multiplier)
     except Exception as exc:
         raise ToolError(f"Could not set the contact models: {exc}") from exc
     return envelope(
@@ -2324,6 +2376,11 @@ async def rocky_set_contact_models(
         adhesion=physics.GetAdhesionModel(),
         restitution_model=physics.GetRestitutionModel(),
         thermal=bool(physics.GetEnableThermalModel()),
+        thermal_correction=physics.GetThermalCorrectionModel(),
+        numerical_softening_factor=physics.GetNumericalSofteningFactor(),
+        coarse_grain=bool(physics.GetEnableCoarseGrainModeling()),
+        search_distance_multiplier=physics.GetSearchDistanceMultiplier(),
+        update_distance_multiplier=physics.GetUpdateDistanceMultiplier(),
     )
 
 
