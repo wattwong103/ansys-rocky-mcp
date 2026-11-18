@@ -515,11 +515,82 @@ async def rocky_set_gravity(
     return envelope(session, message="Gravity updated.", gravity_m_s2=applied, unit=unit)
 
 
+async def rocky_create_material(
+    ctx: Context,
+    name: str | None = None,
+    density: float | None = None,
+    youngs_modulus: float | None = None,
+    poisson_ratio: float | None = None,
+    particle_id: str | None = None,
+    density_unit: str = "kg/m3",
+    modulus_unit: str = "Pa",
+) -> dict[str, Any]:
+    """Create a solid material and optionally assign it to a particle.
+
+    Parameters
+    ----------
+    name : str | None, default: None
+        Material name. Rocky chooses one when this is omitted.
+    density : float | None, default: None
+        Solid density.
+    youngs_modulus : float | None, default: None
+        Young's modulus.
+    poisson_ratio : float | None, default: None
+        Poisson's ratio.
+    particle_id : str | None, default: None
+        Particle to assign the material to, for example ``particle_1``.
+    density_unit : str, default: "kg/m3"
+        Unit of ``density``.
+    modulus_unit : str, default: "Pa"
+        Unit of ``youngs_modulus``.
+
+    """
+    session = get_session(ctx)
+    study = require_study(session)
+    try:
+        material = study.GetMaterialCollection().AddSolidMaterial(name)
+        if density is not None:
+            material.SetDensity(density, unit=density_unit)
+        if youngs_modulus is not None:
+            material.SetYoungsModulus(youngs_modulus, unit=modulus_unit)
+        if poisson_ratio is not None:
+            material.SetPoissonRatio(poisson_ratio)
+    except Exception as exc:
+        raise ToolError(f"Could not create the material: {exc}") from exc
+
+    assigned = None
+    if particle_id is not None:
+        particle = _resolve(session, particle_id, "particle")
+        try:
+            particle.SetMaterial(material)
+        except Exception as exc:
+            raise ToolError(f"Could not assign the material to {particle_id}: {exc}") from exc
+        assigned = particle_id
+
+    ident = session.registry.add(
+        "material",
+        material,
+        label=material.GetName(),
+        meta={"density": material.GetDensity("kg/m3")},
+    )
+    return envelope(
+        session,
+        message=f"Created material {material.GetName()}.",
+        material_id=ident,
+        name=material.GetName(),
+        density=material.GetDensity("kg/m3"),
+        youngs_modulus=material.GetYoungsModulus("Pa"),
+        poisson_ratio=material.GetPoissonRatio(),
+        particle_id=assigned,
+    )
+
+
 def register(mcp: Any) -> None:
     """Register the setup tools on the MCP server."""
     mcp.tool()(rocky_import_wall)
     mcp.tool()(rocky_create_surface)
     mcp.tool()(rocky_create_particle)
+    mcp.tool()(rocky_create_material)
     mcp.tool()(rocky_create_inlet)
     mcp.tool()(rocky_create_outlet)
     mcp.tool()(rocky_set_domain)

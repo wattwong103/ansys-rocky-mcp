@@ -22,6 +22,7 @@ CATEGORIES = (
     "wall",
     "selection",
     "motion",
+    "material",
 )
 
 

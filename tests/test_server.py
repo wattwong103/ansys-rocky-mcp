@@ -27,6 +27,7 @@ EXPECTED_TOOLS = {
     "rocky_import_wall",
     "rocky_create_surface",
     "rocky_create_particle",
+    "rocky_create_material",
     "rocky_create_inlet",
     "rocky_create_outlet",
     "rocky_set_domain",

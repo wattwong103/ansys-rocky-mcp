@@ -106,6 +106,29 @@ async def test_selection_process_filters_results(study: Client) -> None:
     assert selection.data["name"] in processes.data["processes"]
 
 
+async def test_material_can_be_assigned_to_a_particle(study: Client) -> None:
+    """A solid material is created and assigned to a particle."""
+    objects = await study.call_tool("rocky_list_processes")
+    particles = [
+        entry["id"]
+        for entry in objects.data["registered_objects"]
+        if entry["category"] == "particle"
+    ]
+    created = await study.call_tool(
+        "rocky_create_material",
+        {
+            "name": "sand",
+            "density": 2600.0,
+            "youngs_modulus": 1.0e7,
+            "poisson_ratio": 0.3,
+            "particle_id": particles[0],
+        },
+    )
+    assert created.data["name"] == "sand"
+    assert created.data["density"] == pytest.approx(2600.0)
+    assert created.data["particle_id"] == particles[0]
+
+
 async def test_domain_and_solver_settings_are_applied(study: Client) -> None:
     """Domain and solver settings are visible in the study description."""
     await study.call_tool(

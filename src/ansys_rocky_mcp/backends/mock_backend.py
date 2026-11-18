@@ -211,6 +211,66 @@ class MockParticlesProcess:
         return int(self._study._particle_count(time))
 
 
+class MockSolidMaterial:
+    """Stand-in for a Rocky solid material."""
+
+    def __init__(self, name: str) -> None:
+        """Initialize the material."""
+        self._name = name
+        self._density = 1000.0
+        self._youngs = 1.0e8
+        self._poisson = 0.25
+
+    def GetName(self) -> str:
+        """Return the material name."""
+        return self._name
+
+    def SetDensity(self, value: float, unit: str | None = None) -> None:
+        """Set the solid density."""
+        self._density = float(value)
+
+    def GetDensity(self, unit: str | None = None) -> float:
+        """Return the solid density."""
+        return self._density
+
+    def SetYoungsModulus(self, value: float, unit: str | None = None) -> None:
+        """Set Young's modulus."""
+        self._youngs = float(value)
+
+    def GetYoungsModulus(self, unit: str | None = None) -> float:
+        """Return Young's modulus."""
+        return self._youngs
+
+    def SetPoissonRatio(self, value: float, unit: str | None = None) -> None:
+        """Set Poisson's ratio."""
+        self._poisson = float(value)
+
+    def GetPoissonRatio(self, unit: str | None = None) -> float:
+        """Return Poisson's ratio."""
+        return self._poisson
+
+
+class MockMaterialCollection:
+    """Stand-in for the study material collection."""
+
+    def __init__(self) -> None:
+        """Initialize an empty collection."""
+        self._materials: list[MockSolidMaterial] = []
+
+    def AddSolidMaterial(self, name: str | None = None) -> MockSolidMaterial:
+        """Create a solid material."""
+        material = MockSolidMaterial(name or f"Material {len(self._materials) + 1}")
+        self._materials.append(material)
+        return material
+
+    def GetSolidMaterial(self, material_name: str) -> MockSolidMaterial:
+        """Return a solid material by name."""
+        for material in self._materials:
+            if material.GetName() == material_name:
+                return material
+        raise KeyError(material_name)
+
+
 class MockParticle:
     """Stand-in for a Rocky particle definition."""
 
@@ -220,10 +280,19 @@ class MockParticle:
         self._shape = "sphere"
         self._size_type = "sieve"
         self._minimum_size = DEFAULT_SIEVE_SIZE
+        self._material: MockSolidMaterial | None = None
 
     def GetName(self) -> str:
         """Return the particle name."""
         return self._name
+
+    def SetMaterial(self, value: Any) -> None:
+        """Assign a solid material by object or name."""
+        self._material = value
+
+    def GetMaterial(self) -> Any:
+        """Return the assigned material."""
+        return self._material
 
     def GetClassName(self) -> str:
         """Return the Rocky class name of the particle."""
@@ -880,6 +949,7 @@ class MockStudy:
         self._selections: list[MockSelectionProcess] = []
         self._domain = MockDomainSettings()
         self._physics = MockPhysics()
+        self._materials = MockMaterialCollection()
         self._solver = MockSimulatorRun()
         self._motion_source = MockMotionFrameSource()
         self._processes = MockUserProcessCollection(self)
@@ -977,6 +1047,10 @@ class MockStudy:
     def GetPhysics(self) -> MockPhysics:
         """Return the physics settings."""
         return self._physics
+
+    def GetMaterialCollection(self) -> MockMaterialCollection:
+        """Return the material collection."""
+        return self._materials
 
     def GetSolver(self) -> MockSimulatorRun:
         """Return the solver."""
