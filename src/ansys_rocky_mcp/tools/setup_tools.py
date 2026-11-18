@@ -724,6 +724,7 @@ async def rocky_set_contact_models(
     rolling_resistance: str | None = None,
     adhesion: str | None = None,
     restitution_model: str | None = None,
+    thermal: bool | None = None,
 ) -> dict[str, Any]:
     """Set the Rocky contact models on the study physics.
 
@@ -741,6 +742,8 @@ async def rocky_set_contact_models(
         One of ``none``, ``constant``, ``linear``, ``JKR``, or ``custom``.
     restitution_model : str | None, default: None
         One of ``constant`` or ``velocity_dependent``.
+    thermal : bool | None, default: None
+        Enable or disable Rocky's thermal model.
 
     """
     session = get_session(ctx)
@@ -778,6 +781,8 @@ async def rocky_set_contact_models(
             physics.SetAdhesionModel(adhesion)
         if restitution_model is not None:
             physics.SetRestitutionModel(restitution_model)
+        if thermal is not None:
+            physics.SetEnableThermalModel(thermal)
     except Exception as exc:
         raise ToolError(f"Could not set the contact models: {exc}") from exc
     return envelope(
@@ -788,6 +793,7 @@ async def rocky_set_contact_models(
         rolling_resistance=physics.GetRollingResistanceModel(),
         adhesion=physics.GetAdhesionModel(),
         restitution_model=physics.GetRestitutionModel(),
+        thermal=bool(physics.GetEnableThermalModel()),
     )
 
 

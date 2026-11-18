@@ -1039,6 +1039,7 @@ class MockPhysics:
         self._rolling_resistance = "none"
         self._adhesion = "none"
         self._restitution_model = "constant"
+        self._thermal = False
 
     def GetGravityXDirection(self, unit: str | None = None) -> float:
         """Return the X component of gravity."""
@@ -1103,6 +1104,14 @@ class MockPhysics:
     def SetRestitutionModel(self, value: str) -> None:
         """Set the restitution model."""
         self._restitution_model = value
+
+    def GetEnableThermalModel(self) -> bool:
+        """Return whether the thermal model is enabled."""
+        return self._thermal
+
+    def SetEnableThermalModel(self, value: bool) -> None:
+        """Enable or disable the thermal model."""
+        self._thermal = bool(value)
 
 
 class MockExportToolkit:

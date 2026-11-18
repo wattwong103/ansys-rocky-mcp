@@ -266,11 +266,13 @@ async def test_domain_and_solver_settings_are_applied(study: Client) -> None:
             "rolling_resistance": "type_3",
             "adhesion": "JKR",
             "restitution_model": "velocity_dependent",
+            "thermal": True,
         },
     )
     assert models.data["rolling_resistance"] == "type_3"
     assert models.data["adhesion"] == "JKR"
     assert models.data["restitution_model"] == "velocity_dependent"
+    assert models.data["thermal"] is True
     again = await study.call_tool("rocky_describe_study")
     assert again.data["study"]["contact_models"]["normal_force"] == "damped_hertzian"
 

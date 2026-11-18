@@ -120,6 +120,7 @@ def describe_study(session: Any) -> dict[str, Any]:
                 "restitution_model": _safe(physics.GetRestitutionModel)
                 if physics is not None
                 else None,
+                "thermal": _safe(physics.GetEnableThermalModel) if physics is not None else None,
             },
             "solver": {
                 "duration_s": _safe(lambda: solver.GetSimulationDuration("s")),
