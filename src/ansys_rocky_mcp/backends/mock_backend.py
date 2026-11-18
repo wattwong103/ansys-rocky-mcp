@@ -1179,6 +1179,8 @@ class MockSimulatorRun:
         self._timestep_model = "variable"
         self._use_fixed_timestep = False
         self._release_without_overlap = False
+        self._standard_outputs: dict[tuple[str, ...], bool] = {}
+        self._module_outputs: dict[tuple[str, ...], bool] = {}
         self._processing_unit = "CPU"
         self._target_gpus: list[int] = []
         self._gpu_slicing = "X"
@@ -1291,6 +1293,36 @@ class MockSimulatorRun:
     def SetReleaseParticlesWithoutOverlapCheck(self, value: bool) -> None:
         """Set whether particles are released without an overlap check."""
         self._release_without_overlap = bool(value)
+
+    @staticmethod
+    def GetAvailableStandardOutputProperties() -> dict[str, list[str]]:
+        """Return a small set of standard output names."""
+        return {"Particles": ["Count", "Mass Flow In", "Mass Flow Out"]}
+
+    @staticmethod
+    def GetAvailableModulesOutputProperties() -> dict[str, list[str]]:
+        """Return a small set of module output names."""
+        return {"Breakage": ["Fragments"]}
+
+    def SetStandardOutputPropertyEnabled(self, *output_property: str, enabled: bool = True) -> None:
+        """Enable or disable a standard output property."""
+        if not output_property:
+            raise ValueError("An output property name is required.")
+        self._standard_outputs[tuple(output_property)] = bool(enabled)
+
+    def GetStandardOutputPropertyEnabled(self, *output_property: str) -> bool:
+        """Return whether a standard output property is enabled."""
+        return self._standard_outputs.get(tuple(output_property), False)
+
+    def SetModulesOutputPropertyEnabled(self, *output_property: str, enabled: bool = True) -> None:
+        """Enable or disable a module output property."""
+        if not output_property:
+            raise ValueError("An output property name is required.")
+        self._module_outputs[tuple(output_property)] = bool(enabled)
+
+    def GetModulesOutputPropertyEnabled(self, *output_property: str) -> bool:
+        """Return whether a module output property is enabled."""
+        return self._module_outputs.get(tuple(output_property), False)
 
     def GetValidProcessingUnitValues(self) -> list[str]:
         """Return the processing units this stand-in accepts."""

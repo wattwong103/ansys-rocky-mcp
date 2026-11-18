@@ -1275,6 +1275,50 @@ async def rocky_set_simulation_settings(
     )
 
 
+async def rocky_set_output_property(
+    ctx: Context,
+    names: list[str],
+    enabled: bool = True,
+    modules: bool = False,
+) -> dict[str, Any]:
+    """Enable a Rocky output so a later run records it.
+
+    Parameters
+    ----------
+    names : list[str]
+        Property path, for example ``["Particles", "Count"]``.
+    enabled : bool, default: True
+        Whether the property is recorded.
+    modules : bool, default: False
+        When true, the path is a module output rather than a standard output.
+
+    """
+    session = get_session(ctx)
+    study = require_study(session)
+    if not names:
+        raise ToolError("At least one output property name is required.")
+    solver = study.GetSolver()
+    try:
+        if modules:
+            solver.SetModulesOutputPropertyEnabled(*names, enabled=enabled)
+            recorded = bool(solver.GetModulesOutputPropertyEnabled(*names))
+            available = solver.GetAvailableModulesOutputProperties()
+        else:
+            solver.SetStandardOutputPropertyEnabled(*names, enabled=enabled)
+            recorded = bool(solver.GetStandardOutputPropertyEnabled(*names))
+            available = solver.GetAvailableStandardOutputProperties()
+    except Exception as exc:
+        raise ToolError(f"Could not set the output property: {exc}") from exc
+    return envelope(
+        session,
+        message=f"{'Enabled' if recorded else 'Disabled'} output {'/'.join(names)}.",
+        names=list(names),
+        enabled=recorded,
+        modules=modules,
+        available=available,
+    )
+
+
 async def rocky_set_motion(
     ctx: Context,
     kind: str,
@@ -1751,6 +1795,7 @@ def register(mcp: Any) -> None:
     mcp.tool()(rocky_create_outlet)
     mcp.tool()(rocky_set_domain)
     mcp.tool()(rocky_set_simulation_settings)
+    mcp.tool()(rocky_set_output_property)
     mcp.tool()(rocky_set_gravity)
     mcp.tool()(rocky_set_contact_models)
     mcp.tool()(rocky_set_motion)

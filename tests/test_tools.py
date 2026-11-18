@@ -269,6 +269,12 @@ async def test_domain_and_solver_settings_are_applied(study: Client) -> None:
         {"release_without_overlap_check": True},
     )
     assert released.data["release_without_overlap_check"] is True
+    output = await study.call_tool(
+        "rocky_set_output_property",
+        {"names": ["Particles", "Count"], "enabled": True},
+    )
+    assert output.data["enabled"] is True
+    assert "Particles" in output.data["available"]
     gpu = await study.call_tool(
         "rocky_set_simulation_settings",
         {"processing_unit": "GPU", "target_gpus": [0], "gpu_slicing_direction": "Y"},
