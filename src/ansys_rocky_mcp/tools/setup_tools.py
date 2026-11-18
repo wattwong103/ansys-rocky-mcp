@@ -14,6 +14,8 @@ __all__ = ["register"]
 
 SURFACE_KINDS = ("circular", "rectangular")
 DOMAIN_TYPES = ("NONE", "CARTESIAN", "CYLINDRICAL")
+CARTESIAN_PERIODIC = ("NONE", "X", "Y", "XY", "Z", "XZ", "YZ", "XYZ")
+CYLINDRICAL_PERIODIC = ("X", "Y", "Z")
 EXECUTION_MODES = ("local", "single_mpi", "multi_mpi")
 SIZE_DISTRIBUTIONS = ("gaudin_schumann", "incomplete_beta", "custom")
 NORMAL_FORCE_MODELS = (
@@ -365,6 +367,7 @@ async def rocky_set_domain(
     max_values: list[float] | None = None,
     use_boundary_limits: bool | None = None,
     domain_type: str | None = None,
+    periodic_directions: str | None = None,
     unit: str = "m",
 ) -> dict[str, Any]:
     """Configure the Rocky domain limits.
@@ -379,6 +382,9 @@ async def rocky_set_domain(
         Whether Rocky uses the boundary limits of the imported geometry.
     domain_type : str | None, default: None
         One of ``NONE``, ``CARTESIAN``, or ``CYLINDRICAL``.
+    periodic_directions : str | None, default: None
+        For Cartesian: ``NONE``, ``X``, ``Y``, ``XY``, ``Z``, ``XZ``, ``YZ``, or ``XYZ``.
+        For cylindrical: ``X``, ``Y``, or ``Z``.
     unit : str, default: "m"
         Unit of the domain coordinates.
 
@@ -399,6 +405,24 @@ async def rocky_set_domain(
             domain.SetCoordinateLimitsMaxValues(list(max_values), unit=unit)
         if domain_type is not None:
             domain.SetDomainType(domain_type)
+        if periodic_directions is not None:
+            kind = domain.GetDomainType()
+            if kind == "CYLINDRICAL":
+                if periodic_directions not in CYLINDRICAL_PERIODIC:
+                    raise ToolError(
+                        f"Unknown cylindrical direction {periodic_directions!r}. "
+                        f"Expected one of {CYLINDRICAL_PERIODIC}."
+                    )
+                domain.SetCylindricalPeriodicDirections(periodic_directions)
+            else:
+                if periodic_directions not in CARTESIAN_PERIODIC:
+                    raise ToolError(
+                        f"Unknown Cartesian direction {periodic_directions!r}. "
+                        f"Expected one of {CARTESIAN_PERIODIC}."
+                    )
+                domain.SetCartesianPeriodicDirections(periodic_directions)
+    except ToolError:
+        raise
     except Exception as exc:
         raise ToolError(f"Could not configure the domain: {exc}") from exc
 
@@ -409,6 +433,8 @@ async def rocky_set_domain(
         max_m=list(domain.GetCoordinateLimitsMaxValues("m")),
         use_boundary_limits=bool(domain.GetUseBoundaryLimits()),
         domain_type=domain.GetDomainType(),
+        cartesian_periodic_directions=domain.GetCartesianPeriodicDirections(),
+        cylindrical_periodic_directions=domain.GetCylindricalPeriodicDirections(),
     )
 
 

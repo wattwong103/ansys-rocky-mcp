@@ -223,8 +223,17 @@ async def test_domain_and_solver_settings_are_applied(study: Client) -> None:
 
     description = await study.call_tool("rocky_describe_study")
     assert description.data["study"]["domain"]["max_m"] == pytest.approx([5.0, 1.5, 1.5])
-    periodic = await study.call_tool("rocky_set_domain", {"domain_type": "CYLINDRICAL"})
-    assert periodic.data["domain_type"] == "CYLINDRICAL"
+    periodic = await study.call_tool(
+        "rocky_set_domain",
+        {"domain_type": "CARTESIAN", "periodic_directions": "XY"},
+    )
+    assert periodic.data["domain_type"] == "CARTESIAN"
+    assert periodic.data["cartesian_periodic_directions"] == "XY"
+    axis = await study.call_tool(
+        "rocky_set_domain",
+        {"domain_type": "CYLINDRICAL", "periodic_directions": "Z"},
+    )
+    assert axis.data["cylindrical_periodic_directions"] == "Z"
     assert description.data["study"]["solver"]["duration_s"] == pytest.approx(4.0)
     assert description.data["study"]["solver"]["time_interval_s"] == pytest.approx(0.2)
     updated = await study.call_tool("rocky_set_simulation_settings", {"curves_frequency": 5})

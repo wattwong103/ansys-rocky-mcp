@@ -95,6 +95,8 @@ def describe_study(session: Any) -> dict[str, Any]:
                 "max_m": _safe(lambda: list(domain.GetCoordinateLimitsMaxValues("m")), []),
                 "use_boundary_limits": _safe(domain.GetUseBoundaryLimits),
                 "domain_type": _safe(domain.GetDomainType),
+                "cartesian_periodic_directions": _safe(domain.GetCartesianPeriodicDirections),
+                "cylindrical_periodic_directions": _safe(domain.GetCylindricalPeriodicDirections),
             }
             if domain is not None
             else {},

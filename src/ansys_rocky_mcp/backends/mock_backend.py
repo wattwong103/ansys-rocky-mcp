@@ -585,6 +585,8 @@ class MockDomainSettings:
         self._min = (-DEFAULT_DOMAIN_LENGTH / 2.0, -1.0, -1.0)
         self._max = (DEFAULT_DOMAIN_LENGTH / 2.0, 1.0, 1.0)
         self._domain_type = "NONE"
+        self._cartesian_periodic = "NONE"
+        self._cylindrical_periodic = "Y"
 
     def GetUseBoundaryLimits(self) -> bool:
         """Return whether boundary limits are used."""
@@ -633,6 +635,22 @@ class MockDomainSettings:
     def SetDomainType(self, value: str) -> None:
         """Set the domain type."""
         self._domain_type = value
+
+    def GetCartesianPeriodicDirections(self) -> str:
+        """Return the Cartesian periodic directions."""
+        return self._cartesian_periodic
+
+    def SetCartesianPeriodicDirections(self, value: str) -> None:
+        """Set the Cartesian periodic directions."""
+        self._cartesian_periodic = value
+
+    def GetCylindricalPeriodicDirections(self) -> str:
+        """Return the cylindrical periodic axis."""
+        return self._cylindrical_periodic
+
+    def SetCylindricalPeriodicDirections(self, value: str) -> None:
+        """Set the cylindrical periodic axis."""
+        self._cylindrical_periodic = value
 
 
 class MockSimulatorRun:
