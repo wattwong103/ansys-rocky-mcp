@@ -453,6 +453,9 @@ class MockParticle:
         self._tensile_limit = 0.0
         self._von_mises_limit = 0.0
         self._plastic_limit = 0.0
+        self._porosity = 0.0
+        self._bending_deg = 0.0
+        self._torsion_deg = 0.0
         self._surface_energy = 0.0
         self._material: MockSolidMaterial | None = None
         self._horizontal_aspect = 1.0
@@ -708,6 +711,42 @@ class MockParticle:
         if unit not in (None, "Pa"):
             raise ValueError(f"Unsupported plastic-limit unit {unit!r}. Expected 'Pa'.")
         self._plastic_limit = float(value)
+
+    def GetPorosity(self, unit: str | None = None) -> float:
+        """Return porosity. Rocky's token is ``<fraction>``."""
+        if unit not in (None, "<fraction>"):
+            raise ValueError(f"Unsupported porosity unit {unit!r}. Expected '<fraction>'.")
+        return self._porosity
+
+    def SetPorosity(self, value: float, unit: str | None = None) -> None:
+        """Set porosity. Rocky's token is ``<fraction>``."""
+        if unit not in (None, "<fraction>"):
+            raise ValueError(f"Unsupported porosity unit {unit!r}. Expected '<fraction>'.")
+        self._porosity = float(value)
+
+    def GetBendingAngleLimit(self, unit: str | None = None) -> float:
+        """Return the bending angle limit in degrees."""
+        if unit not in (None, "dega"):
+            raise ValueError(f"Unsupported angle unit {unit!r}. Expected 'dega'.")
+        return self._bending_deg
+
+    def SetBendingAngleLimit(self, value: float, unit: str | None = None) -> None:
+        """Set the bending angle limit. Rocky's degree token is ``dega``."""
+        if unit not in (None, "dega"):
+            raise ValueError(f"Unsupported angle unit {unit!r}. Expected 'dega'.")
+        self._bending_deg = float(value)
+
+    def GetTorsionAngleLimit(self, unit: str | None = None) -> float:
+        """Return the torsion angle limit in degrees."""
+        if unit not in (None, "dega"):
+            raise ValueError(f"Unsupported angle unit {unit!r}. Expected 'dega'.")
+        return self._torsion_deg
+
+    def SetTorsionAngleLimit(self, value: float, unit: str | None = None) -> None:
+        """Set the torsion angle limit. Rocky's degree token is ``dega``."""
+        if unit not in (None, "dega"):
+            raise ValueError(f"Unsupported angle unit {unit!r}. Expected 'dega'.")
+        self._torsion_deg = float(value)
 
     def GetSurfaceEnergy(self, unit: str | None = None) -> float:
         """Return the surface energy."""

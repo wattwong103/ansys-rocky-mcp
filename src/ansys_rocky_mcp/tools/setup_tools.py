@@ -569,6 +569,9 @@ async def rocky_create_particle(
     von_mises_stress_limit: float | None = None,
     stress_unit: str = "N/m2",
     plastic_limit: float | None = None,
+    porosity: float | None = None,
+    bending_angle_deg: float | None = None,
+    torsion_angle_deg: float | None = None,
     name: str | None = None,
 ) -> dict[str, Any]:
     """Create a Rocky particle definition.
@@ -618,6 +621,12 @@ async def rocky_create_particle(
         Unit of the stress limits. ``Pa`` is sent to Rocky as ``N/m2``.
     plastic_limit : float | None, default: None
         Plastic limit in pascals. Rocky's token for this one is ``Pa``.
+    porosity : float | None, default: None
+        Particle porosity. Rocky's token is ``<fraction>``.
+    bending_angle_deg : float | None, default: None
+        Bending angle limit in degrees. Rocky's token is ``dega``.
+    torsion_angle_deg : float | None, default: None
+        Torsion angle limit in degrees. Rocky's token is ``dega``.
     name : str | None, default: None
         Name for the created particle.
 
@@ -677,6 +686,12 @@ async def rocky_create_particle(
                 particle.SetVonMisesStressLimit(von_mises_stress_limit, unit=stress)
         if plastic_limit is not None:
             particle.SetPlasticLimit(plastic_limit, unit="Pa")
+        if porosity is not None:
+            particle.SetPorosity(porosity, unit="<fraction>")
+        if bending_angle_deg is not None:
+            particle.SetBendingAngleLimit(bending_angle_deg, unit="dega")
+        if torsion_angle_deg is not None:
+            particle.SetTorsionAngleLimit(torsion_angle_deg, unit="dega")
         if name:
             particle.SetName(name)
     except Exception as exc:
@@ -712,6 +727,9 @@ async def rocky_create_particle(
         tensile_stress_limit_n_m2=particle.GetTensileStressLimit("N/m2"),
         von_mises_stress_limit_n_m2=particle.GetVonMisesStressLimit("N/m2"),
         plastic_limit_pa=particle.GetPlasticLimit("Pa"),
+        porosity=particle.GetPorosity("<fraction>"),
+        bending_angle_deg=particle.GetBendingAngleLimit("dega"),
+        torsion_angle_deg=particle.GetTorsionAngleLimit("dega"),
     )
 
 
