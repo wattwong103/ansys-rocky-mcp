@@ -234,6 +234,9 @@ class MockSolidMaterial:
         """Initialize the material."""
         self._name = name
         self._density = 1000.0
+        self._use_bulk = False
+        self._bulk_density = 1000.0
+        self._bulk_fraction = 1.0
         self._youngs = 1.0e8
         self._poisson = 0.25
         self._specific_heat = 1000.0
@@ -244,12 +247,44 @@ class MockSolidMaterial:
         return self._name
 
     def SetDensity(self, value: float, unit: str | None = None) -> None:
-        """Set the solid density."""
+        """Set the solid density. Rocky's token is ``kg/m3``."""
+        if unit not in (None, "kg/m3"):
+            raise ValueError(f"Unsupported density unit {unit!r}. Expected 'kg/m3'.")
         self._density = float(value)
 
     def GetDensity(self, unit: str | None = None) -> float:
-        """Return the solid density."""
+        """Return the solid density in kg/m3."""
+        if unit not in (None, "kg/m3"):
+            raise ValueError(f"Unsupported density unit {unit!r}. Expected 'kg/m3'.")
         return self._density
+
+    def GetUseBulkDensity(self) -> bool:
+        """Return whether bulk density is used."""
+        return self._use_bulk
+
+    def SetUseBulkDensity(self, value: bool) -> None:
+        """Set whether bulk density is used."""
+        self._use_bulk = bool(value)
+
+    def GetBulkDensity(self, unit: str | None = None) -> float:
+        """Return the bulk density in kg/m3."""
+        if unit not in (None, "kg/m3"):
+            raise ValueError(f"Unsupported density unit {unit!r}. Expected 'kg/m3'.")
+        return self._bulk_density
+
+    def SetBulkDensity(self, value: float, unit: str | None = None) -> None:
+        """Set the bulk density. Rocky's token is ``kg/m3``."""
+        if unit not in (None, "kg/m3"):
+            raise ValueError(f"Unsupported density unit {unit!r}. Expected 'kg/m3'.")
+        self._bulk_density = float(value)
+
+    def GetBulkSolidFraction(self) -> float:
+        """Return the bulk solid fraction."""
+        return self._bulk_fraction
+
+    def SetBulkSolidFraction(self, value: float) -> None:
+        """Set the bulk solid fraction. Rocky stores a plain number."""
+        self._bulk_fraction = float(value)
 
     def SetYoungsModulus(self, value: float, unit: str | None = None) -> None:
         """Set Young's modulus. Rocky's token is ``N/m2``."""
@@ -288,11 +323,15 @@ class MockSolidMaterial:
         return self._conductivity
 
     def SetPoissonRatio(self, value: float, unit: str | None = None) -> None:
-        """Set Poisson's ratio."""
+        """Set Poisson's ratio. Rocky's token is ``-``."""
+        if unit not in (None, "-"):
+            raise ValueError(f"Unsupported Poisson ratio unit {unit!r}. Expected '-'.")
         self._poisson = float(value)
 
     def GetPoissonRatio(self, unit: str | None = None) -> float:
         """Return Poisson's ratio."""
+        if unit not in (None, "-"):
+            raise ValueError(f"Unsupported Poisson ratio unit {unit!r}. Expected '-'.")
         return self._poisson
 
 

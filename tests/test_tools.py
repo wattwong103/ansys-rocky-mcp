@@ -169,6 +169,8 @@ async def test_material_can_be_assigned_to_a_particle(study: Client) -> None:
         {
             "name": "sand",
             "density": 2600.0,
+            "bulk_density": 1600.0,
+            "bulk_solid_fraction": 0.62,
             "youngs_modulus": 1.0e7,
             "poisson_ratio": 0.3,
             "specific_heat": 800.0,
@@ -178,6 +180,9 @@ async def test_material_can_be_assigned_to_a_particle(study: Client) -> None:
     )
     assert created.data["name"] == "sand"
     assert created.data["density"] == pytest.approx(2600.0)
+    assert created.data["use_bulk_density"] is True
+    assert created.data["bulk_density_kg_m3"] == pytest.approx(1600.0)
+    assert created.data["bulk_solid_fraction"] == pytest.approx(0.62)
     assert created.data["youngs_modulus"] == pytest.approx(1.0e7)
     assert created.data["specific_heat_j_kg_k"] == pytest.approx(800.0)
     assert created.data["thermal_conductivity_w_m_k"] == pytest.approx(0.3)

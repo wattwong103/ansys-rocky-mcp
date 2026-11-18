@@ -2436,6 +2436,9 @@ async def rocky_create_material(
     conveyor_id: str | None = None,
     density_unit: str = "kg/m3",
     modulus_unit: str = "N/m2",
+    use_bulk_density: bool | None = None,
+    bulk_density: float | None = None,
+    bulk_solid_fraction: float | None = None,
 ) -> dict[str, Any]:
     """Create a solid material and optionally assign it to a particle, wall, or conveyor.
 
@@ -2444,11 +2447,18 @@ async def rocky_create_material(
     name : str | None, default: None
         Material name. Rocky chooses one when this is omitted.
     density : float | None, default: None
-        Solid density.
+        Solid density in ``kg/m3``.
+    use_bulk_density : bool | None, default: None
+        Use bulk density instead of solid density. A bulk density or solid
+        fraction turns this on when it is omitted.
+    bulk_density : float | None, default: None
+        Bulk density in ``kg/m3``.
+    bulk_solid_fraction : float | None, default: None
+        Solid fraction of the bulk material. Rocky stores a plain number.
     youngs_modulus : float | None, default: None
         Young's modulus.
     poisson_ratio : float | None, default: None
-        Poisson's ratio.
+        Poisson's ratio. Rocky's token is ``-``.
     specific_heat : float | None, default: None
         Specific heat in ``J/kg.K``, Rocky's token.
     thermal_conductivity : float | None, default: None
@@ -2468,14 +2478,25 @@ async def rocky_create_material(
     """
     session = get_session(ctx)
     study = require_study(session)
+    if density_unit != "kg/m3":
+        raise ToolError(f"Unknown density unit {density_unit!r}. Expected 'kg/m3'.")
+    bulk_flag = use_bulk_density
+    if bulk_flag is None and (bulk_density is not None or bulk_solid_fraction is not None):
+        bulk_flag = True
     try:
         material = study.GetMaterialCollection().AddSolidMaterial(name)
         if density is not None:
-            material.SetDensity(density, unit=density_unit)
+            material.SetDensity(density, unit="kg/m3")
+        if bulk_flag is not None:
+            material.SetUseBulkDensity(bool(bulk_flag))
+        if bulk_density is not None:
+            material.SetBulkDensity(bulk_density, unit="kg/m3")
+        if bulk_solid_fraction is not None:
+            material.SetBulkSolidFraction(bulk_solid_fraction)
         if youngs_modulus is not None:
             material.SetYoungsModulus(youngs_modulus, unit=_modulus_unit(modulus_unit))
         if poisson_ratio is not None:
-            material.SetPoissonRatio(poisson_ratio)
+            material.SetPoissonRatio(poisson_ratio, unit="-")
         if specific_heat is not None:
             material.SetSpecificHeat(specific_heat, unit="J/kg.K")
         if thermal_conductivity is not None:
@@ -2522,6 +2543,11 @@ async def rocky_create_material(
         material_id=ident,
         name=material.GetName(),
         density=material.GetDensity("kg/m3"),
+        use_bulk_density=bool(material.GetUseBulkDensity()) if bulk_flag is not None else None,
+        bulk_density_kg_m3=material.GetBulkDensity("kg/m3") if bulk_density is not None else None,
+        bulk_solid_fraction=(
+            material.GetBulkSolidFraction() if bulk_solid_fraction is not None else None
+        ),
         youngs_modulus=material.GetYoungsModulus("N/m2"),
         poisson_ratio=material.GetPoissonRatio(),
         specific_heat_j_kg_k=material.GetSpecificHeat("J/kg.K"),
