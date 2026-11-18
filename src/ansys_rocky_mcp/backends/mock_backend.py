@@ -1228,6 +1228,7 @@ class MockFeedConveyor:
         self._drop = [0.0, 0.0, 0.0]
         self._skirtboard = 0.0
         self._transition = 0.0
+        self._triangle = 0.05
         self._incline_rad = 0.0
         self._material: Any = None
 
@@ -1352,6 +1353,14 @@ class MockFeedConveyor:
     def GetTransitionLength(self, unit: str | None = None) -> float:
         """Return the transition length in meters."""
         return self._transition
+
+    def SetTriangleSize(self, value: float, unit: str | None = None) -> None:
+        """Set the belt mesh triangle size in meters."""
+        self._triangle = float(value)
+
+    def GetTriangleSize(self, unit: str | None = None) -> float:
+        """Return the belt mesh triangle size in meters."""
+        return self._triangle
 
     def SetBeltInclineAngle(self, value: float, unit: str | None = None) -> None:
         """Set the belt incline. Degrees are accepted as ``deg``."""
