@@ -1211,6 +1211,56 @@ class MockExportToolkit:
         path.write_text("solid mock\n" + "\n".join(names) + "\nendsolid mock\n", encoding="utf-8")
 
 
+class MockFeedConveyor:
+    """Stand-in for a Rocky feed conveyor."""
+
+    def __init__(self, name: str) -> None:
+        """Initialize a stopped conveyor."""
+        self._name = name
+        self._speed = 0.0
+        self._width = 1.0
+        self._incline_rad = 0.0
+
+    def GetName(self) -> str:
+        """Return the conveyor name."""
+        return self._name
+
+    def SetName(self, value: str) -> None:
+        """Set the conveyor name."""
+        self._name = value
+
+    def SetBeltSpeed(self, value: float, unit: str | None = None) -> None:
+        """Set the belt speed in meters per second."""
+        self._speed = float(value)
+
+    def GetBeltSpeed(self, unit: str | None = None) -> float:
+        """Return the belt speed in meters per second."""
+        return self._speed
+
+    def SetBeltWidth(self, value: float, unit: str | None = None) -> None:
+        """Set the belt width in meters."""
+        self._width = float(value)
+
+    def GetBeltWidth(self, unit: str | None = None) -> float:
+        """Return the belt width in meters."""
+        return self._width
+
+    def SetBeltInclineAngle(self, value: float, unit: str | None = None) -> None:
+        """Set the belt incline. Degrees are accepted as ``deg``."""
+        angle = float(value)
+        if unit in ("deg", "dega"):
+            angle = math.radians(angle)
+        elif unit not in (None, "rad"):
+            raise ValueError(f"Unsupported angle unit {unit!r}.")
+        self._incline_rad = angle
+
+    def GetBeltInclineAngle(self, unit: str | None = None) -> float:
+        """Return the belt incline in radians, or degrees when asked."""
+        if unit in ("deg", "dega"):
+            return math.degrees(self._incline_rad)
+        return self._incline_rad
+
+
 class MockStudy:
     """Stand-in for a Rocky study, the container of a DEM simulation."""
 
@@ -1222,6 +1272,7 @@ class MockStudy:
         self._inlets: list[MockParticleInlet] = []
         self._outlets: list[MockOutlet] = []
         self._walls: list[MockWall] = []
+        self._conveyors: list[MockFeedConveyor] = []
         self._selections: list[MockSelectionProcess] = []
         self._domain = MockDomainSettings()
         self._physics = MockPhysics()
@@ -1250,6 +1301,12 @@ class MockStudy:
     def GetClassName(self) -> str:
         """Return the Rocky class name of the study."""
         return "RAStudy"
+
+    def CreateFeedConveyor(self) -> MockFeedConveyor:
+        """Create a feed conveyor."""
+        conveyor = MockFeedConveyor(f"Feed Conveyor {len(self._conveyors) + 1}")
+        self._conveyors.append(conveyor)
+        return conveyor
 
     def CreateParticle(self) -> MockParticle:
         """Create a particle definition."""

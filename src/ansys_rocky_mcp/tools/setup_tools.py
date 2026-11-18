@@ -185,6 +185,55 @@ async def rocky_create_surface(
     )
 
 
+async def rocky_create_feed_conveyor(
+    ctx: Context,
+    belt_speed: float = 1.0,
+    belt_width: float = 1.0,
+    incline_deg: float = 0.0,
+    name: str | None = None,
+) -> dict[str, Any]:
+    """Create a Rocky feed conveyor.
+
+    Parameters
+    ----------
+    belt_speed : float, default: 1.0
+        Belt speed in meters per second.
+    belt_width : float, default: 1.0
+        Belt width in meters.
+    incline_deg : float, default: 0.0
+        Belt incline in degrees.
+    name : str | None, default: None
+        Conveyor name.
+
+    """
+    session = get_session(ctx)
+    study = require_study(session)
+    try:
+        conveyor = study.CreateFeedConveyor()
+        conveyor.SetBeltSpeed(belt_speed, unit="m/s")
+        conveyor.SetBeltWidth(belt_width, unit="m")
+        conveyor.SetBeltInclineAngle(incline_deg, unit="deg")
+        if name:
+            conveyor.SetName(name)
+    except Exception as exc:
+        raise ToolError(f"Could not create the feed conveyor: {exc}") from exc
+    ident = session.registry.add(
+        "conveyor",
+        conveyor,
+        label=name or conveyor.GetName(),
+        meta={"belt_speed_m_s": belt_speed},
+    )
+    return envelope(
+        session,
+        message=f"Created feed conveyor {conveyor.GetName()}.",
+        conveyor_id=ident,
+        name=conveyor.GetName(),
+        belt_speed_m_s=conveyor.GetBeltSpeed("m/s"),
+        belt_width_m=conveyor.GetBeltWidth("m"),
+        incline_deg=conveyor.GetBeltInclineAngle("deg"),
+    )
+
+
 async def rocky_create_particle(
     ctx: Context,
     shape: str = "sphere",
@@ -919,6 +968,7 @@ def register(mcp: Any) -> None:
     """Register the setup tools on the MCP server."""
     mcp.tool()(rocky_import_wall)
     mcp.tool()(rocky_create_surface)
+    mcp.tool()(rocky_create_feed_conveyor)
     mcp.tool()(rocky_create_particle)
     mcp.tool()(rocky_set_size_distribution)
     mcp.tool()(rocky_create_material)
