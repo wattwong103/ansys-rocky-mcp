@@ -77,6 +77,13 @@ async def test_results_can_be_deleted(study: Client) -> None:
     assert status.data["has_results"] is False
 
 
+async def test_curve_names_can_be_listed(study: Client) -> None:
+    """The domain publishes the curve names the reader accepts."""
+    listed = await study.call_tool("rocky_list_curves")
+    assert "Particles Count" in listed.data["curves"]
+    assert "Particles Mass Flow In" in listed.data["curves"]
+
+
 async def test_a_curve_can_be_saved_as_csv(study: Client, tmp_path) -> None:
     """A curve can be written to CSV after the run."""
     await study.call_tool("rocky_run_simulation", {"non_blocking": False})

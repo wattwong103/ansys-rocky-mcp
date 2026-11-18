@@ -171,6 +171,16 @@ class MockParticlesProcess:
         """Initialize the process bound to a study."""
         self._study = study
 
+    def GetCurveNames(self) -> list[str]:
+        """Return the curve names this process can read."""
+        return [
+            "Particles Count",
+            "Particles Mass Flow In",
+            "Particles Mass Flow Out",
+            "Total Mass",
+            "Kinetic Energy",
+        ]
+
     def GetNumpyCurve(self, curve_name: str, unit: str | None = None) -> tuple[Any, Any]:
         """Return ``(times, values)`` for a named curve."""
         times, values, base_unit, default_unit = self._study._curve_data(curve_name)
@@ -874,6 +884,10 @@ class MockSelectionProcess(_VectorMixin):
     def GetRotation(self, unit: str | None = None) -> list[float]:
         """Return the rotation of the selection."""
         return list(self._rotation)
+
+    def GetCurveNames(self) -> list[str]:
+        """Return the curve names this selection can read."""
+        return self._study.GetParticles().GetCurveNames()
 
     def GetNumpyCurve(self, curve_name: str, unit: str | None = None) -> tuple[Any, Any]:
         """Return the curve restricted to the selection."""

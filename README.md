@@ -27,7 +27,7 @@ Rocky study, run it, and read the results.
 
 | | |
 |---|---|
-| **Tools** | 35 (session, project, setup, run control, results, Python escape hatch) |
+| **Tools** | 36 (session, project, setup, run control, results, Python escape hatch) |
 | **Transport** | `stdio` (default) and `http` |
 | **Verified** | Full workflow end-to-end over a real MCP stdio handshake, 42 automated tests |
 | **Requires** | Python ≥ 3.12, `ansys-common-mcp`, `ansys-rocky-core` |
@@ -200,6 +200,7 @@ startup_timeout_sec = 90
 | Tool | Purpose |
 |---|---|
 | `rocky_get_curve` | Read a time series (`Particles Count`, `Particles Mass Flow In/Out`, …). |
+| `rocky_list_curves` | List the curve names on the domain or a selection. |
 | `rocky_save_curve` | Write a time series to a CSV file. |
 | `rocky_list_grid_functions` | List the available grid functions. |
 | `rocky_get_grid_function_stats` | Min/max of a grid function over the time set. |

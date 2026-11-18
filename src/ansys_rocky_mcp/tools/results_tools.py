@@ -105,6 +105,40 @@ async def rocky_get_curve(
     )
 
 
+async def rocky_list_curves(
+    ctx: Context,
+    selection_id: str | None = None,
+) -> dict[str, Any]:
+    """List the curve names available on the particles or a selection.
+
+    Parameters
+    ----------
+    selection_id : str | None, default: None
+        Selection to list. When omitted, lists the domain curves.
+
+    """
+    session = get_session(ctx)
+    study = require_study(session)
+    if selection_id:
+        try:
+            source = session.registry.resolve(selection_id, "selection")
+        except KeyError as exc:
+            raise ToolError(str(exc)) from exc
+    else:
+        source = study.GetParticles()
+    getter = getattr(source, "GetCurveNames", None)
+    if getter is None:
+        raise ToolError(
+            f"{type(source).__name__} does not list curve names. "
+            "Try rocky_get_curve with a known name such as 'Particles Count'."
+        )
+    try:
+        names = list(getter())
+    except Exception as exc:
+        raise ToolError(f"Could not list the curves: {exc}") from exc
+    return envelope(session, curves=names, selection_id=selection_id)
+
+
 async def rocky_save_curve(
     ctx: Context,
     name: str,
@@ -409,6 +443,7 @@ async def rocky_run_python(ctx: Context, code: str, timeout: int = 60) -> str:
 def register(mcp: Any) -> None:
     """Register the results tools on the MCP server."""
     mcp.tool()(rocky_get_curve)
+    mcp.tool()(rocky_list_curves)
     mcp.tool()(rocky_save_curve)
     mcp.tool()(rocky_list_grid_functions)
     mcp.tool()(rocky_get_grid_function_stats)
