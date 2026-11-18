@@ -708,6 +708,8 @@ async def rocky_create_particle(
     allow_self_contacts: bool | None = None,
     with_failure: bool | None = None,
     failure_ratio: float | None = None,
+    fragment_volume_fraction: float | None = None,
+    multiple_elements: bool | None = None,
     random_angle_deg: list[float] | None = None,
     name: str | None = None,
 ) -> dict[str, Any]:
@@ -846,6 +848,10 @@ async def rocky_create_particle(
         Damping at the joints between fiber elements.
     with_failure : bool | None, default: None
         Allow a flexible particle to break. A failure ratio turns this on.
+    fragment_volume_fraction : float | None, default: None
+        Disable breakage fragments smaller than this fraction of the parent.
+    multiple_elements : bool | None, default: None
+        ``True`` is multiple elements. ``False`` is a single element.
     failure_ratio : float | None, default: None
         Strain ratio at which a flexible particle breaks.
     random_angle_deg : list[float] | None, default: None
@@ -1040,6 +1046,10 @@ async def rocky_create_particle(
             particle.SetWithFailure(with_failure)
         if failure_ratio is not None:
             particle.SetFailureRatio(failure_ratio)
+        if fragment_volume_fraction is not None:
+            particle.SetMinimumVolumeFractionForFragmentDisabling(fragment_volume_fraction)
+        if multiple_elements is not None:
+            particle.SetUseMultipleElements(multiple_elements)
         if random_angle_deg is not None:
             particle.SetRandomAnglesHalfRange(
                 _three_vector(random_angle_deg, "random_angle_deg"),
@@ -1130,6 +1140,8 @@ async def rocky_create_particle(
         allow_self_contacts=bool(particle.GetAllowSelfContacts()),
         with_failure=bool(particle.GetWithFailure()),
         failure_ratio=particle.GetFailureRatio(),
+        fragment_volume_fraction=particle.GetMinimumVolumeFractionForFragmentDisabling(),
+        multiple_elements=bool(particle.GetUseMultipleElements()),
         random_angle=bool(particle.GetEnableRandomAngle()),
         random_angle_deg=particle.GetRandomAnglesHalfRange("dega"),
     )

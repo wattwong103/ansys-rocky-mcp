@@ -517,6 +517,8 @@ async def test_particle_shape_dimensions_are_stored(study: Client) -> None:
             "element_damping_ratio": 0.1,
             "joint_damping_ratio": 0.05,
             "failure_ratio": 0.15,
+            "fragment_volume_fraction": 0.05,
+            "multiple_elements": True,
             "name": "flake",
         },
     )
@@ -554,6 +556,8 @@ async def test_particle_shape_dimensions_are_stored(study: Client) -> None:
     assert created.data["plasticity_model"] == "BilinearElastoplastic"
     assert created.data["internal_friction"] == pytest.approx(0.25)
     assert created.data["allow_self_contacts"] is True
+    assert created.data["fragment_volume_fraction"] == pytest.approx(0.05)
+    assert created.data["multiple_elements"] is True
     assert created.data["shear_stress_limit_n_m2"] == pytest.approx(1.0e6)
     assert created.data["plastic_limit_pa"] == pytest.approx(2.0e6)
     assert created.data["porosity"] == pytest.approx(0.2)

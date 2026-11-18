@@ -545,6 +545,8 @@ class MockParticle:
         self._plasticity = "LinearElastic"
         self._self_contacts = False
         self._with_failure = False
+        self._fragment_fraction = 0.0
+        self._multiple_elements = False
         self._failure_ratio = 1.0
         self._random_angle = False
         self._random_half_rad = (0.0, 0.0, 0.0)
@@ -1251,6 +1253,22 @@ class MockParticle:
     def GetFailureRatio(self) -> float:
         """Return the failure ratio."""
         return self._failure_ratio
+
+    def GetMinimumVolumeFractionForFragmentDisabling(self) -> float:
+        """Return the fragment volume fraction below which pieces are disabled."""
+        return self._fragment_fraction
+
+    def SetMinimumVolumeFractionForFragmentDisabling(self, value: float) -> None:
+        """Set the fragment volume fraction. Rocky stores a plain number."""
+        self._fragment_fraction = float(value)
+
+    def GetUseMultipleElements(self) -> bool:
+        """Return whether the particle is made of multiple elements."""
+        return self._multiple_elements
+
+    def SetUseMultipleElements(self, value: bool) -> None:
+        """Set multiple-element composition."""
+        self._multiple_elements = bool(value)
 
     def SetFailureRatio(self, value: float) -> None:
         """Set the failure ratio."""
