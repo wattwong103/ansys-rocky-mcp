@@ -444,6 +444,8 @@ class MockParticle:
         self._size_ratio = 1.0
         self._breakage_model = "none"
         self._breakage = False
+        self._abt10_size = 0.0
+        self._abt10_energy = 0.0
         self._surface_energy = 0.0
         self._material: MockSolidMaterial | None = None
         self._horizontal_aspect = 1.0
@@ -590,6 +592,32 @@ class MockParticle:
     def SetEnableBreakage(self, value: bool) -> None:
         """Enable or disable breakage."""
         self._breakage = bool(value)
+
+    def GetAbt10ReferenceSize(self, unit: str | None = None) -> float:
+        """Return the Abt10 reference size in meters."""
+        if unit not in (None, "m"):
+            raise ValueError(f"Unsupported length unit {unit!r}. Expected 'm'.")
+        return self._abt10_size
+
+    def SetAbt10ReferenceSize(self, value: float, unit: str | None = None) -> None:
+        """Set the Abt10 reference size in meters."""
+        if unit not in (None, "m"):
+            raise ValueError(f"Unsupported length unit {unit!r}. Expected 'm'.")
+        self._abt10_size = float(value)
+
+    def GetAbt10ReferenceMinimumSpecificEnergy(self, unit: str | None = None) -> float:
+        """Return the Abt10 reference energy in joules per kilogram."""
+        if unit not in (None, "J/kg"):
+            raise ValueError(f"Unsupported energy unit {unit!r}. Expected 'J/kg'.")
+        return self._abt10_energy
+
+    def SetAbt10ReferenceMinimumSpecificEnergy(
+        self, value: float, unit: str | None = None
+    ) -> None:
+        """Set the Abt10 reference energy in joules per kilogram."""
+        if unit not in (None, "J/kg"):
+            raise ValueError(f"Unsupported energy unit {unit!r}. Expected 'J/kg'.")
+        self._abt10_energy = float(value)
 
     def GetSurfaceEnergy(self, unit: str | None = None) -> float:
         """Return the surface energy."""

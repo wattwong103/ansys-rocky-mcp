@@ -559,6 +559,8 @@ async def rocky_create_particle(
     size_type: str | None = None,
     rolling_resistance: float | None = None,
     breakage_model: str | None = None,
+    abt10_reference_size: float | None = None,
+    abt10_reference_energy: float | None = None,
     name: str | None = None,
 ) -> dict[str, Any]:
     """Create a Rocky particle definition.
@@ -588,6 +590,10 @@ async def rocky_create_particle(
         Particle rolling resistance coefficient.
     breakage_model : str | None, default: None
         One of Rocky's breakage models. Any value other than ``none`` enables breakage.
+    abt10_reference_size : float | None, default: None
+        Abt10 reference size in meters.
+    abt10_reference_energy : float | None, default: None
+        Abt10 reference minimum specific energy in ``J/kg``.
     name : str | None, default: None
         Name for the created particle.
 
@@ -624,6 +630,10 @@ async def rocky_create_particle(
             particle.SetRollingResistance(rolling_resistance)
         if breakage_model is not None:
             particle.SetBreakageModel(breakage_model)
+        if abt10_reference_size is not None:
+            particle.SetAbt10ReferenceSize(abt10_reference_size, unit="m")
+        if abt10_reference_energy is not None:
+            particle.SetAbt10ReferenceMinimumSpecificEnergy(abt10_reference_energy, unit="J/kg")
         if name:
             particle.SetName(name)
     except Exception as exc:
@@ -650,6 +660,8 @@ async def rocky_create_particle(
         rolling_resistance=particle.GetRollingResistance(),
         breakage_model=particle.GetBreakageModel(),
         breakage_enabled=bool(particle.GetEnableBreakage()),
+        abt10_reference_size_m=particle.GetAbt10ReferenceSize("m"),
+        abt10_reference_energy_j_kg=particle.GetAbt10ReferenceMinimumSpecificEnergy("J/kg"),
     )
 
 
