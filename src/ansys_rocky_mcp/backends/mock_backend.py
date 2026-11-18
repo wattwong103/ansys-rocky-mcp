@@ -1288,6 +1288,7 @@ class MockWall:
         self._disable_time = 0.0
         self._triangle_size = 0.0
         self._translation = (0.0, 0.0, 0.0)
+        self._rotation = (0.0, 0.0, 0.0)
 
     def GetName(self) -> str:
         """Return the wall name."""
@@ -1440,6 +1441,26 @@ class MockWall:
         if len(values) != 3:
             raise ValueError("Translation must have three numbers.")
         self._translation = tuple(float(value) for value in values)
+
+    def GetOrientation(self, unit: str | None = None) -> list[float]:
+        """Return the wall orientation in degrees."""
+        if unit not in (None, "dega"):
+            raise ValueError(f"Unsupported angle unit {unit!r}. Expected 'dega'.")
+        return list(self._rotation)
+
+    def SetOrientationFromAngles(
+        self,
+        rotation: list[float],
+        unit: str | None = None,
+        local_angles: bool = True,
+        order: str = "XYZ",
+    ) -> None:
+        """Set the wall orientation. Rocky's default angle token is ``dega``."""
+        if unit not in (None, "dega"):
+            raise ValueError(f"Unsupported angle unit {unit!r}. Expected 'dega'.")
+        if len(rotation) != 3:
+            raise ValueError("Orientation must have three numbers.")
+        self._rotation = tuple(float(value) for value in rotation)
 
     def SetMaterial(self, value: Any) -> None:
         """Assign a solid material."""

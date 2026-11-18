@@ -106,6 +106,7 @@ async def rocky_import_wall(
     max_edge_size: float | None = None,
     triangle_size: float | None = None,
     translation: list[float] | None = None,
+    rotation_deg: list[float] | None = None,
 ) -> dict[str, Any]:
     """Import a geometry file as a Rocky wall.
 
@@ -129,6 +130,8 @@ async def rocky_import_wall(
         Wall triangle size in meters, used for contact resolution.
     translation : list[float] | None, default: None
         Move the imported walls by ``[x, y, z]`` in meters.
+    rotation_deg : list[float] | None, default: None
+        Rotate the imported walls by ``[x, y, z]`` in degrees. Rocky's token is ``dega``.
 
     """
     session = get_session(ctx)
@@ -167,6 +170,10 @@ async def rocky_import_wall(
     if offset is not None:
         for wall in walls:
             wall.SetTranslation(offset, unit="m")
+    angles = _three_vector(rotation_deg, "rotation_deg")
+    if angles is not None:
+        for wall in walls:
+            wall.SetOrientationFromAngles(angles, unit="dega")
     ids = [session.registry.add("wall", wall, label=f"Wall from {target.name}") for wall in walls]
     return envelope(
         session,
@@ -182,6 +189,7 @@ async def rocky_import_wall(
         max_edge_size_m=walls[0].GetMaxEdgeSize() if walls else max_edge_size,
         triangle_size_m=walls[0].GetTriangleSize("m") if walls else triangle_size,
         translation_m=walls[0].GetTranslation("m") if walls else translation,
+        rotation_deg=walls[0].GetOrientation("dega") if walls else rotation_deg,
         walls=[
             {"id": ident, "name": getattr(wall, "GetName", lambda: "")()}
             for ident, wall in zip(ids, walls, strict=True)
