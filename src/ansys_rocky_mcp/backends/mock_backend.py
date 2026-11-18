@@ -623,6 +623,8 @@ class MockParticleInlet:
         self._stop_time = 0.0
         self._target_velocity = 0.0
         self._use_target_velocity = False
+        self._periodic = False
+        self._period = 0.0
 
     def GetName(self) -> str:
         """Return the inlet name."""
@@ -706,6 +708,26 @@ class MockParticleInlet:
     def GetUseTargetNormalVelocity(self) -> bool:
         """Return whether the target injection speed is used."""
         return self._use_target_velocity
+
+    def GetPeriodic(self) -> bool:
+        """Return whether the inlet repeats."""
+        return self._periodic
+
+    def SetPeriodic(self, value: bool) -> None:
+        """Enable or disable a repeating inlet."""
+        self._periodic = bool(value)
+
+    def GetPeriod(self, unit: str | None = None) -> float:
+        """Return the repeat period in seconds."""
+        if unit not in (None, "s"):
+            raise ValueError(f"Unsupported time unit {unit!r}. Expected 's'.")
+        return self._period
+
+    def SetPeriod(self, value: float, unit: str | None = None) -> None:
+        """Set the repeat period in seconds."""
+        if unit not in (None, "s"):
+            raise ValueError(f"Unsupported time unit {unit!r}. Expected 's'.")
+        self._period = float(value)
 
 
 class MockVolumetricInlet:
