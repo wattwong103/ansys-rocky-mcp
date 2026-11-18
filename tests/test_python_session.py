@@ -38,6 +38,16 @@ async def test_run_python_reports_errors(python_client: Client) -> None:
     assert "boom" in str(result.data)
 
 
+async def test_run_python_sees_the_open_study(python_client: Client) -> None:
+    """A snippet reads the same study the other tools created."""
+    await python_client.call_tool("rocky_create_project")
+    await python_client.call_tool("rocky_create_particle", {"shape": "sphere", "sieve_size": 0.05})
+    result = await python_client.call_tool(
+        "rocky_run_python", {"code": "print(study.GetElementNames())"}
+    )
+    assert "Particle 1" in str(result.data)
+
+
 async def test_run_python_is_disabled_without_a_session(client: Client) -> None:
     """The tool explains how to enable the session when it is turned off."""
     with pytest.raises(ToolError, match="Python session"):

@@ -269,11 +269,12 @@ async def rocky_list_processes(ctx: Context) -> dict[str, Any]:
 
 
 async def rocky_run_python(ctx: Context, code: str, timeout: int = 60) -> str:
-    """Run arbitrary Python code in the persistent Python session.
+    """Run Python against the connected Rocky application and open study.
 
-    This is the escape hatch for anything the dedicated tools do not cover.
-    The session keeps state between calls, so variables survive from one
-    invocation to the next.
+    ``app`` and ``study`` in the snippet are the same objects the other tools
+    use. ``study`` is ``None`` until a project is open. Variables survive from
+    one call to the next. This runs in the server process so the live objects
+    stay reachable. A separate interpreter cannot hold them.
 
     Parameters
     ----------
@@ -283,16 +284,32 @@ async def rocky_run_python(ctx: Context, code: str, timeout: int = 60) -> str:
         Maximum number of seconds to wait for the code to finish.
 
     """
-    from ansys.common.mcp.tools import execute_python_code
+    import asyncio
+    import contextlib
+    import io
+    import traceback
 
-    get_session(ctx)
-    lifespan = getattr(ctx.request_context, "lifespan_context", None)
-    if getattr(lifespan, "python_session", None) is None:
+    session = get_session(ctx)
+    if not session.config.python_session:
         raise ToolError(
-            "The persistent Python session is disabled. Restart the server without "
+            "The Python session is disabled. Restart the server without "
             "'--no-python-session' to enable it."
         )
-    return await execute_python_code(ctx, code, timeout=timeout)
+    namespace = session.python_namespace()
+
+    def _run() -> str:
+        buffer = io.StringIO()
+        try:
+            with contextlib.redirect_stdout(buffer):
+                exec(code, namespace, namespace)  # noqa: S102
+        except Exception:
+            traceback.print_exc(file=buffer)
+        return buffer.getvalue()
+
+    try:
+        return await asyncio.wait_for(asyncio.to_thread(_run), timeout=timeout)
+    except TimeoutError as exc:
+        raise ToolError(f"The Python snippet exceeded {timeout} seconds.") from exc
 
 
 def register(mcp: Any) -> None:
