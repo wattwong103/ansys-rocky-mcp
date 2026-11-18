@@ -1521,6 +1521,7 @@ class MockFeedConveyor:
         self._wall_thickness = 0.01
         self._face_width = 0.3
         self._alignment_rad = 0.0
+        self._return_belt_rad = 0.0
         self._temperature_k = 298.15
         self._incline_rad = 0.0
         self._horizontal_offset = 0.0
@@ -1707,6 +1708,21 @@ class MockFeedConveyor:
         elif unit not in (None, "rad"):
             raise ValueError(f"Unsupported angle unit {unit!r}.")
         self._alignment_rad = angle
+
+    def SetReturnBeltAngle(self, value: float, unit: str | None = None) -> None:
+        """Set the return belt angle. Rocky's degree token is ``dega``."""
+        angle = float(value)
+        if unit in ("deg", "dega"):
+            angle = math.radians(angle)
+        elif unit not in (None, "rad"):
+            raise ValueError(f"Unsupported angle unit {unit!r}.")
+        self._return_belt_rad = angle
+
+    def GetReturnBeltAngle(self, unit: str | None = None) -> float:
+        """Return the return belt angle in radians, or degrees when asked."""
+        if unit in ("deg", "dega"):
+            return math.degrees(self._return_belt_rad)
+        return self._return_belt_rad
 
     def GetAlignmentAngle(self, unit: str | None = None) -> float:
         """Return the alignment angle in radians, or degrees when asked."""

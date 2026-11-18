@@ -339,6 +339,7 @@ async def test_a_feed_conveyor_records_belt_speed(study: Client) -> None:
             "wall_thickness": 0.008,
             "face_width": 0.35,
             "alignment_deg": 15.0,
+            "return_belt_deg": 12.0,
             "horizontal_offset": 1.25,
             "vertical_offset": 0.4,
             "name": "feed",
@@ -356,6 +357,7 @@ async def test_a_feed_conveyor_records_belt_speed(study: Client) -> None:
     assert created.data["belt_width_m"] == pytest.approx(0.8)
     assert created.data["incline_deg"] == pytest.approx(12.0)
     assert created.data["alignment_deg"] == pytest.approx(15.0)
+    assert created.data["return_belt_deg"] == pytest.approx(12.0)
     assert created.data["horizontal_offset_m"] == pytest.approx(1.25)
     assert created.data["vertical_offset_m"] == pytest.approx(0.4)
     receiving = await study.call_tool(
@@ -370,6 +372,7 @@ async def test_a_feed_conveyor_records_belt_speed(study: Client) -> None:
             "triangle_size": 0.02,
             "belt_thickness": 0.012,
             "alignment_deg": -8.0,
+            "return_belt_deg": 5.0,
             "horizontal_offset": -0.5,
             "vertical_offset": 2.0,
             "name": "discharge",
@@ -377,6 +380,7 @@ async def test_a_feed_conveyor_records_belt_speed(study: Client) -> None:
     )
     assert receiving.data["kind"] == "receiving"
     assert receiving.data["alignment_deg"] == pytest.approx(-8.0)
+    assert receiving.data["return_belt_deg"] == pytest.approx(5.0)
     assert receiving.data["horizontal_offset_m"] == pytest.approx(-0.5)
     assert receiving.data["vertical_offset_m"] == pytest.approx(2.0)
     assert receiving.data["start_time_s"] == pytest.approx(3.0)
