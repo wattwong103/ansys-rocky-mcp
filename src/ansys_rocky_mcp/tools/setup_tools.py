@@ -1014,6 +1014,8 @@ async def rocky_set_simulation_settings(
     curves_frequency: int | None = None,
     timestep_model: str | None = None,
     fixed_timestep: float | None = None,
+    processing_unit: str | None = None,
+    target_gpus: list[int] | None = None,
     unit: str = "s",
 ) -> dict[str, Any]:
     """Configure the Rocky solver settings.
@@ -1034,6 +1036,10 @@ async def rocky_set_simulation_settings(
         ``constant`` or ``variable``.
     fixed_timestep : float | None, default: None
         Fixed DEM timestep in seconds. Setting it selects the constant model.
+    processing_unit : str | None, default: None
+        ``CPU`` or ``GPU``. Rocky's object lists the accepted names.
+    target_gpus : list[int] | None, default: None
+        GPU ids for a local GPU run, for example ``[0]``.
     unit : str, default: "s"
         Unit of the duration and the time interval.
 
@@ -1066,6 +1072,17 @@ async def rocky_set_simulation_settings(
         if fixed_timestep is not None:
             solver.SetFixedTimestep(fixed_timestep, unit="s")
             solver.SetUseFixedTimestep(True)
+        if processing_unit is not None:
+            valid_units = list(solver.GetValidProcessingUnitValues())
+            if processing_unit not in valid_units:
+                raise ToolError(
+                    f"Unknown processing unit {processing_unit!r}. Expected one of {valid_units}."
+                )
+            solver.SetProcessingUnit(processing_unit)
+        if target_gpus is not None:
+            solver.SetTargetGpus(target_gpus)
+    except ToolError:
+        raise
     except Exception as exc:
         raise ToolError(f"Could not configure the solver: {exc}") from exc
 
@@ -1080,6 +1097,8 @@ async def rocky_set_simulation_settings(
         timestep_model=solver.GetTimestepModel(),
         fixed_timestep_s=solver.GetFixedTimestep("s"),
         use_fixed_timestep=bool(solver.GetUseFixedTimestep()),
+        processing_unit=solver.GetProcessingUnit(),
+        target_gpus=list(solver.GetTargetGpus()),
     )
 
 

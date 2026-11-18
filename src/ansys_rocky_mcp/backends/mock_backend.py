@@ -1013,6 +1013,8 @@ class MockSimulatorRun:
         self._fixed_timestep = 1e-4
         self._timestep_model = "variable"
         self._use_fixed_timestep = False
+        self._processing_unit = "CPU"
+        self._target_gpus: list[int] = []
 
     def GetSimulationDuration(self, unit: str | None = None) -> float:
         """Return the simulation duration."""
@@ -1106,6 +1108,29 @@ class MockSimulatorRun:
     def SetUseFixedTimestep(self, value: bool) -> None:
         """Enable or disable the fixed timestep."""
         self._use_fixed_timestep = bool(value)
+
+    def GetValidProcessingUnitValues(self) -> list[str]:
+        """Return the processing units this stand-in accepts."""
+        return ["CPU", "GPU"]
+
+    def GetProcessingUnit(self) -> str:
+        """Return the processing unit."""
+        return self._processing_unit
+
+    def SetProcessingUnit(self, value: str) -> None:
+        """Set the processing unit."""
+        valid = self.GetValidProcessingUnitValues()
+        if value not in valid:
+            raise ValueError(f"Unknown processing unit {value!r}. Expected one of {valid}.")
+        self._processing_unit = value
+
+    def GetTargetGpus(self) -> list[int]:
+        """Return the selected GPU ids."""
+        return list(self._target_gpus)
+
+    def SetTargetGpus(self, gpus: list[int]) -> None:
+        """Set the GPU ids used by a local simulation."""
+        self._target_gpus = [int(gpu) for gpu in gpus]
 
 
 class MockMotionFrame:
