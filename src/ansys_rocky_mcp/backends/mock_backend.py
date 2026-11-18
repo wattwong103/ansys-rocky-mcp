@@ -446,6 +446,9 @@ class MockParticle:
         self._breakage = False
         self._abt10_size = 0.0
         self._abt10_energy = 0.0
+        self._tavares_a = 0.0
+        self._tavares_d0 = 0.0
+        self._tavares_e_inf = 0.0
         self._surface_energy = 0.0
         self._material: MockSolidMaterial | None = None
         self._horizontal_aspect = 1.0
@@ -618,6 +621,42 @@ class MockParticle:
         if unit not in (None, "J/kg"):
             raise ValueError(f"Unsupported energy unit {unit!r}. Expected 'J/kg'.")
         self._abt10_energy = float(value)
+
+    def GetTavaresA(self, unit: str | None = None) -> float:
+        """Return Tavares A as a percent."""
+        if unit not in (None, "%"):
+            raise ValueError(f"Unsupported percent unit {unit!r}. Expected '%'.")
+        return self._tavares_a
+
+    def SetTavaresA(self, value: float, unit: str | None = None) -> None:
+        """Set Tavares A. Rocky's token is percent."""
+        if unit not in (None, "%"):
+            raise ValueError(f"Unsupported percent unit {unit!r}. Expected '%'.")
+        self._tavares_a = float(value)
+
+    def GetTavaresD0(self, unit: str | None = None) -> float:
+        """Return Tavares D0 in meters."""
+        if unit not in (None, "m"):
+            raise ValueError(f"Unsupported length unit {unit!r}. Expected 'm'.")
+        return self._tavares_d0
+
+    def SetTavaresD0(self, value: float, unit: str | None = None) -> None:
+        """Set Tavares D0 in meters."""
+        if unit not in (None, "m"):
+            raise ValueError(f"Unsupported length unit {unit!r}. Expected 'm'.")
+        self._tavares_d0 = float(value)
+
+    def GetTavaresEInf(self, unit: str | None = None) -> float:
+        """Return Tavares E infinity in joules per kilogram."""
+        if unit not in (None, "J/kg"):
+            raise ValueError(f"Unsupported energy unit {unit!r}. Expected 'J/kg'.")
+        return self._tavares_e_inf
+
+    def SetTavaresEInf(self, value: float, unit: str | None = None) -> None:
+        """Set Tavares E infinity in joules per kilogram."""
+        if unit not in (None, "J/kg"):
+            raise ValueError(f"Unsupported energy unit {unit!r}. Expected 'J/kg'.")
+        self._tavares_e_inf = float(value)
 
     def GetSurfaceEnergy(self, unit: str | None = None) -> float:
         """Return the surface energy."""

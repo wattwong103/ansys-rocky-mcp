@@ -561,6 +561,9 @@ async def rocky_create_particle(
     breakage_model: str | None = None,
     abt10_reference_size: float | None = None,
     abt10_reference_energy: float | None = None,
+    tavares_a: float | None = None,
+    tavares_d0: float | None = None,
+    tavares_e_inf: float | None = None,
     name: str | None = None,
 ) -> dict[str, Any]:
     """Create a Rocky particle definition.
@@ -594,6 +597,12 @@ async def rocky_create_particle(
         Abt10 reference size in meters.
     abt10_reference_energy : float | None, default: None
         Abt10 reference minimum specific energy in ``J/kg``.
+    tavares_a : float | None, default: None
+        Tavares A parameter. Rocky's token is ``%``.
+    tavares_d0 : float | None, default: None
+        Tavares reference size in meters.
+    tavares_e_inf : float | None, default: None
+        Tavares upper specific energy in ``J/kg``.
     name : str | None, default: None
         Name for the created particle.
 
@@ -634,6 +643,12 @@ async def rocky_create_particle(
             particle.SetAbt10ReferenceSize(abt10_reference_size, unit="m")
         if abt10_reference_energy is not None:
             particle.SetAbt10ReferenceMinimumSpecificEnergy(abt10_reference_energy, unit="J/kg")
+        if tavares_a is not None:
+            particle.SetTavaresA(tavares_a, unit="%")
+        if tavares_d0 is not None:
+            particle.SetTavaresD0(tavares_d0, unit="m")
+        if tavares_e_inf is not None:
+            particle.SetTavaresEInf(tavares_e_inf, unit="J/kg")
         if name:
             particle.SetName(name)
     except Exception as exc:
@@ -662,6 +677,9 @@ async def rocky_create_particle(
         breakage_enabled=bool(particle.GetEnableBreakage()),
         abt10_reference_size_m=particle.GetAbt10ReferenceSize("m"),
         abt10_reference_energy_j_kg=particle.GetAbt10ReferenceMinimumSpecificEnergy("J/kg"),
+        tavares_a_percent=particle.GetTavaresA("%"),
+        tavares_d0_m=particle.GetTavaresD0("m"),
+        tavares_e_inf_j_kg=particle.GetTavaresEInf("J/kg"),
     )
 
 
