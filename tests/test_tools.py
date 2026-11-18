@@ -203,6 +203,22 @@ async def test_domain_and_solver_settings_are_applied(study: Client) -> None:
     assert again.data["study"]["contact_models"]["normal_force"] == "damped_hertzian"
 
 
+async def test_particle_size_distribution_is_set(study: Client) -> None:
+    """A particle can use one of Rocky's size distribution models."""
+    objects = await study.call_tool("rocky_list_processes")
+    particles = [
+        entry["id"]
+        for entry in objects.data["registered_objects"]
+        if entry["category"] == "particle"
+    ]
+    updated = await study.call_tool(
+        "rocky_set_size_distribution",
+        {"particle_id": particles[0], "model": "incomplete_beta", "minimum_size": 0.02},
+    )
+    assert updated.data["model"] == "incomplete_beta"
+    assert updated.data["minimum_size_m"] == pytest.approx(0.02)
+
+
 async def test_inlet_injection_duration_is_stored(study: Client) -> None:
     """An inlet can stop feeding after a set duration."""
     objects = await study.call_tool("rocky_list_processes")

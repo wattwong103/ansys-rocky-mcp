@@ -14,6 +14,7 @@ __all__ = ["register"]
 
 SURFACE_KINDS = ("circular", "rectangular")
 EXECUTION_MODES = ("local", "single_mpi", "multi_mpi")
+SIZE_DISTRIBUTIONS = ("gaudin_schumann", "incomplete_beta", "custom")
 NORMAL_FORCE_MODELS = (
     "linear_hysteresis",
     "linear_elastic_viscous",
@@ -211,6 +212,49 @@ async def rocky_create_particle(
         particle_id=ident,
         shape=shape,
         name=getattr(particle, "GetName", lambda: name or "")(),
+    )
+
+
+async def rocky_set_size_distribution(
+    ctx: Context,
+    particle_id: str,
+    model: str,
+    minimum_size: float | None = None,
+    unit: str = "m",
+) -> dict[str, Any]:
+    """Set the size distribution model on a particle.
+
+    Parameters
+    ----------
+    particle_id : str
+        Particle identifier, for example ``particle_1``.
+    model : str
+        One of ``gaudin_schumann``, ``incomplete_beta``, or ``custom``.
+    minimum_size : float | None, default: None
+        Minimum sieve size. Omit it to leave the current size.
+    unit : str, default: "m"
+        Unit of ``minimum_size``.
+
+    """
+    session = get_session(ctx)
+    require_study(session)
+    if model not in SIZE_DISTRIBUTIONS:
+        raise ToolError(
+            f"Unknown size distribution {model!r}. Expected one of {SIZE_DISTRIBUTIONS}."
+        )
+    particle = _resolve(session, particle_id, "particle")
+    try:
+        particle.SetDistributionModel(model)
+        if minimum_size is not None:
+            particle.SetMinimumSize(minimum_size, unit=unit)
+    except Exception as exc:
+        raise ToolError(f"Could not set the size distribution: {exc}") from exc
+    return envelope(
+        session,
+        message="Size distribution updated.",
+        particle_id=particle_id,
+        model=particle.GetDistributionModel(),
+        minimum_size_m=particle.GetMinimumSize("m"),
     )
 
 
@@ -731,6 +775,7 @@ def register(mcp: Any) -> None:
     mcp.tool()(rocky_import_wall)
     mcp.tool()(rocky_create_surface)
     mcp.tool()(rocky_create_particle)
+    mcp.tool()(rocky_set_size_distribution)
     mcp.tool()(rocky_create_material)
     mcp.tool()(rocky_set_material_interaction)
     mcp.tool()(rocky_create_inlet)
