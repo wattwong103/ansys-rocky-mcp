@@ -1219,6 +1219,7 @@ class MockFeedConveyor:
         self._name = name
         self._speed = 0.0
         self._width = 1.0
+        self._loading_length = 0.0
         self._incline_rad = 0.0
         self._material: Any = None
 
@@ -1245,6 +1246,14 @@ class MockFeedConveyor:
     def GetBeltWidth(self, unit: str | None = None) -> float:
         """Return the belt width in meters."""
         return self._width
+
+    def SetLoadingLength(self, value: float, unit: str | None = None) -> None:
+        """Set the loading length in meters."""
+        self._loading_length = float(value)
+
+    def GetLoadingLength(self, unit: str | None = None) -> float:
+        """Return the loading length in meters."""
+        return self._loading_length
 
     def SetBeltInclineAngle(self, value: float, unit: str | None = None) -> None:
         """Set the belt incline. Degrees are accepted as ``deg``."""

@@ -190,6 +190,7 @@ async def rocky_create_feed_conveyor(
     belt_speed: float = 1.0,
     belt_width: float = 1.0,
     incline_deg: float = 0.0,
+    loading_length: float | None = None,
     name: str | None = None,
 ) -> dict[str, Any]:
     """Create a Rocky feed conveyor.
@@ -202,11 +203,15 @@ async def rocky_create_feed_conveyor(
         Belt width in meters.
     incline_deg : float, default: 0.0
         Belt incline in degrees.
+    loading_length : float | None, default: None
+        Length of the loading section in meters. Feed conveyors only.
     name : str | None, default: None
         Conveyor name.
 
     """
-    return await _create_conveyor(ctx, "feed", belt_speed, belt_width, incline_deg, name)
+    return await _create_conveyor(
+        ctx, "feed", belt_speed, belt_width, incline_deg, name, loading_length
+    )
 
 
 async def _create_conveyor(
@@ -216,6 +221,7 @@ async def _create_conveyor(
     belt_width: float,
     incline_deg: float,
     name: str | None,
+    loading_length: float | None = None,
 ) -> dict[str, Any]:
     """Create a feed or receiving conveyor."""
     session = get_session(ctx)
@@ -230,6 +236,8 @@ async def _create_conveyor(
         conveyor.SetBeltInclineAngle(incline_deg, unit="deg")
         if name:
             conveyor.SetName(name)
+        if loading_length is not None:
+            conveyor.SetLoadingLength(loading_length, unit="m")
     except Exception as exc:
         raise ToolError(f"Could not create the {kind} conveyor: {exc}") from exc
     ident = session.registry.add(
@@ -247,6 +255,7 @@ async def _create_conveyor(
         belt_speed_m_s=conveyor.GetBeltSpeed("m/s"),
         belt_width_m=conveyor.GetBeltWidth("m"),
         incline_deg=conveyor.GetBeltInclineAngle("deg"),
+        loading_length_m=conveyor.GetLoadingLength("m"),
     )
 
 

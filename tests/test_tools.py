@@ -295,9 +295,16 @@ async def test_a_feed_conveyor_records_belt_speed(study: Client) -> None:
     """A feed conveyor keeps the belt speed, width, and incline."""
     created = await study.call_tool(
         "rocky_create_feed_conveyor",
-        {"belt_speed": 2.5, "belt_width": 0.8, "incline_deg": 12.0, "name": "feed"},
+        {
+            "belt_speed": 2.5,
+            "belt_width": 0.8,
+            "incline_deg": 12.0,
+            "loading_length": 6.0,
+            "name": "feed",
+        },
     )
     assert created.data["name"] == "feed"
+    assert created.data["loading_length_m"] == pytest.approx(6.0)
     assert created.data["belt_speed_m_s"] == pytest.approx(2.5)
     assert created.data["belt_width_m"] == pytest.approx(0.8)
     assert created.data["incline_deg"] == pytest.approx(12.0)
