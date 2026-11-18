@@ -179,7 +179,7 @@ startup_timeout_sec = 90
 | `rocky_create_inlet` | Create a particle inlet, set its mass flow rate, and optionally its duration. |
 | `rocky_create_outlet` | Create an outlet on a surface. |
 | `rocky_set_domain` | Set the domain limits and boundary-limit behaviour. |
-| `rocky_set_simulation_settings` | Duration, output interval, processors, execution mode. |
+| `rocky_set_simulation_settings` | Duration, output interval, processors, execution mode, curve frequency. |
 | `rocky_set_gravity` | Set the gravity vector on the study physics. |
 | `rocky_set_contact_models` | Set the normal, tangential, and rolling-resistance models. |
 | `rocky_set_motion` | Apply a rotation or translation motion to objects. |

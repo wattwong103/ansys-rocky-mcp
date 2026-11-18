@@ -409,6 +409,7 @@ async def rocky_set_simulation_settings(
     time_interval: float | None = None,
     processors: int | None = None,
     execution_mode: str | None = None,
+    curves_frequency: int | None = None,
     unit: str = "s",
 ) -> dict[str, Any]:
     """Configure the Rocky solver settings.
@@ -423,6 +424,8 @@ async def rocky_set_simulation_settings(
         Number of processors used by the solver.
     execution_mode : str | None, default: None
         Execution mode: ``"local"``, ``"single_mpi"``, or ``"multi_mpi"``.
+    curves_frequency : int | None, default: None
+        How often solver curves are stored. Must be at least 1.
     unit : str, default: "s"
         Unit of the duration and the time interval.
 
@@ -432,6 +435,8 @@ async def rocky_set_simulation_settings(
     if execution_mode is not None and execution_mode not in EXECUTION_MODES:
         legal = ", ".join(EXECUTION_MODES)
         raise ToolError(f"Unknown execution mode {execution_mode!r}. Expected one of {legal}.")
+    if curves_frequency is not None and curves_frequency < 1:
+        raise ToolError("curves_frequency must be at least 1.")
     solver = study.GetSolver()
     try:
         if duration is not None:
@@ -442,6 +447,8 @@ async def rocky_set_simulation_settings(
             solver.SetNumberOfProcessors(int(processors))
         if execution_mode is not None:
             solver.SetExecutionMode(execution_mode)
+        if curves_frequency is not None:
+            solver.SetSolverCurvesFrequency(int(curves_frequency))
     except Exception as exc:
         raise ToolError(f"Could not configure the solver: {exc}") from exc
 
@@ -452,6 +459,7 @@ async def rocky_set_simulation_settings(
         time_interval_s=solver.GetTimeInterval("s"),
         processors=solver.GetNumberOfProcessors(),
         execution_mode=solver.GetExecutionMode(),
+        curves_frequency=solver.GetSolverCurvesFrequency(),
     )
 
 

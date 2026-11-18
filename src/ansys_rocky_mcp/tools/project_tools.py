@@ -118,6 +118,7 @@ def describe_study(session: Any) -> dict[str, Any]:
                 "time_interval_s": _safe(lambda: solver.GetTimeInterval("s")),
                 "processors": _safe(solver.GetNumberOfProcessors),
                 "execution_mode": _safe(solver.GetExecutionMode),
+                "curves_frequency": _safe(solver.GetSolverCurvesFrequency),
             }
             if solver is not None
             else {},

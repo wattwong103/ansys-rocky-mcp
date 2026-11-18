@@ -643,6 +643,7 @@ class MockSimulatorRun:
         self._duration = DEFAULT_DURATION
         self._time_interval = DEFAULT_DURATION / 20.0
         self._processors = 1
+        self._curves_frequency = 1
         self._execution_mode = "local"
         self._gpu = 0
 
@@ -674,6 +675,17 @@ class MockSimulatorRun:
     def SetNumberOfProcessors(self, value: int | str) -> None:
         """Set the number of processors."""
         self._processors = int(value)
+
+    def GetSolverCurvesFrequency(self) -> int:
+        """Return how often solver curves are stored."""
+        return self._curves_frequency
+
+    def SetSolverCurvesFrequency(self, value: int | str) -> None:
+        """Set how often solver curves are stored."""
+        frequency = int(value)
+        if frequency < 1:
+            raise ValueError("Solver curves frequency must be at least 1.")
+        self._curves_frequency = frequency
 
     def GetExecutionMode(self) -> str:
         """Return the execution mode."""
