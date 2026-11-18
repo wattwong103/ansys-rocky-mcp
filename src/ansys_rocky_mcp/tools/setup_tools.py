@@ -834,6 +834,8 @@ async def rocky_set_material_interaction(
     velocity_exponent: float | None = None,
     velocity_limit: float | None = None,
     contact_stiffness_multiplier: float | None = None,
+    adhesive_fraction: float | None = None,
+    surface_energy: float | None = None,
 ) -> dict[str, Any]:
     """Set contact coefficients between two solid materials.
 
@@ -859,6 +861,10 @@ async def rocky_set_material_interaction(
         Velocity limit for a velocity-dependent restitution model, in m/s.
     contact_stiffness_multiplier : float | None, default: None
         Multiplier on the contact stiffness. Dimensionless.
+    adhesive_fraction : float | None, default: None
+        Fraction of the contact area that is adhesive. Dimensionless.
+    surface_energy : float | None, default: None
+        Surface energy of this material pair, in J/m2.
 
     """
     session = get_session(ctx)
@@ -885,6 +891,10 @@ async def rocky_set_material_interaction(
             interaction.SetVelocityLimit(velocity_limit, unit="m/s")
         if contact_stiffness_multiplier is not None:
             interaction.SetContactStiffnessMultiplier(contact_stiffness_multiplier)
+        if adhesive_fraction is not None:
+            interaction.SetAdhesiveFraction(adhesive_fraction)
+        if surface_energy is not None:
+            interaction.SetSurfaceEnergy(surface_energy, unit="J/m2")
     except Exception as exc:
         raise ToolError(f"Could not set the material interaction: {exc}") from exc
     return envelope(
@@ -900,6 +910,8 @@ async def rocky_set_material_interaction(
         velocity_exponent=interaction.GetVelocityExponent(),
         velocity_limit_m_s=interaction.GetVelocityLimit("m/s"),
         contact_stiffness_multiplier=interaction.GetContactStiffnessMultiplier(),
+        adhesive_fraction=interaction.GetAdhesiveFraction(),
+        surface_energy=interaction.GetSurfaceEnergy("J/m2"),
     )
 
 

@@ -273,6 +273,8 @@ class MockMaterialsInteraction:
         self._velocity_exponent = 0.0
         self._velocity_limit = 0.0
         self._stiffness_multiplier = 1.0
+        self._adhesive_fraction = 0.0
+        self._pair_surface_energy = 0.0
 
     def SetStaticFriction(self, value: float, unit: str | None = None) -> None:
         """Set the static friction coefficient."""
@@ -337,6 +339,22 @@ class MockMaterialsInteraction:
     def GetContactStiffnessMultiplier(self, unit: str | None = None) -> float:
         """Return the contact stiffness multiplier."""
         return self._stiffness_multiplier
+
+    def SetAdhesiveFraction(self, value: float, unit: str | None = None) -> None:
+        """Set the adhesive fraction."""
+        self._adhesive_fraction = float(value)
+
+    def GetAdhesiveFraction(self, unit: str | None = None) -> float:
+        """Return the adhesive fraction."""
+        return self._adhesive_fraction
+
+    def SetSurfaceEnergy(self, value: float, unit: str | None = None) -> None:
+        """Set the pair surface energy."""
+        self._pair_surface_energy = float(value)
+
+    def GetSurfaceEnergy(self, unit: str | None = None) -> float:
+        """Return the pair surface energy."""
+        return self._pair_surface_energy
 
 
 class MockMaterialsInteractionCollection:
