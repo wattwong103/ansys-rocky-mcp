@@ -457,6 +457,8 @@ class MockParticle:
         self._bending_deg = 0.0
         self._torsion_deg = 0.0
         self._flexible = False
+        self._elasticity = "isotropic"
+        self._target_elements = 1
         self._surface_energy = 0.0
         self._material: MockSolidMaterial | None = None
         self._horizontal_aspect = 1.0
@@ -756,6 +758,27 @@ class MockParticle:
     def SetFlexible(self, value: bool) -> None:
         """Set whether the particle is flexible."""
         self._flexible = bool(value)
+
+    def GetElasticity(self) -> str:
+        """Return the elasticity model."""
+        return self._elasticity
+
+    def SetElasticity(self, value: str) -> None:
+        """Set the elasticity model."""
+        if value not in ("isotropic", "anisotropic"):
+            raise ValueError(f"Unknown elasticity {value!r}.")
+        self._elasticity = value
+
+    def GetTargetNumberOfElements(self) -> int:
+        """Return the target number of fiber elements."""
+        return self._target_elements
+
+    def SetTargetNumberOfElements(self, value: int) -> None:
+        """Set the target number of fiber elements."""
+        count = int(value)
+        if count < 1:
+            raise ValueError("Target number of elements must be at least 1.")
+        self._target_elements = count
 
     def GetSurfaceEnergy(self, unit: str | None = None) -> float:
         """Return the surface energy."""

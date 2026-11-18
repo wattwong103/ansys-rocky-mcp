@@ -573,6 +573,8 @@ async def rocky_create_particle(
     bending_angle_deg: float | None = None,
     torsion_angle_deg: float | None = None,
     flexible: bool | None = None,
+    elasticity: str | None = None,
+    target_element_count: int | None = None,
     name: str | None = None,
 ) -> dict[str, Any]:
     """Create a Rocky particle definition.
@@ -630,6 +632,10 @@ async def rocky_create_particle(
         Torsion angle limit in degrees. Rocky's token is ``dega``.
     flexible : bool | None, default: None
         Make the particle flexible. A bending or torsion limit turns this on.
+    elasticity : str | None, default: None
+        ``isotropic`` or ``anisotropic``.
+    target_element_count : int | None, default: None
+        Number of elements in a flexible fiber. Must be at least 1.
     name : str | None, default: None
         Name for the created particle.
 
@@ -639,6 +645,10 @@ async def rocky_create_particle(
     valid_sizes = ("sieve", "equivalent_diameter", "original_size_scale")
     if size_type is not None and size_type not in valid_sizes:
         raise ToolError(f"Unknown size type {size_type!r}. Expected one of {valid_sizes}.")
+    if elasticity is not None and elasticity not in ("isotropic", "anisotropic"):
+        raise ToolError("elasticity must be 'isotropic' or 'anisotropic'.")
+    if target_element_count is not None and target_element_count < 1:
+        raise ToolError("target_element_count must be at least 1.")
     if breakage_model is not None and breakage_model not in BREAKAGE_MODELS:
         raise ToolError(
             f"Unknown breakage model {breakage_model!r}. Expected one of {BREAKAGE_MODELS}."
@@ -695,10 +705,19 @@ async def rocky_create_particle(
             particle.SetBendingAngleLimit(bending_angle_deg, unit="dega")
         if torsion_angle_deg is not None:
             particle.SetTorsionAngleLimit(torsion_angle_deg, unit="dega")
-        if flexible is None and (bending_angle_deg is not None or torsion_angle_deg is not None):
+        if flexible is None and (
+            bending_angle_deg is not None
+            or torsion_angle_deg is not None
+            or elasticity is not None
+            or target_element_count is not None
+        ):
             flexible = True
         if flexible is not None:
             particle.SetFlexible(flexible)
+        if elasticity is not None:
+            particle.SetElasticity(elasticity)
+        if target_element_count is not None:
+            particle.SetTargetNumberOfElements(target_element_count)
         if name:
             particle.SetName(name)
     except Exception as exc:
@@ -738,6 +757,8 @@ async def rocky_create_particle(
         bending_angle_deg=particle.GetBendingAngleLimit("dega"),
         torsion_angle_deg=particle.GetTorsionAngleLimit("dega"),
         flexible=bool(particle.GetFlexible()),
+        elasticity=particle.GetElasticity(),
+        target_element_count=particle.GetTargetNumberOfElements(),
     )
 
 

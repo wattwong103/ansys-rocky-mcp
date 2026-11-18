@@ -471,6 +471,8 @@ async def test_particle_shape_dimensions_are_stored(study: Client) -> None:
             "porosity": 0.2,
             "bending_angle_deg": 15.0,
             "torsion_angle_deg": 10.0,
+            "elasticity": "anisotropic",
+            "target_element_count": 8,
             "name": "flake",
         },
     )
@@ -495,6 +497,8 @@ async def test_particle_shape_dimensions_are_stored(study: Client) -> None:
     assert created.data["bending_angle_deg"] == pytest.approx(15.0)
     assert created.data["torsion_angle_deg"] == pytest.approx(10.0)
     assert created.data["flexible"] is True
+    assert created.data["elasticity"] == "anisotropic"
+    assert created.data["target_element_count"] == 8
 
 
 async def test_particle_size_distribution_is_set(study: Client) -> None:
