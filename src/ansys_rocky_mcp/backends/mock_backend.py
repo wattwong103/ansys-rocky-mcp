@@ -969,6 +969,9 @@ class MockPhysics:
     def __init__(self) -> None:
         """Initialize gravity at rest."""
         self._gravity = [0.0, 0.0, 0.0]
+        self._normal_force = "damped_hertzian"
+        self._tangential_force = "mindlin_deresiewicz"
+        self._rolling_resistance = "none"
 
     def GetGravityXDirection(self, unit: str | None = None) -> float:
         """Return the X component of gravity."""
@@ -993,6 +996,30 @@ class MockPhysics:
     def SetGravityZDirection(self, value: float, unit: str | None = None) -> None:
         """Set the Z component of gravity."""
         self._gravity[2] = float(value)
+
+    def GetNormalForceModel(self) -> str:
+        """Return the normal force model."""
+        return self._normal_force
+
+    def SetNormalForceModel(self, value: str) -> None:
+        """Set the normal force model."""
+        self._normal_force = value
+
+    def GetTangentialForceModel(self) -> str:
+        """Return the tangential force model."""
+        return self._tangential_force
+
+    def SetTangentialForceModel(self, value: str) -> None:
+        """Set the tangential force model."""
+        self._tangential_force = value
+
+    def GetRollingResistanceModel(self) -> str:
+        """Return the rolling resistance model."""
+        return self._rolling_resistance
+
+    def SetRollingResistanceModel(self, value: str) -> None:
+        """Set the rolling resistance model."""
+        self._rolling_resistance = value
 
 
 class MockStudy:

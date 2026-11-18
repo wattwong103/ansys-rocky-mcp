@@ -27,7 +27,7 @@ Rocky study, run it, and read the results.
 
 | | |
 |---|---|
-| **Tools** | 28 (session, project, setup, run control, results, Python escape hatch) |
+| **Tools** | 29 (session, project, setup, run control, results, Python escape hatch) |
 | **Transport** | `stdio` (default) and `http` |
 | **Verified** | Full workflow end-to-end over a real MCP stdio handshake, 42 automated tests |
 | **Requires** | Python ≥ 3.12, `ansys-common-mcp`, `ansys-rocky-core` |
@@ -180,6 +180,7 @@ startup_timeout_sec = 90
 | `rocky_set_domain` | Set the domain limits and boundary-limit behaviour. |
 | `rocky_set_simulation_settings` | Duration, output interval, processors, execution mode. |
 | `rocky_set_gravity` | Set the gravity vector on the study physics. |
+| `rocky_set_contact_models` | Set the normal, tangential, and rolling-resistance models. |
 | `rocky_set_motion` | Apply a rotation or translation motion to objects. |
 
 ### Run control

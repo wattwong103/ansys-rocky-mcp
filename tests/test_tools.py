@@ -175,6 +175,18 @@ async def test_domain_and_solver_settings_are_applied(study: Client) -> None:
     described = await study.call_tool("rocky_describe_study")
     assert described.data["study"]["gravity_m_s2"] == pytest.approx([0.0, -9.81, 0.0])
 
+    models = await study.call_tool(
+        "rocky_set_contact_models",
+        {
+            "normal_force": "damped_hertzian",
+            "tangential_force": "mindlin_deresiewicz",
+            "rolling_resistance": "type_3",
+        },
+    )
+    assert models.data["rolling_resistance"] == "type_3"
+    again = await study.call_tool("rocky_describe_study")
+    assert again.data["study"]["contact_models"]["normal_force"] == "damped_hertzian"
+
 
 async def test_motion_is_applied_to_the_targets(study: Client) -> None:
     """A rotation motion is attached to the requested surface."""

@@ -104,6 +104,15 @@ def describe_study(session: Any) -> dict[str, Any]:
             ]
             if physics is not None
             else [],
+            "contact_models": {
+                "normal_force": _safe(physics.GetNormalForceModel) if physics is not None else None,
+                "tangential_force": _safe(physics.GetTangentialForceModel)
+                if physics is not None
+                else None,
+                "rolling_resistance": _safe(physics.GetRollingResistanceModel)
+                if physics is not None
+                else None,
+            },
             "solver": {
                 "duration_s": _safe(lambda: solver.GetSimulationDuration("s")),
                 "time_interval_s": _safe(lambda: solver.GetTimeInterval("s")),

@@ -14,6 +14,19 @@ __all__ = ["register"]
 
 SURFACE_KINDS = ("circular", "rectangular")
 EXECUTION_MODES = ("local", "single_mpi", "multi_mpi")
+NORMAL_FORCE_MODELS = (
+    "linear_hysteresis",
+    "linear_elastic_viscous",
+    "damped_hertzian",
+    "custom",
+)
+TANGENTIAL_FORCE_MODELS = (
+    "elastic_coulomb",
+    "coulomb_limit",
+    "mindlin_deresiewicz",
+    "custom",
+)
+ROLLING_RESISTANCE_MODELS = ("type_1", "type_3", "none", "custom")
 
 
 def _resolve(session: Any, object_id: str, category: str) -> Any:
@@ -598,6 +611,61 @@ async def rocky_create_material(
     )
 
 
+async def rocky_set_contact_models(
+    ctx: Context,
+    normal_force: str | None = None,
+    tangential_force: str | None = None,
+    rolling_resistance: str | None = None,
+) -> dict[str, Any]:
+    """Set the Rocky contact models on the study physics.
+
+    Parameters
+    ----------
+    normal_force : str | None, default: None
+        One of ``linear_hysteresis``, ``linear_elastic_viscous``,
+        ``damped_hertzian``, or ``custom``.
+    tangential_force : str | None, default: None
+        One of ``elastic_coulomb``, ``coulomb_limit``,
+        ``mindlin_deresiewicz``, or ``custom``.
+    rolling_resistance : str | None, default: None
+        One of ``type_1``, ``type_3``, ``none``, or ``custom``.
+
+    """
+    session = get_session(ctx)
+    study = require_study(session)
+    if normal_force is not None and normal_force not in NORMAL_FORCE_MODELS:
+        raise ToolError(
+            f"Unknown normal force model {normal_force!r}. Expected one of {NORMAL_FORCE_MODELS}."
+        )
+    if tangential_force is not None and tangential_force not in TANGENTIAL_FORCE_MODELS:
+        raise ToolError(
+            f"Unknown tangential force model {tangential_force!r}. "
+            f"Expected one of {TANGENTIAL_FORCE_MODELS}."
+        )
+    if rolling_resistance is not None and rolling_resistance not in ROLLING_RESISTANCE_MODELS:
+        raise ToolError(
+            f"Unknown rolling resistance model {rolling_resistance!r}. "
+            f"Expected one of {ROLLING_RESISTANCE_MODELS}."
+        )
+    try:
+        physics = study.GetPhysics()
+        if normal_force is not None:
+            physics.SetNormalForceModel(normal_force)
+        if tangential_force is not None:
+            physics.SetTangentialForceModel(tangential_force)
+        if rolling_resistance is not None:
+            physics.SetRollingResistanceModel(rolling_resistance)
+    except Exception as exc:
+        raise ToolError(f"Could not set the contact models: {exc}") from exc
+    return envelope(
+        session,
+        message="Contact models updated.",
+        normal_force=physics.GetNormalForceModel(),
+        tangential_force=physics.GetTangentialForceModel(),
+        rolling_resistance=physics.GetRollingResistanceModel(),
+    )
+
+
 async def rocky_set_material_interaction(
     ctx: Context,
     material_a: str,
@@ -661,4 +729,5 @@ def register(mcp: Any) -> None:
     mcp.tool()(rocky_set_domain)
     mcp.tool()(rocky_set_simulation_settings)
     mcp.tool()(rocky_set_gravity)
+    mcp.tool()(rocky_set_contact_models)
     mcp.tool()(rocky_set_motion)
