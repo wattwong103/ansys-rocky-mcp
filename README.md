@@ -27,7 +27,7 @@ Rocky study, run it, and read the results.
 
 | | |
 |---|---|
-| **Tools** | 31 (session, project, setup, run control, results, Python escape hatch) |
+| **Tools** | 32 (session, project, setup, run control, results, Python escape hatch) |
 | **Transport** | `stdio` (default) and `http` |
 | **Verified** | Full workflow end-to-end over a real MCP stdio handshake, 42 automated tests |
 | **Requires** | Python ≥ 3.12, `ansys-common-mcp`, `ansys-rocky-core` |
@@ -191,6 +191,7 @@ startup_timeout_sec = 90
 | `rocky_run_simulation` | Start the solver (blocking or non-blocking). |
 | `rocky_simulation_status` | Progress, time set, results availability. |
 | `rocky_wait_for_completion` | Wait for the run to finish. |
+| `rocky_stop_simulation` | Stop a running simulation. |
 
 ### Results
 

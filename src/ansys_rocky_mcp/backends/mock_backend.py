@@ -1291,6 +1291,7 @@ class MockStudy:
     def StopSimulation(self) -> None:
         """Stop a running simulation."""
         self._stop_event.set()
+        self._simulating = False
 
     def IsSimulating(self) -> bool:
         """Return whether a simulation is running."""

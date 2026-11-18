@@ -49,6 +49,14 @@ async def test_full_workflow(study: Client) -> None:
     assert flow.data["values"][-1] == pytest.approx(1000.0)
 
 
+async def test_a_running_simulation_can_be_stopped(study: Client) -> None:
+    """Stopping a non-blocking run clears the simulating flag."""
+    await study.call_tool("rocky_set_simulation_settings", {"duration": 30.0})
+    await study.call_tool("rocky_run_simulation", {"non_blocking": True})
+    stopped = await study.call_tool("rocky_stop_simulation")
+    assert stopped.data["simulating"] is False
+
+
 async def test_curves_are_requested_before_the_run(study: Client) -> None:
     """Requesting a curve before the simulation reports the missing step."""
     with pytest.raises(ToolError, match="rocky_run_simulation"):

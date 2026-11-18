@@ -123,8 +123,29 @@ async def rocky_wait_for_completion(
     )
 
 
+async def rocky_stop_simulation(ctx: Context) -> dict[str, Any]:
+    """Stop a running Rocky simulation.
+
+    If nothing is running, Rocky leaves the study as it is.
+    """
+    session = get_session(ctx)
+    study = require_study(session)
+    try:
+        study.StopSimulation()
+    except Exception as exc:
+        raise ToolError(f"Could not stop the simulation: {exc}") from exc
+    return envelope(
+        session,
+        message="Simulation stop requested.",
+        simulating=bool(study.IsSimulating()),
+        progress_percent=study.GetProgress(),
+        has_results=bool(study.HasResults()),
+    )
+
+
 def register(mcp: Any) -> None:
     """Register the run-control tools on the MCP server."""
     mcp.tool()(rocky_run_simulation)
     mcp.tool()(rocky_simulation_status)
     mcp.tool()(rocky_wait_for_completion)
+    mcp.tool()(rocky_stop_simulation)
