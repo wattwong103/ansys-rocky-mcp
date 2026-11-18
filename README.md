@@ -188,6 +188,7 @@ startup_timeout_sec = 90
 | `rocky_set_output_property` | Turn a standard or module output on before a run. |
 | `rocky_set_sph_boundary` | Set an SPH wall boundary and its contact angle in degrees. |
 | `rocky_set_wall_wear` | Set a wall wear model and the Archard volume per joule. |
+| `rocky_set_wall_mass` | Set a moving wall's mass and principal inertia. |
 | `rocky_set_gravity` | Set the gravity vector on the study physics. |
 | `rocky_set_contact_models` | Set contact models and whether the thermal model is on. |
 | `rocky_set_motion` | Apply a rotation or translation motion to objects. |

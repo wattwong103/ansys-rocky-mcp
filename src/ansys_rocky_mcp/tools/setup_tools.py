@@ -1527,6 +1527,43 @@ async def rocky_set_simulation_settings(
 _SPH_BOUNDARIES = ("free_slip", "no_slip_laminar", "no_slip_turbulent")
 
 
+async def rocky_set_wall_mass(
+    ctx: Context,
+    wall_id: str,
+    mass: float,
+    inertia: list[float] | None = None,
+) -> dict[str, Any]:
+    """Set the mass of a moving wall.
+
+    Parameters
+    ----------
+    wall_id : str
+        Identifier of the wall.
+    mass : float
+        Boundary mass in kilograms.
+    inertia : list[float] | None, default: None
+        Principal moments of inertia ``[ix, iy, iz]``. Rocky's token is ``kg.m2``.
+
+    """
+    session = get_session(ctx)
+    require_study(session)
+    wall = _resolve(session, wall_id, "wall")
+    moments = _three_vector(inertia, "inertia")
+    try:
+        wall.SetBoundaryMass(mass, unit="kg")
+        if moments is not None:
+            wall.SetPrincipalMomentOfInertia(moments, unit="kg.m2")
+    except Exception as exc:
+        raise ToolError(f"Could not set the wall mass: {exc}") from exc
+    return envelope(
+        session,
+        message=f"Set the mass of {wall_id} to {mass} kg.",
+        wall_id=wall_id,
+        mass_kg=wall.GetBoundaryMass("kg"),
+        inertia_kg_m2=wall.GetPrincipalMomentOfInertia("kg.m2"),
+    )
+
+
 async def rocky_set_wall_wear(
     ctx: Context,
     wall_id: str,
@@ -2156,6 +2193,7 @@ def register(mcp: Any) -> None:
     mcp.tool()(rocky_set_output_property)
     mcp.tool()(rocky_set_sph_boundary)
     mcp.tool()(rocky_set_wall_wear)
+    mcp.tool()(rocky_set_wall_mass)
     mcp.tool()(rocky_set_gravity)
     mcp.tool()(rocky_set_contact_models)
     mcp.tool()(rocky_set_motion)

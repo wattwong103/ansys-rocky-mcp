@@ -808,6 +808,12 @@ async def test_import_wall_creates_identified_walls(study: Client, tmp_path) -> 
     )
     assert heated_wall.data["temperature_k"] == pytest.approx(350.0)
     assert heated_wall.data["thermal_boundary"] == "prescribed_temperature"
+    heavy = await study.call_tool(
+        "rocky_set_wall_mass",
+        {"wall_id": result.data["wall_ids"][0], "mass": 12.0, "inertia": [0.2, 0.3, 0.4]},
+    )
+    assert heavy.data["mass_kg"] == pytest.approx(12.0)
+    assert heavy.data["inertia_kg_m2"] == pytest.approx([0.2, 0.3, 0.4])
     assert result.data["walls"][0]["id"] == result.data["wall_ids"][0]
 
 

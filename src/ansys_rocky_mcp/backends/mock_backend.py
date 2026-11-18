@@ -1283,6 +1283,8 @@ class MockWall:
         self._wear_model = "none"
         self._wear_ratio = 0.0
         self._thermal_boundary = "adiabatic"
+        self._mass = 0.0
+        self._inertia = (0.0, 0.0, 0.0)
 
     def GetName(self) -> str:
         """Return the wall name."""
@@ -1371,6 +1373,32 @@ class MockWall:
         if value not in valid:
             raise ValueError(f"Unknown thermal boundary {value!r}. Expected one of {valid}.")
         self._thermal_boundary = value
+
+    def GetBoundaryMass(self, unit: str | None = None) -> float:
+        """Return the boundary mass in kilograms."""
+        if unit not in (None, "kg"):
+            raise ValueError(f"Unsupported mass unit {unit!r}. Expected 'kg'.")
+        return self._mass
+
+    def SetBoundaryMass(self, value: float, unit: str | None = None) -> None:
+        """Set the boundary mass in kilograms."""
+        if unit not in (None, "kg"):
+            raise ValueError(f"Unsupported mass unit {unit!r}. Expected 'kg'.")
+        self._mass = float(value)
+
+    def GetPrincipalMomentOfInertia(self, unit: str | None = None) -> list[float]:
+        """Return the principal inertia. Rocky's token is ``kg.m2``."""
+        if unit not in (None, "kg.m2"):
+            raise ValueError(f"Unsupported inertia unit {unit!r}. Expected 'kg.m2'.")
+        return list(self._inertia)
+
+    def SetPrincipalMomentOfInertia(self, values: list[float], unit: str | None = None) -> None:
+        """Set the principal inertia. Rocky's token is ``kg.m2``."""
+        if unit not in (None, "kg.m2"):
+            raise ValueError(f"Unsupported inertia unit {unit!r}. Expected 'kg.m2'.")
+        if len(values) != 3:
+            raise ValueError("Principal inertia must have three numbers.")
+        self._inertia = tuple(float(value) for value in values)
 
     def SetMaterial(self, value: Any) -> None:
         """Assign a solid material."""
