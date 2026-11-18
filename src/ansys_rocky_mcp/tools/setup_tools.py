@@ -32,6 +32,7 @@ TANGENTIAL_FORCE_MODELS = (
 )
 ROLLING_RESISTANCE_MODELS = ("type_1", "type_3", "none", "custom")
 ADHESION_MODELS = ("none", "constant", "linear", "JKR", "custom")
+RESTITUTION_MODELS = ("constant", "velocity_dependent")
 
 
 def _resolve(session: Any, object_id: str, category: str) -> Any:
@@ -722,6 +723,7 @@ async def rocky_set_contact_models(
     tangential_force: str | None = None,
     rolling_resistance: str | None = None,
     adhesion: str | None = None,
+    restitution_model: str | None = None,
 ) -> dict[str, Any]:
     """Set the Rocky contact models on the study physics.
 
@@ -737,6 +739,8 @@ async def rocky_set_contact_models(
         One of ``type_1``, ``type_3``, ``none``, or ``custom``.
     adhesion : str | None, default: None
         One of ``none``, ``constant``, ``linear``, ``JKR``, or ``custom``.
+    restitution_model : str | None, default: None
+        One of ``constant`` or ``velocity_dependent``.
 
     """
     session = get_session(ctx)
@@ -749,6 +753,11 @@ async def rocky_set_contact_models(
         raise ToolError(
             f"Unknown tangential force model {tangential_force!r}. "
             f"Expected one of {TANGENTIAL_FORCE_MODELS}."
+        )
+    if restitution_model is not None and restitution_model not in RESTITUTION_MODELS:
+        legal = ", ".join(RESTITUTION_MODELS)
+        raise ToolError(
+            f"Unknown restitution model {restitution_model!r}. Expected one of {legal}."
         )
     if adhesion is not None and adhesion not in ADHESION_MODELS:
         raise ToolError(f"Unknown adhesion model {adhesion!r}. Expected one of {ADHESION_MODELS}.")
@@ -767,6 +776,8 @@ async def rocky_set_contact_models(
             physics.SetRollingResistanceModel(rolling_resistance)
         if adhesion is not None:
             physics.SetAdhesionModel(adhesion)
+        if restitution_model is not None:
+            physics.SetRestitutionModel(restitution_model)
     except Exception as exc:
         raise ToolError(f"Could not set the contact models: {exc}") from exc
     return envelope(
@@ -776,6 +787,7 @@ async def rocky_set_contact_models(
         tangential_force=physics.GetTangentialForceModel(),
         rolling_resistance=physics.GetRollingResistanceModel(),
         adhesion=physics.GetAdhesionModel(),
+        restitution_model=physics.GetRestitutionModel(),
     )
 
 

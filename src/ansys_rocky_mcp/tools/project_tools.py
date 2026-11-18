@@ -117,6 +117,9 @@ def describe_study(session: Any) -> dict[str, Any]:
                 if physics is not None
                 else None,
                 "adhesion": _safe(physics.GetAdhesionModel) if physics is not None else None,
+                "restitution_model": _safe(physics.GetRestitutionModel)
+                if physics is not None
+                else None,
             },
             "solver": {
                 "duration_s": _safe(lambda: solver.GetSimulationDuration("s")),
