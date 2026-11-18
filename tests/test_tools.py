@@ -688,11 +688,19 @@ async def test_import_wall_creates_identified_walls(study: Client, tmp_path) -> 
 
     result = await study.call_tool(
         "rocky_import_wall",
-        {"path": str(geometry), "convert_yz": True, "geometry_split_method": "PARTS"},
+        {
+            "path": str(geometry),
+            "convert_yz": True,
+            "geometry_split_method": "PARTS",
+            "normal_angle_tolerance": 12.0,
+            "max_edge_size": 0.05,
+        },
     )
     assert result.data["wall_ids"]
     assert result.data["convert_yz"] is True
     assert result.data["geometry_split_method"] == "PARTS"
+    assert result.data["normal_angle_tolerance"] == pytest.approx(12.0)
+    assert result.data["max_edge_size_m"] == pytest.approx(0.05)
     assert result.data["walls"][0]["id"] == result.data["wall_ids"][0]
 
 

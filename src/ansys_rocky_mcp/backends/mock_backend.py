@@ -924,6 +924,8 @@ class MockWall:
         self._temperature_k = 298.15
         self._convert_yz = False
         self._split_method = "BODY"
+        self._normal_angle = 16.0
+        self._max_edge: float | None = None
 
     def GetName(self) -> str:
         """Return the wall name."""
@@ -944,6 +946,14 @@ class MockWall:
     def GetGeometrySplitMethod(self) -> str:
         """Return the CAD split method used at import."""
         return self._split_method
+
+    def GetNormalAngleTolerance(self) -> float:
+        """Return the CAD mesh angle tolerance in degrees."""
+        return self._normal_angle
+
+    def GetMaxEdgeSize(self) -> float | None:
+        """Return the CAD mesh maximum edge size in meters."""
+        return self._max_edge
 
     def SetMaterial(self, value: Any) -> None:
         """Assign a solid material."""
@@ -2052,6 +2062,10 @@ class MockStudy:
         wall = MockWall(str(path), f"{prefix}")
         wall._convert_yz = bool(convert_yz)
         wall._split_method = str(kwargs.get("geometry_split_method", "BODY"))
+        if "normal_angle_tolerance" in kwargs:
+            wall._normal_angle = float(kwargs["normal_angle_tolerance"])
+        if kwargs.get("max_edge_size") is not None:
+            wall._max_edge = float(kwargs["max_edge_size"])
         self._walls.append(wall)
         return [wall]
 

@@ -90,6 +90,8 @@ async def rocky_import_wall(
     name_prefix: str | None = None,
     convert_yz: bool = False,
     geometry_split_method: str = "BODY",
+    normal_angle_tolerance: float | None = None,
+    max_edge_size: float | None = None,
 ) -> dict[str, Any]:
     """Import a geometry file as a Rocky wall.
 
@@ -105,6 +107,10 @@ async def rocky_import_wall(
         Swap Y and Z on import. Use this for geometry saved Z-up.
     geometry_split_method : str, default: "BODY"
         How a CAD file is split: ``MODEL``, ``ASSEMBLY``, ``PARTS``, or ``BODY``.
+    normal_angle_tolerance : float | None, default: None
+        Maximum mesh angle in degrees for a CAD file.
+    max_edge_size : float | None, default: None
+        Maximum mesh edge length in meters for a CAD file.
 
     """
     session = get_session(ctx)
@@ -124,6 +130,10 @@ async def rocky_import_wall(
             convert_yz=convert_yz,
             custom_name_prefix=name_prefix,
             geometry_split_method=geometry_split_method,
+            normal_angle_tolerance=(
+                16.0 if normal_angle_tolerance is None else normal_angle_tolerance
+            ),
+            max_edge_size=max_edge_size,
         )
     except TypeError:
         # Older Rocky builds do not accept every keyword argument.
@@ -141,6 +151,10 @@ async def rocky_import_wall(
         geometry_split_method=(
             walls[0].GetGeometrySplitMethod() if walls else geometry_split_method
         ),
+        normal_angle_tolerance=(
+            walls[0].GetNormalAngleTolerance() if walls else normal_angle_tolerance
+        ),
+        max_edge_size_m=walls[0].GetMaxEdgeSize() if walls else max_edge_size,
         walls=[
             {"id": ident, "name": getattr(wall, "GetName", lambda: "")()}
             for ident, wall in zip(ids, walls, strict=True)
