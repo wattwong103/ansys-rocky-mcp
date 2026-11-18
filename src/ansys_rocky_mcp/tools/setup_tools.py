@@ -1524,6 +1524,49 @@ async def rocky_set_simulation_settings(
     )
 
 
+_SPH_BOUNDARIES = ("free_slip", "no_slip_laminar", "no_slip_turbulent")
+
+
+async def rocky_set_sph_boundary(
+    ctx: Context,
+    wall_id: str,
+    boundary_type: str,
+    contact_angle_deg: float | None = None,
+) -> dict[str, Any]:
+    """Set how an SPH fluid meets a wall.
+
+    Parameters
+    ----------
+    wall_id : str
+        Identifier of the wall.
+    boundary_type : str
+        ``free_slip``, ``no_slip_laminar``, or ``no_slip_turbulent``.
+    contact_angle_deg : float | None, default: None
+        Surface-tension contact angle in degrees. Rocky's token is ``dega``.
+
+    """
+    if boundary_type not in _SPH_BOUNDARIES:
+        raise ToolError(
+            f"Unknown SPH boundary type {boundary_type!r}. Expected one of {_SPH_BOUNDARIES}."
+        )
+    session = get_session(ctx)
+    require_study(session)
+    wall = _resolve(session, wall_id, "wall")
+    try:
+        wall.SetSphBoundaryType(boundary_type)
+        if contact_angle_deg is not None:
+            wall.SetSurfaceTensionContactAngle(contact_angle_deg, unit="dega")
+    except Exception as exc:
+        raise ToolError(f"Could not set the SPH boundary: {exc}") from exc
+    return envelope(
+        session,
+        message=f"Set the SPH boundary of {wall_id} to {boundary_type}.",
+        wall_id=wall_id,
+        boundary_type=wall.GetSphBoundaryType(),
+        contact_angle_deg=wall.GetSurfaceTensionContactAngle("dega"),
+    )
+
+
 async def rocky_set_output_property(
     ctx: Context,
     names: list[str] | None = None,
@@ -2052,6 +2095,7 @@ def register(mcp: Any) -> None:
     mcp.tool()(rocky_set_domain)
     mcp.tool()(rocky_set_simulation_settings)
     mcp.tool()(rocky_set_output_property)
+    mcp.tool()(rocky_set_sph_boundary)
     mcp.tool()(rocky_set_gravity)
     mcp.tool()(rocky_set_contact_models)
     mcp.tool()(rocky_set_motion)

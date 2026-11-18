@@ -634,9 +634,7 @@ class MockParticle:
             raise ValueError(f"Unsupported energy unit {unit!r}. Expected 'J/kg'.")
         return self._abt10_energy
 
-    def SetAbt10ReferenceMinimumSpecificEnergy(
-        self, value: float, unit: str | None = None
-    ) -> None:
+    def SetAbt10ReferenceMinimumSpecificEnergy(self, value: float, unit: str | None = None) -> None:
         """Set the Abt10 reference energy in joules per kilogram."""
         if unit not in (None, "J/kg"):
             raise ValueError(f"Unsupported energy unit {unit!r}. Expected 'J/kg'.")
@@ -1280,6 +1278,8 @@ class MockWall:
         self._split_method = "BODY"
         self._normal_angle = 16.0
         self._max_edge: float | None = None
+        self._sph_boundary = "free_slip"
+        self._contact_angle_deg = 0.0
 
     def GetName(self) -> str:
         """Return the wall name."""
@@ -1308,6 +1308,33 @@ class MockWall:
     def GetMaxEdgeSize(self) -> float | None:
         """Return the CAD mesh maximum edge size in meters."""
         return self._max_edge
+
+    def GetValidSphBoundaryTypeValues(self) -> list[str]:
+        """Return the SPH boundary types this stand-in accepts."""
+        return ["free_slip", "no_slip_laminar", "no_slip_turbulent"]
+
+    def GetSphBoundaryType(self) -> str:
+        """Return the SPH boundary type."""
+        return self._sph_boundary
+
+    def SetSphBoundaryType(self, value: str) -> None:
+        """Set the SPH boundary type."""
+        valid = self.GetValidSphBoundaryTypeValues()
+        if value not in valid:
+            raise ValueError(f"Unknown SPH boundary type {value!r}. Expected one of {valid}.")
+        self._sph_boundary = value
+
+    def GetSurfaceTensionContactAngle(self, unit: str | None = None) -> float:
+        """Return the contact angle in degrees."""
+        if unit not in (None, "dega"):
+            raise ValueError(f"Unsupported angle unit {unit!r}. Expected 'dega'.")
+        return self._contact_angle_deg
+
+    def SetSurfaceTensionContactAngle(self, value: float, unit: str | None = None) -> None:
+        """Set the contact angle. Rocky's degree token is ``dega``."""
+        if unit not in (None, "dega"):
+            raise ValueError(f"Unsupported angle unit {unit!r}. Expected 'dega'.")
+        self._contact_angle_deg = float(value)
 
     def SetMaterial(self, value: Any) -> None:
         """Assign a solid material."""
