@@ -1559,6 +1559,7 @@ class MockStudy:
     def _new_conveyor(self, label: str) -> MockFeedConveyor:
         """Create a conveyor with the next index."""
         conveyor = MockFeedConveyor(f"{label} {len(self._conveyors) + 1}")
+        conveyor._is_feed = label.startswith("Feed")
         self._conveyors.append(conveyor)
         return conveyor
 
@@ -1590,7 +1591,10 @@ class MockStudy:
             particle = kwargs.get("particle")
         if entry_point is None or particle is None:
             raise ValueError("CreateParticleInlet requires an entry_point and a particle.")
-        if not isinstance(entry_point, (MockSurface, MockFeedConveyor)):
+        if isinstance(entry_point, MockFeedConveyor):
+            if not getattr(entry_point, "_is_feed", False):
+                raise TypeError("A particle inlet entry point must be a feed conveyor.")
+        elif not isinstance(entry_point, MockSurface):
             raise TypeError(
                 "The entry point of a particle inlet must be a surface or a feed conveyor."
             )

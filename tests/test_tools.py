@@ -434,6 +434,16 @@ async def test_inlet_injection_duration_is_stored(study: Client) -> None:
     assert fed.data["conveyor_id"] == conveyor.data["conveyor_id"]
     assert fed.data["surface_id"] is None
     assert fed.data["inlet_id"]
+    receiving = await study.call_tool("rocky_create_receiving_conveyor", {"name": "discharge"})
+    with pytest.raises(ToolError, match="feed conveyor"):
+        await study.call_tool(
+            "rocky_create_inlet",
+            {
+                "conveyor_id": receiving.data["conveyor_id"],
+                "particle_id": particles[0],
+                "mass_flow_rate": 5.0,
+            },
+        )
 
 
 async def test_volumetric_inlet_fills_a_box(study: Client) -> None:
