@@ -1900,6 +1900,10 @@ class MockMotionFrame:
         self._motions: list[dict[str, Any]] = []
         self._applied_to: list[str] = []
         self._period = 0.0
+        self._period_start = 0.0
+        self._period_stop = 0.0
+        self._origin = (0.0, 0.0, 0.0)
+        self._orientation = (0.0, 0.0, 0.0)
 
     def AddRotationMotion(
         self,
@@ -1952,13 +1956,13 @@ class MockMotionFrame:
         """Add a translation motion to the frame."""
         if define_as not in (
             "fixed_velocity",
-            "fixed_acceleration",
-            "initial_and_final_velocities",
+            "initial_velocity_and_acceleration",
+            "initial_and_final_velocity",
         ):
             raise ValueError(
                 f"Unsupported translation definition {define_as!r}. "
-                "Expected 'fixed_velocity', 'fixed_acceleration', "
-                "or 'initial_and_final_velocities'."
+                "Expected 'fixed_velocity', 'initial_velocity_and_acceleration', "
+                "or 'initial_and_final_velocity'."
             )
         if (
             isinstance(acceleration, tuple)
@@ -1992,6 +1996,64 @@ class MockMotionFrame:
         if unit not in (None, "s"):
             raise ValueError(f"Unsupported time unit {unit!r}. Expected 's'.")
         self._period = float(value)
+
+    def GetPeriodicMotionStartTime(self, unit: str | None = None) -> float:
+        """Return when the repeating motion starts, in seconds."""
+        if unit not in (None, "s"):
+            raise ValueError(f"Unsupported time unit {unit!r}. Expected 's'.")
+        return self._period_start
+
+    def SetPeriodicMotionStartTime(self, value: float, unit: str | None = None) -> None:
+        """Set when the repeating motion starts, in seconds."""
+        if unit not in (None, "s"):
+            raise ValueError(f"Unsupported time unit {unit!r}. Expected 's'.")
+        self._period_start = float(value)
+
+    def GetPeriodicMotionStopTime(self, unit: str | None = None) -> float:
+        """Return when the repeating motion stops, in seconds."""
+        if unit not in (None, "s"):
+            raise ValueError(f"Unsupported time unit {unit!r}. Expected 's'.")
+        return self._period_stop
+
+    def SetPeriodicMotionStopTime(self, value: float, unit: str | None = None) -> None:
+        """Set when the repeating motion stops, in seconds."""
+        if unit not in (None, "s"):
+            raise ValueError(f"Unsupported time unit {unit!r}. Expected 's'.")
+        self._period_stop = float(value)
+
+    def GetRelativePosition(self, unit: str | None = None) -> list[float]:
+        """Return the frame position in meters."""
+        if unit not in (None, "m"):
+            raise ValueError(f"Unsupported length unit {unit!r}. Expected 'm'.")
+        return list(self._origin)
+
+    def SetRelativePosition(self, values: list[float], unit: str | None = None) -> None:
+        """Set the frame position. Rocky's default length token is ``m``."""
+        if unit not in (None, "m"):
+            raise ValueError(f"Unsupported length unit {unit!r}. Expected 'm'.")
+        if len(values) != 3:
+            raise ValueError("Relative position must have three numbers.")
+        self._origin = tuple(float(value) for value in values)
+
+    def GetOrientationFromAngles(self, unit: str | None = None) -> list[float]:
+        """Return the frame orientation in degrees."""
+        if unit not in (None, "dega"):
+            raise ValueError(f"Unsupported angle unit {unit!r}. Expected 'dega'.")
+        return list(self._orientation)
+
+    def SetOrientationFromAngles(
+        self,
+        rotation: list[float] | tuple[float, float, float],
+        unit: str | None = None,
+        local_angles: bool = True,
+        order: str = "XYZ",
+    ) -> None:
+        """Set the frame orientation. Rocky's default angle token is ``dega``."""
+        if unit not in (None, "dega"):
+            raise ValueError(f"Unsupported angle unit {unit!r}. Expected 'dega'.")
+        if len(rotation) != 3:
+            raise ValueError("Orientation must have three numbers.")
+        self._orientation = tuple(float(value) for value in rotation)
 
     def ApplyTo(self, obj: Any) -> None:
         """Apply the frame to an object."""

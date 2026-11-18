@@ -93,22 +93,24 @@ def _angular_acceleration_rad_s2(values: list[float], unit: str) -> tuple[float,
     return tuple(float(value) * scale for value in values)  # type: ignore[return-value]
 
 
-_TRANSLATION_DEFINITIONS = (
-    "fixed_velocity",
-    "fixed_acceleration",
-    "initial_and_final_velocities",
-)
+_TRANSLATION_DEFINITIONS = {
+    "fixed_velocity": "fixed_velocity",
+    "initial_velocity_and_acceleration": "initial_velocity_and_acceleration",
+    "fixed_acceleration": "initial_velocity_and_acceleration",
+    "initial_and_final_velocity": "initial_and_final_velocity",
+    "initial_and_final_velocities": "initial_and_final_velocity",
+}
 
 
 def _translation_definition(define_as: str | None, has_acceleration: bool, has_final: bool) -> str:
     """Pick the Rocky translation definition so acceleration is not ignored."""
     if define_as is not None:
-        token = define_as.strip().lower()
-        if token not in _TRANSLATION_DEFINITIONS:
+        token = _TRANSLATION_DEFINITIONS.get(define_as.strip().lower())
+        if token is None:
             raise ToolError(
                 f"Unknown translation definition {define_as!r}. "
-                "Expected 'fixed_velocity', 'fixed_acceleration', "
-                "or 'initial_and_final_velocities'."
+                "Expected 'fixed_velocity', 'initial_velocity_and_acceleration', "
+                "or 'initial_and_final_velocity'."
             )
         return token
     if has_acceleration and has_final:
@@ -116,9 +118,9 @@ def _translation_definition(define_as: str | None, has_acceleration: bool, has_f
             "Set 'define_as' when both 'linear_acceleration' and 'final_velocity' are given."
         )
     if has_final:
-        return "initial_and_final_velocities"
+        return "initial_and_final_velocity"
     if has_acceleration:
-        return "fixed_acceleration"
+        return "initial_velocity_and_acceleration"
     return "fixed_velocity"
 
 
@@ -1795,10 +1797,14 @@ async def rocky_set_motion(
     linear_acceleration: list[float] | None = None,
     final_velocity: list[float] | None = None,
     define_as: str | None = None,
+    origin: list[float] | None = None,
+    orientation_deg: list[float] | None = None,
     unit: str = "rad/s",
     start_time: float = 0.0,
     stop_time: float = 1000.0,
     period: float | None = None,
+    period_start: float | None = None,
+    period_stop: float | None = None,
 ) -> dict[str, Any]:
     """Apply a rotation or translation motion to one or more study objects.
 
@@ -1821,13 +1827,18 @@ async def rocky_set_motion(
     linear_acceleration : list[float] | None, default: None
         Linear acceleration ``[ax, ay, az]`` in meters per second squared.
         When this is set and ``define_as`` is omitted, the motion is
-        ``fixed_acceleration`` so Rocky uses the acceleration.
+        ``initial_velocity_and_acceleration`` so Rocky uses the acceleration.
     final_velocity : list[float] | None, default: None
         Final velocity ``[vx, vy, vz]`` in meters per second. When this is set
-        and ``define_as`` is omitted, the motion is ``initial_and_final_velocities``.
+        and ``define_as`` is omitted, the motion is ``initial_and_final_velocity``.
     define_as : str | None, default: None
         How Rocky defines the translation: ``fixed_velocity``,
-        ``fixed_acceleration``, or ``initial_and_final_velocities``.
+        ``initial_velocity_and_acceleration``, or ``initial_and_final_velocity``.
+    origin : list[float] | None, default: None
+        Frame position ``[x, y, z]`` in meters. This is the point the rotation
+        is taken about. Rocky's token is ``m``.
+    orientation_deg : list[float] | None, default: None
+        Frame angles ``[x, y, z]`` in degrees. Rocky's token is ``dega``.
     unit : str, default: "rad/s"
         Unit of the angular velocity. Rocky stores ``rad/s``. ``deg/s`` and
         ``dega/s`` are converted before the call. Translations always use ``m/s``.
@@ -1837,6 +1848,10 @@ async def rocky_set_motion(
         Stop time of the motion in seconds.
     period : float | None, default: None
         Repeat period in seconds. Rocky's token is ``s``.
+    period_start : float | None, default: None
+        Time in seconds when the repeating motion starts.
+    period_stop : float | None, default: None
+        Time in seconds when the repeating motion stops.
 
     """
     session = get_session(ctx)
@@ -1855,7 +1870,13 @@ async def rocky_set_motion(
 
     radians: tuple[float, float, float] | None = None
     acceleration: tuple[float, float, float] | None = None
+    placed = _three_vector(origin, "origin")
+    angles = _three_vector(orientation_deg, "orientation_deg")
     try:
+        if placed is not None:
+            frame.SetRelativePosition(placed, unit="m")
+        if angles is not None:
+            frame.SetOrientationFromAngles(tuple(angles), unit="dega")
         if kind == "rotation":
             if angular_velocity is None:
                 raise ToolError("A rotation requires 'angular_velocity'.")
@@ -1895,7 +1916,6 @@ async def rocky_set_motion(
                     "m/s2",
                 ),
                 define_as=chosen,
-                initial_velocity=(tuple(float(value) for value in linear_velocity), "m/s"),
                 final_velocity=(
                     final if final is not None else (0.0, 0.0, 0.0),
                     "m/s",
@@ -1903,6 +1923,10 @@ async def rocky_set_motion(
             )
         if period is not None:
             frame.SetPeriodicMotionPeriod(period, unit="s")
+        if period_start is not None:
+            frame.SetPeriodicMotionStartTime(period_start, unit="s")
+        if period_stop is not None:
+            frame.SetPeriodicMotionStopTime(period_stop, unit="s")
     except ToolError:
         raise
     except Exception as exc:
@@ -1937,7 +1961,11 @@ async def rocky_set_motion(
             list(acceleration) if kind == "translation" and acceleration is not None else None
         ),
         define_as=chosen if kind == "translation" else None,
+        origin_m=frame.GetRelativePosition("m") if placed is not None else None,
+        orientation_deg=frame.GetOrientationFromAngles("dega") if angles is not None else None,
         period_s=frame.GetPeriodicMotionPeriod("s"),
+        period_start_s=frame.GetPeriodicMotionStartTime("s") if period_start is not None else None,
+        period_stop_s=frame.GetPeriodicMotionStopTime("s") if period_stop is not None else None,
     )
 
 
