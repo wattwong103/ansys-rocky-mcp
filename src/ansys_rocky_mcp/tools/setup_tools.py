@@ -77,6 +77,22 @@ def _angular_velocity_rad_s(values: list[float], unit: str) -> tuple[float, floa
     return tuple(float(value) * scale for value in values)  # type: ignore[return-value]
 
 
+def _angular_acceleration_rad_s2(values: list[float], unit: str) -> tuple[float, float, float]:
+    """Return an angular acceleration in rad/s2. Degrees per second squared are converted."""
+    if len(values) != 3:
+        raise ToolError("angular_acceleration must be three numbers.")
+    if unit == "rad/s2":
+        scale = 1.0
+    elif unit in ("deg/s2", "dega/s2"):
+        scale = math.pi / 180.0
+    else:
+        raise ToolError(
+            "Unknown angular acceleration unit "
+            f"{unit!r}. Expected 'rad/s2', 'deg/s2', or 'dega/s2'."
+        )
+    return tuple(float(value) * scale for value in values)  # type: ignore[return-value]
+
+
 def _modulus_unit(unit: str) -> str:
     """Return Rocky's Young's modulus token. ``Pa`` is the same unit as ``N/m2``."""
     if unit in ("N/m2", "Pa", "N/m^2"):
@@ -1744,6 +1760,8 @@ async def rocky_set_motion(
     kind: str,
     targets: list[str],
     angular_velocity: list[float] | None = None,
+    angular_acceleration: list[float] | None = None,
+    acceleration_unit: str = "rad/s2",
     linear_velocity: list[float] | None = None,
     unit: str = "rad/s",
     start_time: float = 0.0,
@@ -1761,6 +1779,11 @@ async def rocky_set_motion(
         ``["surface_1"]``.
     angular_velocity : list[float] | None, default: None
         Angular velocity vector as ``[wx, wy, wz]``. Required for a rotation.
+    angular_acceleration : list[float] | None, default: None
+        Angular acceleration ``[ax, ay, az]``. ``deg/s2`` and ``dega/s2`` are
+        converted to ``rad/s2``.
+    acceleration_unit : str, default: "rad/s2"
+        Unit of ``angular_acceleration``.
     linear_velocity : list[float] | None, default: None
         Linear velocity vector as ``[vx, vy, vz]``. Required for a translation.
     unit : str, default: "rad/s"
@@ -1789,15 +1812,22 @@ async def rocky_set_motion(
         raise ToolError(f"Could not create a motion frame: {exc}") from exc
 
     radians: tuple[float, float, float] | None = None
+    acceleration: tuple[float, float, float] | None = None
     try:
         if kind == "rotation":
             if angular_velocity is None:
                 raise ToolError("A rotation requires 'angular_velocity'.")
             radians = _angular_velocity_rad_s(angular_velocity, unit)
+            if angular_acceleration is not None:
+                acceleration = _angular_acceleration_rad_s2(angular_acceleration, acceleration_unit)
             frame.AddRotationMotion(
                 start_time=(start_time, "s"),
                 stop_time=(stop_time, "s"),
                 angular_velocity=(radians, "rad/s"),
+                angular_acceleration=(
+                    acceleration if acceleration is not None else (0.0, 0.0, 0.0),
+                    "rad/s2",
+                ),
             )
         else:
             if linear_velocity is None:
@@ -1836,6 +1866,7 @@ async def rocky_set_motion(
         kind=kind,
         targets=applied,
         angular_velocity_rad_s=list(radians) if kind == "rotation" else None,
+        angular_acceleration_rad_s2=list(acceleration) if acceleration is not None else None,
         period_s=frame.GetPeriodicMotionPeriod("s"),
     )
 

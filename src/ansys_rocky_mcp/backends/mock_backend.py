@@ -1919,6 +1919,16 @@ class MockMotionFrame:
             raise ValueError(
                 f"Unsupported angular velocity unit {angular_velocity[1]!r}. Expected 'rad/s'."
             )
+        if (
+            isinstance(angular_acceleration, tuple)
+            and len(angular_acceleration) == 2
+            and isinstance(angular_acceleration[1], str)
+            and angular_acceleration[1] != "rad/s2"
+        ):
+            raise ValueError(
+                "Unsupported angular acceleration unit "
+                f"{angular_acceleration[1]!r}. Expected 'rad/s2'."
+            )
         motion = {
             "kind": "rotation",
             "start_time": list(start_time) if isinstance(start_time, tuple) else start_time,

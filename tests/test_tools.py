@@ -728,9 +728,12 @@ async def test_motion_is_applied_to_the_targets(study: Client) -> None:
             "targets": [surfaces[0]],
             "angular_velocity": [0.0, 180.0, 0.0],
             "unit": "deg/s",
+            "angular_acceleration": [0.0, 180.0, 0.0],
+            "acceleration_unit": "deg/s2",
         },
     )
     assert in_degrees.data["angular_velocity_rad_s"] == pytest.approx([0.0, math.pi, 0.0])
+    assert in_degrees.data["angular_acceleration_rad_s2"] == pytest.approx([0.0, math.pi, 0.0])
     assert motion.data["kind"] == "rotation"
     assert motion.data["targets"] == [surfaces[0]]
 
