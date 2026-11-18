@@ -1748,6 +1748,7 @@ async def rocky_set_motion(
     unit: str = "rad/s",
     start_time: float = 0.0,
     stop_time: float = 1000.0,
+    period: float | None = None,
 ) -> dict[str, Any]:
     """Apply a rotation or translation motion to one or more study objects.
 
@@ -1769,6 +1770,8 @@ async def rocky_set_motion(
         Start time of the motion in seconds.
     stop_time : float, default: 1000.0
         Stop time of the motion in seconds.
+    period : float | None, default: None
+        Repeat period in seconds. Rocky's token is ``s``.
 
     """
     session = get_session(ctx)
@@ -1804,6 +1807,8 @@ async def rocky_set_motion(
                 stop_time=(stop_time, "s"),
                 velocity=(tuple(linear_velocity), "m/s"),
             )
+        if period is not None:
+            frame.SetPeriodicMotionPeriod(period, unit="s")
     except ToolError:
         raise
     except Exception as exc:
@@ -1831,6 +1836,7 @@ async def rocky_set_motion(
         kind=kind,
         targets=applied,
         angular_velocity_rad_s=list(radians) if kind == "rotation" else None,
+        period_s=frame.GetPeriodicMotionPeriod("s"),
     )
 
 

@@ -1899,6 +1899,7 @@ class MockMotionFrame:
         """Initialize the frame."""
         self._motions: list[dict[str, Any]] = []
         self._applied_to: list[str] = []
+        self._period = 0.0
 
     def AddRotationMotion(
         self,
@@ -1950,6 +1951,18 @@ class MockMotionFrame:
         }
         self._motions.append(motion)
         return motion
+
+    def GetPeriodicMotionPeriod(self, unit: str | None = None) -> float:
+        """Return the motion repeat period in seconds."""
+        if unit not in (None, "s"):
+            raise ValueError(f"Unsupported time unit {unit!r}. Expected 's'.")
+        return self._period
+
+    def SetPeriodicMotionPeriod(self, value: float, unit: str | None = None) -> None:
+        """Set the motion repeat period in seconds."""
+        if unit not in (None, "s"):
+            raise ValueError(f"Unsupported time unit {unit!r}. Expected 's'.")
+        self._period = float(value)
 
     def ApplyTo(self, obj: Any) -> None:
         """Apply the frame to an object."""
