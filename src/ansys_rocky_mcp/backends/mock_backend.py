@@ -1098,6 +1098,22 @@ class MockDomainSettings:
         self._divisions = count
 
 
+class MockExecutionSettings:
+    """Stand-in for local or MPI processor settings."""
+
+    def __init__(self, processors: int = 1) -> None:
+        """Initialize the processor count."""
+        self._processors = processors
+
+    def GetNumberOfProcessors(self) -> int:
+        """Return the processor count for this execution path."""
+        return self._processors
+
+    def SetNumberOfProcessors(self, value: int | str) -> None:
+        """Set the processor count for this execution path."""
+        self._processors = int(value)
+
+
 class MockSimulatorRun:
     """Stand-in for the Rocky solver / simulator run object."""
 
@@ -1106,6 +1122,8 @@ class MockSimulatorRun:
         self._duration = DEFAULT_DURATION
         self._time_interval = DEFAULT_DURATION / 20.0
         self._processors = 1
+        self._local_settings = MockExecutionSettings(1)
+        self._mpi_settings = MockExecutionSettings(1)
         self._curves_frequency = 1
         self._execution_mode = "local"
         self._gpu = 0
@@ -1144,6 +1162,14 @@ class MockSimulatorRun:
     def SetNumberOfProcessors(self, value: int | str) -> None:
         """Set the number of processors."""
         self._processors = int(value)
+
+    def GetLocalExecutionSettings(self) -> MockExecutionSettings:
+        """Return the local execution settings."""
+        return self._local_settings
+
+    def GetMpiSettings(self) -> MockExecutionSettings:
+        """Return the MPI execution settings."""
+        return self._mpi_settings
 
     def GetSolverCurvesFrequency(self) -> int:
         """Return how often solver curves are stored."""

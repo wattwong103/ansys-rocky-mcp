@@ -1105,6 +1105,17 @@ async def rocky_set_domain(
     )
 
 
+def _settings_processors(solver: Any, getter_name: str) -> int | None:
+    """Read a processor count from local or MPI settings when Rocky exposes it."""
+    getter = getattr(solver, getter_name, None)
+    if getter is None:
+        return None
+    reader = getattr(getter(), "GetNumberOfProcessors", None)
+    if reader is None:
+        return None
+    return int(reader())
+
+
 async def rocky_set_simulation_settings(
     ctx: Context,
     duration: float | None = None,
@@ -1165,7 +1176,18 @@ async def rocky_set_simulation_settings(
         if time_interval is not None:
             solver.SetTimeInterval(time_interval, unit=unit)
         if processors is not None:
-            solver.SetNumberOfProcessors(int(processors))
+            if processors < 1:
+                raise ToolError("processors must be at least 1.")
+            count = int(processors)
+            solver.SetNumberOfProcessors(count)
+            for settings_name in ("GetLocalExecutionSettings", "GetMpiSettings"):
+                settings_getter = getattr(solver, settings_name, None)
+                if settings_getter is None:
+                    continue
+                settings = settings_getter()
+                settings_setter = getattr(settings, "SetNumberOfProcessors", None)
+                if settings_setter is not None:
+                    settings_setter(count)
         if execution_mode is not None:
             solver.SetExecutionMode(execution_mode)
         if curves_frequency is not None:
@@ -1203,6 +1225,8 @@ async def rocky_set_simulation_settings(
         duration_s=solver.GetSimulationDuration("s"),
         time_interval_s=solver.GetTimeInterval("s"),
         processors=solver.GetNumberOfProcessors(),
+        local_processors=_settings_processors(solver, "GetLocalExecutionSettings"),
+        mpi_processors=_settings_processors(solver, "GetMpiSettings"),
         execution_mode=solver.GetExecutionMode(),
         curves_frequency=solver.GetSolverCurvesFrequency(),
         timestep_model=solver.GetTimestepModel(),

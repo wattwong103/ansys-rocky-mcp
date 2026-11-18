@@ -260,6 +260,10 @@ async def test_domain_and_solver_settings_are_applied(study: Client) -> None:
     assert timed.data["timestep_model"] == "constant"
     assert timed.data["fixed_timestep_s"] == pytest.approx(1.0e-5)
     assert timed.data["use_fixed_timestep"] is True
+    cores = await study.call_tool("rocky_set_simulation_settings", {"processors": 4})
+    assert cores.data["processors"] == 4
+    assert cores.data["local_processors"] == 4
+    assert cores.data["mpi_processors"] == 4
     gpu = await study.call_tool(
         "rocky_set_simulation_settings",
         {"processing_unit": "GPU", "target_gpus": [0], "gpu_slicing_direction": "Y"},
