@@ -800,10 +800,12 @@ async def test_import_wall_creates_identified_walls(study: Client, tmp_path) -> 
             "wall_id": result.data["wall_ids"][0],
             "boundary_type": "no_slip_turbulent",
             "contact_angle_deg": 30.0,
+            "capillary_friction": 0.3,
         },
     )
     assert boundary.data["boundary_type"] == "no_slip_turbulent"
     assert boundary.data["contact_angle_deg"] == pytest.approx(30.0)
+    assert boundary.data["capillary_friction"] == pytest.approx(0.3)
     wear = await study.call_tool(
         "rocky_set_wall_wear",
         {"wall_id": result.data["wall_ids"][0], "volume_shear_work_ratio": 1.0e-12},

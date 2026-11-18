@@ -1290,6 +1290,7 @@ class MockWall:
         self._translation = (0.0, 0.0, 0.0)
         self._rotation = (0.0, 0.0, 0.0)
         self._periodic_replication = False
+        self._capillary_friction = 0.0
 
     def GetName(self) -> str:
         """Return the wall name."""
@@ -1470,6 +1471,14 @@ class MockWall:
     def SetPeriodicReplication(self, value: bool) -> None:
         """Set whether the wall is copied across periodic boundaries."""
         self._periodic_replication = bool(value)
+
+    def GetCapillaryFrictionCoefficient(self) -> float:
+        """Return the capillary friction coefficient."""
+        return self._capillary_friction
+
+    def SetCapillaryFrictionCoefficient(self, value: float) -> None:
+        """Set the capillary friction coefficient."""
+        self._capillary_friction = float(value)
 
     def SetMaterial(self, value: Any) -> None:
         """Assign a solid material."""

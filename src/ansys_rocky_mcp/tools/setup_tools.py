@@ -1648,6 +1648,7 @@ async def rocky_set_sph_boundary(
     wall_id: str,
     boundary_type: str,
     contact_angle_deg: float | None = None,
+    capillary_friction: float | None = None,
 ) -> dict[str, Any]:
     """Set how an SPH fluid meets a wall.
 
@@ -1659,6 +1660,8 @@ async def rocky_set_sph_boundary(
         ``free_slip``, ``no_slip_laminar``, or ``no_slip_turbulent``.
     contact_angle_deg : float | None, default: None
         Surface-tension contact angle in degrees. Rocky's token is ``dega``.
+    capillary_friction : float | None, default: None
+        Friction coefficient for the capillary force at the wall.
 
     """
     if boundary_type not in _SPH_BOUNDARIES:
@@ -1672,6 +1675,8 @@ async def rocky_set_sph_boundary(
         wall.SetSphBoundaryType(boundary_type)
         if contact_angle_deg is not None:
             wall.SetSurfaceTensionContactAngle(contact_angle_deg, unit="dega")
+        if capillary_friction is not None:
+            wall.SetCapillaryFrictionCoefficient(capillary_friction)
     except Exception as exc:
         raise ToolError(f"Could not set the SPH boundary: {exc}") from exc
     return envelope(
@@ -1680,6 +1685,7 @@ async def rocky_set_sph_boundary(
         wall_id=wall_id,
         boundary_type=wall.GetSphBoundaryType(),
         contact_angle_deg=wall.GetSurfaceTensionContactAngle("dega"),
+        capillary_friction=wall.GetCapillaryFrictionCoefficient(),
     )
 
 
