@@ -1235,6 +1235,8 @@ class MockFeedConveyor:
         self._face_width = 0.3
         self._alignment_rad = 0.0
         self._incline_rad = 0.0
+        self._horizontal_offset = 0.0
+        self._vertical_offset = 0.0
         self._material: Any = None
 
     def GetName(self) -> str:
@@ -1428,6 +1430,22 @@ class MockFeedConveyor:
         if unit in ("deg", "dega"):
             return math.degrees(self._incline_rad)
         return self._incline_rad
+
+    def SetHorizontalOffset(self, value: float, unit: str | None = None) -> None:
+        """Set the horizontal offset in meters."""
+        self._horizontal_offset = float(value)
+
+    def GetHorizontalOffset(self, unit: str | None = None) -> float:
+        """Return the horizontal offset in meters."""
+        return self._horizontal_offset
+
+    def SetVerticalOffset(self, value: float, unit: str | None = None) -> None:
+        """Set the vertical offset in meters."""
+        self._vertical_offset = float(value)
+
+    def GetVerticalOffset(self, unit: str | None = None) -> float:
+        """Return the vertical offset in meters."""
+        return self._vertical_offset
 
     def SetMaterial(self, value: Any) -> None:
         """Assign a solid material to the belt."""

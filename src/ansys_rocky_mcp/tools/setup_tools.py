@@ -207,6 +207,8 @@ async def rocky_create_feed_conveyor(
     wall_thickness: float | None = None,
     face_width: float | None = None,
     alignment_deg: float | None = None,
+    horizontal_offset: float | None = None,
+    vertical_offset: float | None = None,
     name: str | None = None,
 ) -> dict[str, Any]:
     """Create a Rocky feed conveyor.
@@ -253,6 +255,10 @@ async def rocky_create_feed_conveyor(
         Pulley face width in meters. Feed conveyors only.
     alignment_deg : float | None, default: None
         Alignment angle in degrees. Rocky stores this angle as ``dega``.
+    horizontal_offset : float | None, default: None
+        Horizontal offset in meters.
+    vertical_offset : float | None, default: None
+        Vertical offset in meters.
     name : str | None, default: None
         Conveyor name.
 
@@ -281,6 +287,8 @@ async def rocky_create_feed_conveyor(
         wall_thickness=wall_thickness,
         face_width=face_width,
         alignment_deg=alignment_deg,
+        horizontal_offset=horizontal_offset,
+        vertical_offset=vertical_offset,
     )
 
 
@@ -308,6 +316,8 @@ async def _create_conveyor(
     wall_thickness: float | None = None,
     face_width: float | None = None,
     alignment_deg: float | None = None,
+    horizontal_offset: float | None = None,
+    vertical_offset: float | None = None,
 ) -> dict[str, Any]:
     """Create a feed or receiving conveyor."""
     session = get_session(ctx)
@@ -359,6 +369,10 @@ async def _create_conveyor(
             conveyor.SetFaceWidth(face_width, unit="m")
         if alignment_deg is not None:
             conveyor.SetAlignmentAngle(alignment_deg, unit="dega")
+        if horizontal_offset is not None:
+            conveyor.SetHorizontalOffset(horizontal_offset, unit="m")
+        if vertical_offset is not None:
+            conveyor.SetVerticalOffset(vertical_offset, unit="m")
     except ToolError:
         raise
     except Exception as exc:
@@ -397,6 +411,8 @@ async def _create_conveyor(
         idler_diameter_m=conveyor.GetDiameter("m"),
         wall_thickness_m=conveyor.GetWallThickness("m"),
         face_width_m=conveyor.GetFaceWidth("m"),
+        horizontal_offset_m=conveyor.GetHorizontalOffset("m"),
+        vertical_offset_m=conveyor.GetVerticalOffset("m"),
     )
 
 
@@ -413,6 +429,8 @@ async def rocky_create_receiving_conveyor(
     triangle_size: float | None = None,
     belt_thickness: float | None = None,
     alignment_deg: float | None = None,
+    horizontal_offset: float | None = None,
+    vertical_offset: float | None = None,
     name: str | None = None,
 ) -> dict[str, Any]:
     """Create a Rocky receiving conveyor.
@@ -434,6 +452,8 @@ async def rocky_create_receiving_conveyor(
         triangle_size=triangle_size,
         belt_thickness=belt_thickness,
         alignment_deg=alignment_deg,
+        horizontal_offset=horizontal_offset,
+        vertical_offset=vertical_offset,
     )
 
 
