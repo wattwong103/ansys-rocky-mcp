@@ -948,6 +948,8 @@ class MockParticleInlet:
         self._uz = 0.0
         self._stop_all = False
         self._force_packing = False
+        self._sph_temperature = 298.15
+        self._sph_injection = False
 
     def GetName(self) -> str:
         """Return the inlet name."""
@@ -1107,6 +1109,24 @@ class MockParticleInlet:
     def SetForcePacking(self, value: bool) -> None:
         """Set whether the inlet force-packs particles."""
         self._force_packing = bool(value)
+
+    def GetSphInjectionEnabled(self) -> bool:
+        """Return whether SPH injection is enabled."""
+        return self._sph_injection
+
+    def SetSphInjectionEnabled(self, value: bool) -> None:
+        """Enable or disable SPH injection."""
+        self._sph_injection = bool(value)
+
+    def GetSphTemperature(self, unit: str | None = None) -> float:
+        """Return the SPH temperature in kelvin."""
+        _require_kelvin(unit)
+        return self._sph_temperature
+
+    def SetSphTemperature(self, value: float, unit: str | None = None) -> None:
+        """Set the SPH temperature in kelvin."""
+        _require_kelvin(unit)
+        self._sph_temperature = float(value)
 
 
 class MockVolumetricInlet:

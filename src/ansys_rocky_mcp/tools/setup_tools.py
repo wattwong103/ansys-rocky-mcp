@@ -908,6 +908,7 @@ async def rocky_create_inlet(
     velocity_z: float | None = None,
     stop_all: bool | None = None,
     force_packing: bool | None = None,
+    sph_temperature: float | None = None,
 ) -> dict[str, Any]:
     """Create a particle inlet on a surface or a feed conveyor.
 
@@ -946,6 +947,8 @@ async def rocky_create_inlet(
         Stop every particle at ``stop_time``. A stop time turns this on.
     force_packing : bool | None, default: None
         Pack particles into the inlet even when they overlap.
+    sph_temperature : float | None, default: None
+        SPH fluid temperature in kelvin. Setting it turns SPH injection on.
 
     """
     session = get_session(ctx)
@@ -984,6 +987,9 @@ async def rocky_create_inlet(
             inlet.SetStopAllAtStopTime(stop_all)
         if force_packing is not None:
             inlet.SetForcePacking(force_packing)
+        if sph_temperature is not None:
+            inlet.SetSphTemperature(sph_temperature, unit="K")
+            inlet.SetSphInjectionEnabled(True)
         if target_velocity is not None:
             inlet.SetTargetNormalVelocity(target_velocity, unit="m/s")
         if velocity_x is not None:
@@ -1028,6 +1034,8 @@ async def rocky_create_inlet(
         velocity_z_m_s=inlet.GetUzLocal("m/s"),
         stop_all=bool(inlet.GetStopAllAtStopTime()),
         force_packing=bool(inlet.GetForcePacking()),
+        sph_temperature_k=inlet.GetSphTemperature("K"),
+        sph_injection=bool(inlet.GetSphInjectionEnabled()),
     )
 
 
