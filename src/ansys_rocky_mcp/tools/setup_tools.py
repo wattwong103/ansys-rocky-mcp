@@ -13,6 +13,7 @@ from ansys_rocky_mcp.tools._common import envelope, get_session, require_study
 __all__ = ["register"]
 
 SURFACE_KINDS = ("circular", "rectangular")
+DOMAIN_TYPES = ("NONE", "CARTESIAN", "CYLINDRICAL")
 EXECUTION_MODES = ("local", "single_mpi", "multi_mpi")
 SIZE_DISTRIBUTIONS = ("gaudin_schumann", "incomplete_beta", "custom")
 NORMAL_FORCE_MODELS = (
@@ -363,6 +364,7 @@ async def rocky_set_domain(
     min_values: list[float] | None = None,
     max_values: list[float] | None = None,
     use_boundary_limits: bool | None = None,
+    domain_type: str | None = None,
     unit: str = "m",
 ) -> dict[str, Any]:
     """Configure the Rocky domain limits.
@@ -375,12 +377,16 @@ async def rocky_set_domain(
         Maximum domain coordinates as ``[x, y, z]``.
     use_boundary_limits : bool | None, default: None
         Whether Rocky uses the boundary limits of the imported geometry.
+    domain_type : str | None, default: None
+        One of ``NONE``, ``CARTESIAN``, or ``CYLINDRICAL``.
     unit : str, default: "m"
         Unit of the domain coordinates.
 
     """
     session = get_session(ctx)
     study = require_study(session)
+    if domain_type is not None and domain_type not in DOMAIN_TYPES:
+        raise ToolError(f"Unknown domain type {domain_type!r}. Expected one of {DOMAIN_TYPES}.")
     domain = study.GetDomainSettings()
     try:
         if use_boundary_limits is True:
@@ -391,6 +397,8 @@ async def rocky_set_domain(
             domain.SetCoordinateLimitsMinValues(list(min_values), unit=unit)
         if max_values is not None:
             domain.SetCoordinateLimitsMaxValues(list(max_values), unit=unit)
+        if domain_type is not None:
+            domain.SetDomainType(domain_type)
     except Exception as exc:
         raise ToolError(f"Could not configure the domain: {exc}") from exc
 
@@ -400,6 +408,7 @@ async def rocky_set_domain(
         min_m=list(domain.GetCoordinateLimitsMinValues("m")),
         max_m=list(domain.GetCoordinateLimitsMaxValues("m")),
         use_boundary_limits=bool(domain.GetUseBoundaryLimits()),
+        domain_type=domain.GetDomainType(),
     )
 
 

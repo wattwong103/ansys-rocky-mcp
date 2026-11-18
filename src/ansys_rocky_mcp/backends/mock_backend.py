@@ -584,7 +584,7 @@ class MockDomainSettings:
         self._use_boundary_limits = True
         self._min = (-DEFAULT_DOMAIN_LENGTH / 2.0, -1.0, -1.0)
         self._max = (DEFAULT_DOMAIN_LENGTH / 2.0, 1.0, 1.0)
-        self._domain_type = "rectangular"
+        self._domain_type = "NONE"
 
     def GetUseBoundaryLimits(self) -> bool:
         """Return whether boundary limits are used."""

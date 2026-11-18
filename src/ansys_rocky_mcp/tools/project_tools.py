@@ -94,6 +94,7 @@ def describe_study(session: Any) -> dict[str, Any]:
                 "min_m": _safe(lambda: list(domain.GetCoordinateLimitsMinValues("m")), []),
                 "max_m": _safe(lambda: list(domain.GetCoordinateLimitsMaxValues("m")), []),
                 "use_boundary_limits": _safe(domain.GetUseBoundaryLimits),
+                "domain_type": _safe(domain.GetDomainType),
             }
             if domain is not None
             else {},
