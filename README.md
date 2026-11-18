@@ -173,7 +173,7 @@ startup_timeout_sec = 90
 | `rocky_import_wall` | Import a geometry file as a wall. |
 | `rocky_create_surface` | Create a circular or rectangular surface. |
 | `rocky_create_feed_conveyor` | Create a feed conveyor with belt motion, loading length, drop box, skirtboard, and transition. |
-| `rocky_create_receiving_conveyor` | Create a receiving conveyor with belt motion, profile, and mesh size. |
+| `rocky_create_receiving_conveyor` | Create a receiving conveyor with belt motion, profile, mesh size, and thickness. |
 | `rocky_create_particle` | Create a particle definition (shape, sieve size). |
 | `rocky_set_size_distribution` | Set a particle's size distribution, minimum size, and surface energy. |
 | `rocky_create_material` | Create a solid material and assign it to a particle, wall, or conveyor. |

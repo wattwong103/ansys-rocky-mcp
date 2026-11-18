@@ -202,6 +202,7 @@ async def rocky_create_feed_conveyor(
     skirtboard_height: float | None = None,
     transition_length: float | None = None,
     triangle_size: float | None = None,
+    belt_thickness: float | None = None,
     name: str | None = None,
 ) -> dict[str, Any]:
     """Create a Rocky feed conveyor.
@@ -238,6 +239,8 @@ async def rocky_create_feed_conveyor(
         Transition length in meters. Feed conveyors only.
     triangle_size : float | None, default: None
         Belt mesh triangle size in meters.
+    belt_thickness : float | None, default: None
+        Belt thickness in meters.
     name : str | None, default: None
         Conveyor name.
 
@@ -261,6 +264,7 @@ async def rocky_create_feed_conveyor(
         skirtboard_height=skirtboard_height,
         transition_length=transition_length,
         triangle_size=triangle_size,
+        belt_thickness=belt_thickness,
     )
 
 
@@ -283,6 +287,7 @@ async def _create_conveyor(
     skirtboard_height: float | None = None,
     transition_length: float | None = None,
     triangle_size: float | None = None,
+    belt_thickness: float | None = None,
 ) -> dict[str, Any]:
     """Create a feed or receiving conveyor."""
     session = get_session(ctx)
@@ -324,6 +329,8 @@ async def _create_conveyor(
             conveyor.SetTransitionLength(transition_length, unit="m")
         if triangle_size is not None:
             conveyor.SetTriangleSize(triangle_size, unit="m")
+        if belt_thickness is not None:
+            conveyor.SetBeltThickness(belt_thickness, unit="m")
     except ToolError:
         raise
     except Exception as exc:
@@ -357,6 +364,7 @@ async def _create_conveyor(
         skirtboard_height_m=conveyor.GetSkirtboardHeight("m"),
         transition_length_m=conveyor.GetTransitionLength("m"),
         triangle_size_m=conveyor.GetTriangleSize("m"),
+        belt_thickness_m=conveyor.GetBeltThickness("m"),
     )
 
 
@@ -371,6 +379,7 @@ async def rocky_create_receiving_conveyor(
     deceleration_period: float | None = None,
     belt_profile: str | None = None,
     triangle_size: float | None = None,
+    belt_thickness: float | None = None,
     name: str | None = None,
 ) -> dict[str, Any]:
     """Create a Rocky receiving conveyor.
@@ -390,6 +399,7 @@ async def rocky_create_receiving_conveyor(
         deceleration_period=deceleration_period,
         belt_profile=belt_profile,
         triangle_size=triangle_size,
+        belt_thickness=belt_thickness,
     )
 
 
