@@ -1762,6 +1762,13 @@ async def rocky_set_simulation_settings(
     resume_frequency: int | None = None,
     mass_matrix: str | None = None,
     breakage_overlap_factor: float | None = None,
+    particle_neighbor_m: float | None = None,
+    triangle_neighbor_m: float | None = None,
+    overlap_delay: float | None = None,
+    negate_initial_overlaps: bool | None = None,
+    wide_psd: bool | None = None,
+    reorder_size_m: float | None = None,
+    drag_limiter: float | None = None,
     unit: str = "s",
 ) -> dict[str, Any]:
     """Configure the Rocky solver settings.
@@ -1806,6 +1813,21 @@ async def rocky_set_simulation_settings(
         ``lumped`` or ``consistent``.
     breakage_overlap_factor : float | None, default: None
         Overlap allowed during breakage. Setting it turns the factor on.
+    particle_neighbor_m : float | None, default: None
+        Extra contact search distance between particles, in meters. Setting it
+        turns that distance on.
+    triangle_neighbor_m : float | None, default: None
+        Extra contact search distance between particles and triangles, in meters.
+    overlap_delay : float | None, default: None
+        Delay before overlap removal, in seconds.
+    negate_initial_overlaps : bool | None, default: None
+        Remove overlaps that exist at the start.
+    wide_psd : bool | None, default: None
+        Use the wide size-distribution reordering.
+    reorder_size_m : float | None, default: None
+        Particle size limit for reordering, in meters.
+    drag_limiter : float | None, default: None
+        Drag limiter factor. Setting it turns the limiter on.
     breakage_delay : float | None, default: None
         Seconds after release before breakage can start. Rocky's token is ``s``.
     unit : str, default: "s"
@@ -1903,6 +1925,25 @@ async def rocky_set_simulation_settings(
         if breakage_overlap_factor is not None:
             solver.SetUseBreakageOverlapFactor(True)
             solver.SetBreakageOverlapFactor(breakage_overlap_factor)
+        if particle_neighbor_m is not None:
+            solver.SetUseContactNeighboringDistanceBetweenParticles(True)
+            solver.SetContactNeighboringDistanceBetweenParticles(particle_neighbor_m, unit="m")
+        if triangle_neighbor_m is not None:
+            solver.SetUseContactNeighboringDistanceBetweenParticlesAndTriangles(True)
+            solver.SetContactNeighboringDistanceBetweenParticlesAndTriangles(
+                triangle_neighbor_m, unit="m"
+            )
+        if overlap_delay is not None:
+            solver.SetOverlapParticlesDelay(overlap_delay, unit="s")
+        if negate_initial_overlaps is not None:
+            solver.SetNegateInitialOverlaps(negate_initial_overlaps)
+        if wide_psd is not None:
+            solver.SetSpecialReorderingForWidePsd(wide_psd)
+        if reorder_size_m is not None:
+            solver.SetParticleSizeLimitForReordering(reorder_size_m, unit="m")
+        if drag_limiter is not None:
+            solver.SetUseDragLimiterFactor(True)
+            solver.SetDragLimiterFactor(drag_limiter)
     except ToolError:
         raise
     except Exception as exc:
@@ -1930,6 +1971,15 @@ async def rocky_set_simulation_settings(
         mass_matrix=solver.GetDeformableMassMatrixType(),
         breakage_overlap_factor=solver.GetBreakageOverlapFactor(),
         use_breakage_overlap_factor=bool(solver.GetUseBreakageOverlapFactor()),
+        particle_neighbor_m=solver.GetContactNeighboringDistanceBetweenParticles("m"),
+        use_particle_neighbor=bool(solver.GetUseContactNeighboringDistanceBetweenParticles()),
+        triangle_neighbor_m=solver.GetContactNeighboringDistanceBetweenParticlesAndTriangles("m"),
+        overlap_delay_s=solver.GetOverlapParticlesDelay("s"),
+        negate_initial_overlaps=bool(solver.GetNegateInitialOverlaps()),
+        wide_psd=bool(solver.GetSpecialReorderingForWidePsd()),
+        reorder_size_m=solver.GetParticleSizeLimitForReordering("m"),
+        drag_limiter=solver.GetDragLimiterFactor(),
+        use_drag_limiter=bool(solver.GetUseDragLimiterFactor()),
         processing_unit=solver.GetProcessingUnit(),
         local_processing_unit=_local_value(solver, "GetProcessingUnit"),
         target_gpus=list(solver.GetTargetGpus()),

@@ -2166,6 +2166,16 @@ class MockSimulatorRun:
         self._mass_matrix = "lumped"
         self._breakage_overlap = 0.0
         self._use_breakage_overlap = False
+        self._particle_neighbor = 0.0
+        self._use_particle_neighbor = False
+        self._triangle_neighbor = 0.0
+        self._use_triangle_neighbor = False
+        self._overlap_delay = 0.0
+        self._negate_overlaps = False
+        self._wide_psd = False
+        self._reorder_size = 0.0
+        self._drag_limiter = 0.0
+        self._use_drag_limiter = False
         self._standard_outputs: dict[tuple[str, ...], bool] = {}
         self._module_outputs: dict[tuple[str, ...], bool] = {}
         self._processing_unit = "CPU"
@@ -2379,6 +2389,98 @@ class MockSimulatorRun:
     def SetUseBreakageOverlapFactor(self, value: bool) -> None:
         """Set whether the breakage overlap factor is used."""
         self._use_breakage_overlap = bool(value)
+
+    def _meters(self, value: float, unit: str | None) -> float:
+        """Store a length. Rocky's token is ``m``."""
+        if unit not in (None, "m"):
+            raise ValueError(f"Unsupported length unit {unit!r}. Expected 'm'.")
+        return float(value)
+
+    def GetContactNeighboringDistanceBetweenParticles(self, unit: str | None = None) -> float:
+        """Return the particle contact search distance in meters."""
+        return self._meters(self._particle_neighbor, unit)
+
+    def SetContactNeighboringDistanceBetweenParticles(
+        self, value: float, unit: str | None = None
+    ) -> None:
+        """Set the particle contact search distance. Rocky's token is ``m``."""
+        self._particle_neighbor = self._meters(value, unit)
+
+    def GetUseContactNeighboringDistanceBetweenParticles(self) -> bool:
+        """Return whether the particle contact search distance is used."""
+        return self._use_particle_neighbor
+
+    def SetUseContactNeighboringDistanceBetweenParticles(self, value: bool) -> None:
+        """Set whether the particle contact search distance is used."""
+        self._use_particle_neighbor = bool(value)
+
+    def GetContactNeighboringDistanceBetweenParticlesAndTriangles(
+        self, unit: str | None = None
+    ) -> float:
+        """Return the particle-triangle contact search distance in meters."""
+        return self._meters(self._triangle_neighbor, unit)
+
+    def SetContactNeighboringDistanceBetweenParticlesAndTriangles(
+        self, value: float, unit: str | None = None
+    ) -> None:
+        """Set the particle-triangle contact search distance. Rocky's token is ``m``."""
+        self._triangle_neighbor = self._meters(value, unit)
+
+    def GetUseContactNeighboringDistanceBetweenParticlesAndTriangles(self) -> bool:
+        """Return whether the particle-triangle search distance is used."""
+        return self._use_triangle_neighbor
+
+    def SetUseContactNeighboringDistanceBetweenParticlesAndTriangles(self, value: bool) -> None:
+        """Set whether the particle-triangle search distance is used."""
+        self._use_triangle_neighbor = bool(value)
+
+    def GetOverlapParticlesDelay(self, unit: str | None = None) -> float:
+        """Return the overlap delay in seconds."""
+        return self._seconds(self._overlap_delay, unit)
+
+    def SetOverlapParticlesDelay(self, value: float, unit: str | None = None) -> None:
+        """Set the overlap delay. Rocky's token is ``s``."""
+        self._overlap_delay = self._seconds(value, unit)
+
+    def GetNegateInitialOverlaps(self) -> bool:
+        """Return whether initial overlaps are removed."""
+        return self._negate_overlaps
+
+    def SetNegateInitialOverlaps(self, value: bool) -> None:
+        """Set whether initial overlaps are removed."""
+        self._negate_overlaps = bool(value)
+
+    def GetSpecialReorderingForWidePsd(self) -> bool:
+        """Return whether wide size distributions use special reordering."""
+        return self._wide_psd
+
+    def SetSpecialReorderingForWidePsd(self, value: bool) -> None:
+        """Set whether wide size distributions use special reordering."""
+        self._wide_psd = bool(value)
+
+    def GetParticleSizeLimitForReordering(self, unit: str | None = None) -> float:
+        """Return the reorder size limit in meters."""
+        return self._meters(self._reorder_size, unit)
+
+    def SetParticleSizeLimitForReordering(self, value: float, unit: str | None = None) -> None:
+        """Set the reorder size limit. Rocky's token is ``m``."""
+        self._reorder_size = self._meters(value, unit)
+
+    def GetDragLimiterFactor(self) -> float:
+        """Return the drag limiter factor."""
+        return self._drag_limiter
+
+    def SetDragLimiterFactor(self, value: float) -> None:
+        """Set the drag limiter factor."""
+        self._drag_limiter = float(value)
+
+    def GetUseDragLimiterFactor(self) -> bool:
+        """Return whether the drag limiter is used."""
+        return self._use_drag_limiter
+
+    def SetUseDragLimiterFactor(self, value: bool) -> None:
+        """Set whether the drag limiter is used."""
+        self._use_drag_limiter = bool(value)
 
     @staticmethod
     def GetAvailableStandardOutputProperties() -> dict[str, list[str]]:

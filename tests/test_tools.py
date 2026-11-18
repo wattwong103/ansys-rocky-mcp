@@ -344,6 +344,10 @@ async def test_domain_and_solver_settings_are_applied(study: Client) -> None:
             "mass_matrix": "consistent",
             "breakage_overlap_factor": 0.2,
             "wear_start": 2.0,
+            "particle_neighbor_m": 0.01,
+            "overlap_delay": 0.25,
+            "negate_initial_overlaps": True,
+            "drag_limiter": 5.0,
         },
     )
     assert updated.data["curves_frequency"] == 5
@@ -353,6 +357,11 @@ async def test_domain_and_solver_settings_are_applied(study: Client) -> None:
     assert updated.data["mass_matrix"] == "consistent"
     assert updated.data["use_breakage_overlap_factor"] is True
     assert updated.data["wear_start_s"] == pytest.approx(2.0)
+    assert updated.data["particle_neighbor_m"] == pytest.approx(0.01)
+    assert updated.data["use_particle_neighbor"] is True
+    assert updated.data["overlap_delay_s"] == pytest.approx(0.25)
+    assert updated.data["negate_initial_overlaps"] is True
+    assert updated.data["use_drag_limiter"] is True
     described = await study.call_tool("rocky_describe_study")
     assert described.data["study"]["solver"]["curves_frequency"] == 5
 
