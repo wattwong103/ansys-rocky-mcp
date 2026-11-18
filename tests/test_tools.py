@@ -77,6 +77,19 @@ async def test_results_can_be_deleted(study: Client) -> None:
     assert status.data["has_results"] is False
 
 
+async def test_a_curve_can_be_saved_as_csv(study: Client, tmp_path) -> None:
+    """A curve can be written to CSV after the run."""
+    await study.call_tool("rocky_run_simulation", {"non_blocking": False})
+    destination = tmp_path / "count.csv"
+    saved = await study.call_tool(
+        "rocky_save_curve",
+        {"name": "Particles Count", "path": str(destination)},
+    )
+    assert saved.data["number_of_points"] > 1
+    text = destination.read_text(encoding="utf-8")
+    assert text.startswith("time_s,value\n")
+
+
 async def test_curves_are_requested_before_the_run(study: Client) -> None:
     """Requesting a curve before the simulation reports the missing step."""
     with pytest.raises(ToolError, match="rocky_run_simulation"):

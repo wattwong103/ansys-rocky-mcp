@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 
 from fastmcp import Context
@@ -101,6 +102,51 @@ async def rocky_get_curve(
         number_of_points=len(values),
         times=times,
         values=values,
+    )
+
+
+async def rocky_save_curve(
+    ctx: Context,
+    name: str,
+    path: str,
+    unit: str | None = None,
+    selection_id: str | None = None,
+) -> dict[str, Any]:
+    """Write a simulation curve to a CSV file.
+
+    Parameters
+    ----------
+    name : str
+        Curve name, for example ``"Particles Count"``.
+    path : str
+        Destination CSV path.
+    unit : str | None, default: None
+        Unit of the curve values.
+    selection_id : str | None, default: None
+        Selection to read instead of the whole domain.
+
+    """
+    session = get_session(ctx)
+    study = require_study(session)
+    if selection_id:
+        try:
+            source = session.registry.resolve(selection_id, "selection")
+        except KeyError as exc:
+            raise ToolError(str(exc)) from exc
+    else:
+        source = study.GetParticles()
+    times, values = _curve(source, name, unit)
+    destination = Path(path).expanduser()
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    lines = ["time_s,value"]
+    lines.extend(f"{time},{value}" for time, value in zip(times, values, strict=True))
+    destination.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return envelope(
+        session,
+        message=f"Saved {name} to {destination}.",
+        path=str(destination),
+        name=name,
+        number_of_points=len(values),
     )
 
 
@@ -363,6 +409,7 @@ async def rocky_run_python(ctx: Context, code: str, timeout: int = 60) -> str:
 def register(mcp: Any) -> None:
     """Register the results tools on the MCP server."""
     mcp.tool()(rocky_get_curve)
+    mcp.tool()(rocky_save_curve)
     mcp.tool()(rocky_list_grid_functions)
     mcp.tool()(rocky_get_grid_function_stats)
     mcp.tool()(rocky_create_selection)
