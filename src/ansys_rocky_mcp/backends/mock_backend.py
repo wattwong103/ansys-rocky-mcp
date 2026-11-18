@@ -725,6 +725,9 @@ class MockDomainSettings:
         self._cartesian_periodic = "NONE"
         self._cylindrical_periodic = "Y"
         self._divisions = 1
+        self._periodic_min = self._min
+        self._periodic_max = self._max
+        self._periodic_at_geometry = False
 
     def GetUseBoundaryLimits(self) -> bool:
         """Return whether boundary limits are used."""
@@ -789,6 +792,38 @@ class MockDomainSettings:
     def SetCylindricalPeriodicDirections(self, value: str) -> None:
         """Set the cylindrical periodic axis."""
         self._cylindrical_periodic = value
+
+    def GetPeriodicLimitsMinCoordinates(self, unit: str | None = None) -> list[float]:
+        """Return the minimum periodic coordinates."""
+        factor = 1.0 / _LENGTH_TO_M.get(unit or "m", 1.0)
+        return [value * factor for value in self._periodic_min]
+
+    def SetPeriodicLimitsMinCoordinates(
+        self, values: Any, unit: str | None = None, **kwargs: Any
+    ) -> None:
+        """Set the minimum periodic coordinates."""
+        factor = _LENGTH_TO_M.get(unit or "m", 1.0)
+        self._periodic_min = tuple(value * factor for value in _as_sequence(values))
+
+    def GetPeriodicLimitsMaxCoordinates(self, unit: str | None = None) -> list[float]:
+        """Return the maximum periodic coordinates."""
+        factor = 1.0 / _LENGTH_TO_M.get(unit or "m", 1.0)
+        return [value * factor for value in self._periodic_max]
+
+    def SetPeriodicLimitsMaxCoordinates(
+        self, values: Any, unit: str | None = None, **kwargs: Any
+    ) -> None:
+        """Set the maximum periodic coordinates."""
+        factor = _LENGTH_TO_M.get(unit or "m", 1.0)
+        self._periodic_max = tuple(value * factor for value in _as_sequence(values))
+
+    def GetPeriodicAtGeometryLimits(self) -> bool:
+        """Return whether periodic limits follow the geometry."""
+        return self._periodic_at_geometry
+
+    def SetPeriodicAtGeometryLimits(self, value: bool) -> None:
+        """Set whether periodic limits follow the geometry."""
+        self._periodic_at_geometry = bool(value)
 
     def GetNumberOfDivisions(self) -> int:
         """Return the number of cylindrical divisions."""

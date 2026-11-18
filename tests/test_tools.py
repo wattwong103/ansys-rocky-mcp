@@ -258,6 +258,17 @@ async def test_domain_and_solver_settings_are_applied(study: Client) -> None:
     )
     assert periodic.data["domain_type"] == "CARTESIAN"
     assert periodic.data["cartesian_periodic_directions"] == "XY"
+    bounded = await study.call_tool(
+        "rocky_set_domain",
+        {
+            "periodic_min": [-2.0, -0.5, 0.0],
+            "periodic_max": [2.0, 0.5, 1.0],
+            "periodic_at_geometry_limits": False,
+        },
+    )
+    assert bounded.data["periodic_min_m"] == pytest.approx([-2.0, -0.5, 0.0])
+    assert bounded.data["periodic_max_m"] == pytest.approx([2.0, 0.5, 1.0])
+    assert bounded.data["periodic_at_geometry_limits"] is False
     axis = await study.call_tool(
         "rocky_set_domain",
         {"domain_type": "CYLINDRICAL", "periodic_directions": "Z"},

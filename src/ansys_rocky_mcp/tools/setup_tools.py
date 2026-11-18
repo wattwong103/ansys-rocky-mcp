@@ -797,6 +797,9 @@ async def rocky_set_domain(
     domain_type: str | None = None,
     periodic_directions: str | None = None,
     number_of_divisions: int | None = None,
+    periodic_min: list[float] | None = None,
+    periodic_max: list[float] | None = None,
+    periodic_at_geometry_limits: bool | None = None,
     unit: str = "m",
 ) -> dict[str, Any]:
     """Configure the Rocky domain limits.
@@ -816,6 +819,12 @@ async def rocky_set_domain(
         For cylindrical: ``X``, ``Y``, or ``Z``.
     number_of_divisions : int | None, default: None
         Number of divisions for a cylindrical periodic domain. Must be at least 1.
+    periodic_min : list[float] | None, default: None
+        Minimum periodic boundary coordinates as ``[x, y, z]``.
+    periodic_max : list[float] | None, default: None
+        Maximum periodic boundary coordinates as ``[x, y, z]``.
+    periodic_at_geometry_limits : bool | None, default: None
+        When true, Rocky takes the periodic limits from the geometry.
     unit : str, default: "m"
         Unit of the domain coordinates.
 
@@ -856,6 +865,16 @@ async def rocky_set_domain(
                 domain.SetCartesianPeriodicDirections(periodic_directions)
         if number_of_divisions is not None:
             domain.SetNumberOfDivisions(int(number_of_divisions))
+        if periodic_min is not None:
+            domain.SetPeriodicLimitsMinCoordinates(
+                _three_vector(periodic_min, "periodic_min"), unit=unit
+            )
+        if periodic_max is not None:
+            domain.SetPeriodicLimitsMaxCoordinates(
+                _three_vector(periodic_max, "periodic_max"), unit=unit
+            )
+        if periodic_at_geometry_limits is not None:
+            domain.SetPeriodicAtGeometryLimits(periodic_at_geometry_limits)
     except ToolError:
         raise
     except Exception as exc:
@@ -871,6 +890,9 @@ async def rocky_set_domain(
         cartesian_periodic_directions=domain.GetCartesianPeriodicDirections(),
         cylindrical_periodic_directions=domain.GetCylindricalPeriodicDirections(),
         number_of_divisions=domain.GetNumberOfDivisions(),
+        periodic_min_m=list(domain.GetPeriodicLimitsMinCoordinates("m")),
+        periodic_max_m=list(domain.GetPeriodicLimitsMaxCoordinates("m")),
+        periodic_at_geometry_limits=bool(domain.GetPeriodicAtGeometryLimits()),
     )
 
 
