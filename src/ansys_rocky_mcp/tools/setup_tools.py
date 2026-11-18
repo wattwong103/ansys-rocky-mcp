@@ -199,6 +199,7 @@ async def rocky_create_feed_conveyor(
     drop_length: float | None = None,
     drop_width: float | None = None,
     drop_height: float | None = None,
+    skirtboard_height: float | None = None,
     name: str | None = None,
 ) -> dict[str, Any]:
     """Create a Rocky feed conveyor.
@@ -229,6 +230,8 @@ async def rocky_create_feed_conveyor(
         Drop box width in meters. Feed conveyors only.
     drop_height : float | None, default: None
         Drop box height in meters. Feed conveyors only.
+    skirtboard_height : float | None, default: None
+        Skirtboard height in meters. Feed conveyors only.
     name : str | None, default: None
         Conveyor name.
 
@@ -249,6 +252,7 @@ async def rocky_create_feed_conveyor(
         drop_length=drop_length,
         drop_width=drop_width,
         drop_height=drop_height,
+        skirtboard_height=skirtboard_height,
     )
 
 
@@ -268,6 +272,7 @@ async def _create_conveyor(
     drop_length: float | None = None,
     drop_width: float | None = None,
     drop_height: float | None = None,
+    skirtboard_height: float | None = None,
 ) -> dict[str, Any]:
     """Create a feed or receiving conveyor."""
     session = get_session(ctx)
@@ -303,6 +308,8 @@ async def _create_conveyor(
             conveyor.SetDropBoxWidth(drop_width, unit="m")
         if drop_height is not None:
             conveyor.SetDropBoxHeight(drop_height, unit="m")
+        if skirtboard_height is not None:
+            conveyor.SetSkirtboardHeight(skirtboard_height, unit="m")
     except ToolError:
         raise
     except Exception as exc:
@@ -333,6 +340,7 @@ async def _create_conveyor(
             conveyor.GetDropBoxWidth("m"),
             conveyor.GetDropBoxHeight("m"),
         ],
+        skirtboard_height_m=conveyor.GetSkirtboardHeight("m"),
     )
 
 
