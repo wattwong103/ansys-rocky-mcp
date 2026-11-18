@@ -1662,6 +1662,7 @@ class MockFeedConveyor:
         self._face_width = 0.3
         self._alignment_rad = 0.0
         self._return_belt_rad = 0.0
+        self._out_of_plane = 0.0
         self._temperature_k = 298.15
         self._incline_rad = 0.0
         self._horizontal_offset = 0.0
@@ -1857,6 +1858,18 @@ class MockFeedConveyor:
         elif unit not in (None, "rad"):
             raise ValueError(f"Unsupported angle unit {unit!r}.")
         self._return_belt_rad = angle
+
+    def SetOutOfPlaneOffset(self, value: float, unit: str | None = None) -> None:
+        """Set the out-of-plane offset in meters."""
+        if unit not in (None, "m"):
+            raise ValueError(f"Unsupported length unit {unit!r}. Expected 'm'.")
+        self._out_of_plane = float(value)
+
+    def GetOutOfPlaneOffset(self, unit: str | None = None) -> float:
+        """Return the out-of-plane offset in meters."""
+        if unit not in (None, "m"):
+            raise ValueError(f"Unsupported length unit {unit!r}. Expected 'm'.")
+        return self._out_of_plane
 
     def GetReturnBeltAngle(self, unit: str | None = None) -> float:
         """Return the return belt angle in radians, or degrees when asked."""

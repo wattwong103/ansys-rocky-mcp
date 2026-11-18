@@ -267,6 +267,7 @@ async def rocky_create_feed_conveyor(
     horizontal_offset: float | None = None,
     vertical_offset: float | None = None,
     return_belt_deg: float | None = None,
+    out_of_plane_offset: float | None = None,
     name: str | None = None,
 ) -> dict[str, Any]:
     """Create a Rocky feed conveyor.
@@ -319,6 +320,8 @@ async def rocky_create_feed_conveyor(
         Vertical offset in meters.
     return_belt_deg : float | None, default: None
         Return-belt angle in degrees. Rocky stores this as ``dega``, not radians.
+    out_of_plane_offset : float | None, default: None
+        Offset normal to the belt plane, in meters.
     name : str | None, default: None
         Conveyor name.
 
@@ -350,6 +353,7 @@ async def rocky_create_feed_conveyor(
         horizontal_offset=horizontal_offset,
         vertical_offset=vertical_offset,
         return_belt_deg=return_belt_deg,
+        out_of_plane_offset=out_of_plane_offset,
     )
 
 
@@ -380,6 +384,7 @@ async def _create_conveyor(
     horizontal_offset: float | None = None,
     vertical_offset: float | None = None,
     return_belt_deg: float | None = None,
+    out_of_plane_offset: float | None = None,
 ) -> dict[str, Any]:
     """Create a feed or receiving conveyor."""
     session = get_session(ctx)
@@ -437,6 +442,8 @@ async def _create_conveyor(
             conveyor.SetVerticalOffset(vertical_offset, unit="m")
         if return_belt_deg is not None:
             conveyor.SetReturnBeltAngle(return_belt_deg, unit="dega")
+        if out_of_plane_offset is not None:
+            conveyor.SetOutOfPlaneOffset(out_of_plane_offset, unit="m")
     except ToolError:
         raise
     except Exception as exc:
@@ -478,6 +485,7 @@ async def _create_conveyor(
         horizontal_offset_m=conveyor.GetHorizontalOffset("m"),
         vertical_offset_m=conveyor.GetVerticalOffset("m"),
         return_belt_deg=conveyor.GetReturnBeltAngle("dega"),
+        out_of_plane_offset_m=conveyor.GetOutOfPlaneOffset("m"),
     )
 
 
@@ -497,6 +505,7 @@ async def rocky_create_receiving_conveyor(
     horizontal_offset: float | None = None,
     vertical_offset: float | None = None,
     return_belt_deg: float | None = None,
+    out_of_plane_offset: float | None = None,
     name: str | None = None,
 ) -> dict[str, Any]:
     """Create a Rocky receiving conveyor.
@@ -521,6 +530,7 @@ async def rocky_create_receiving_conveyor(
         horizontal_offset=horizontal_offset,
         vertical_offset=vertical_offset,
         return_belt_deg=return_belt_deg,
+        out_of_plane_offset=out_of_plane_offset,
     )
 
 

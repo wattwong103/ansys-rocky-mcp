@@ -172,7 +172,7 @@ startup_timeout_sec = 90
 |---|---|
 | `rocky_import_wall` | Import geometry, with Y/Z swap, CAD split, and mesh size. |
 | `rocky_create_surface` | Create a circular or rectangular surface. |
-| `rocky_create_feed_conveyor` | Create a feed conveyor, including return-belt angle in degrees. |
+| `rocky_create_feed_conveyor` | Create a feed conveyor, including return-belt angle and out-of-plane offset. |
 | `rocky_create_receiving_conveyor` | Create a receiving conveyor with belt motion, profile, and alignment. |
 | `rocky_create_particle` | Create a particle, including size type and rolling resistance. |
 | `rocky_set_size_distribution` | Set a particle's size distribution, minimum size, and surface energy. |
