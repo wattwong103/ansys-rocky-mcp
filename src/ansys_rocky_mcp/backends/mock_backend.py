@@ -250,6 +250,57 @@ class MockSolidMaterial:
         return self._poisson
 
 
+class MockMaterialsInteraction:
+    """Stand-in for the contact pair between two materials."""
+
+    def __init__(self) -> None:
+        """Initialize neutral contact coefficients."""
+        self._static = 0.0
+        self._dynamic = 0.0
+        self._restitution = 0.0
+
+    def SetStaticFriction(self, value: float, unit: str | None = None) -> None:
+        """Set the static friction coefficient."""
+        self._static = float(value)
+
+    def GetStaticFriction(self, unit: str | None = None) -> float:
+        """Return the static friction coefficient."""
+        return self._static
+
+    def SetDynamicFriction(self, value: float, unit: str | None = None) -> None:
+        """Set the dynamic friction coefficient."""
+        self._dynamic = float(value)
+
+    def GetDynamicFriction(self, unit: str | None = None) -> float:
+        """Return the dynamic friction coefficient."""
+        return self._dynamic
+
+    def SetRestitutionCoefficient(self, value: float, unit: str | None = None) -> None:
+        """Set the restitution coefficient."""
+        self._restitution = float(value)
+
+    def GetRestitutionCoefficient(self, unit: str | None = None) -> float:
+        """Return the restitution coefficient."""
+        return self._restitution
+
+
+class MockMaterialsInteractionCollection:
+    """Stand-in for the study material-interaction collection."""
+
+    def __init__(self) -> None:
+        """Initialize an empty pair map."""
+        self._pairs: dict[tuple[int, int], MockMaterialsInteraction] = {}
+
+    def GetMaterialsInteraction(self, material_1: Any, material_2: Any) -> MockMaterialsInteraction:
+        """Return the interaction for a material pair, creating it if needed."""
+        key = tuple(sorted((id(material_1), id(material_2))))
+        interaction = self._pairs.get(key)
+        if interaction is None:
+            interaction = MockMaterialsInteraction()
+            self._pairs[key] = interaction
+        return interaction
+
+
 class MockMaterialCollection:
     """Stand-in for the study material collection."""
 
@@ -950,6 +1001,7 @@ class MockStudy:
         self._domain = MockDomainSettings()
         self._physics = MockPhysics()
         self._materials = MockMaterialCollection()
+        self._interactions = MockMaterialsInteractionCollection()
         self._solver = MockSimulatorRun()
         self._motion_source = MockMotionFrameSource()
         self._processes = MockUserProcessCollection(self)
@@ -1051,6 +1103,10 @@ class MockStudy:
     def GetMaterialCollection(self) -> MockMaterialCollection:
         """Return the material collection."""
         return self._materials
+
+    def GetMaterialsInteractionCollection(self) -> MockMaterialsInteractionCollection:
+        """Return the material interaction collection."""
+        return self._interactions
 
     def GetSolver(self) -> MockSimulatorRun:
         """Return the solver."""

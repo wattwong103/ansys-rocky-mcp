@@ -27,7 +27,7 @@ Rocky study, run it, and read the results.
 
 | | |
 |---|---|
-| **Tools** | 27 (session, project, setup, run control, results, Python escape hatch) |
+| **Tools** | 28 (session, project, setup, run control, results, Python escape hatch) |
 | **Transport** | `stdio` (default) and `http` |
 | **Verified** | Full workflow end-to-end over a real MCP stdio handshake, 42 automated tests |
 | **Requires** | Python ≥ 3.12, `ansys-common-mcp`, `ansys-rocky-core` |
@@ -174,6 +174,7 @@ startup_timeout_sec = 90
 | `rocky_create_surface` | Create a circular or rectangular surface. |
 | `rocky_create_particle` | Create a particle definition (shape, sieve size). |
 | `rocky_create_material` | Create a solid material and optionally assign it to a particle. |
+| `rocky_set_material_interaction` | Set friction and restitution between two materials. |
 | `rocky_create_inlet` | Create a particle inlet and set its mass flow rate. |
 | `rocky_create_outlet` | Create an outlet on a surface. |
 | `rocky_set_domain` | Set the domain limits and boundary-limit behaviour. |

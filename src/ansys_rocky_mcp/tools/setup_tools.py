@@ -585,12 +585,64 @@ async def rocky_create_material(
     )
 
 
+async def rocky_set_material_interaction(
+    ctx: Context,
+    material_a: str,
+    material_b: str,
+    static_friction: float | None = None,
+    dynamic_friction: float | None = None,
+    restitution: float | None = None,
+) -> dict[str, Any]:
+    """Set contact coefficients between two solid materials.
+
+    Parameters
+    ----------
+    material_a : str
+        First material id, for example ``material_1``.
+    material_b : str
+        Second material id. Use the same id twice for a material with itself.
+    static_friction : float | None, default: None
+        Static friction coefficient.
+    dynamic_friction : float | None, default: None
+        Dynamic friction coefficient.
+    restitution : float | None, default: None
+        Restitution coefficient.
+
+    """
+    session = get_session(ctx)
+    study = require_study(session)
+    first = _resolve(session, material_a, "material")
+    second = _resolve(session, material_b, "material")
+    try:
+        interaction = study.GetMaterialsInteractionCollection().GetMaterialsInteraction(
+            first, second
+        )
+        if static_friction is not None:
+            interaction.SetStaticFriction(static_friction)
+        if dynamic_friction is not None:
+            interaction.SetDynamicFriction(dynamic_friction)
+        if restitution is not None:
+            interaction.SetRestitutionCoefficient(restitution)
+    except Exception as exc:
+        raise ToolError(f"Could not set the material interaction: {exc}") from exc
+    return envelope(
+        session,
+        message="Material interaction updated.",
+        material_a=material_a,
+        material_b=material_b,
+        static_friction=interaction.GetStaticFriction(),
+        dynamic_friction=interaction.GetDynamicFriction(),
+        restitution=interaction.GetRestitutionCoefficient(),
+    )
+
+
 def register(mcp: Any) -> None:
     """Register the setup tools on the MCP server."""
     mcp.tool()(rocky_import_wall)
     mcp.tool()(rocky_create_surface)
     mcp.tool()(rocky_create_particle)
     mcp.tool()(rocky_create_material)
+    mcp.tool()(rocky_set_material_interaction)
     mcp.tool()(rocky_create_inlet)
     mcp.tool()(rocky_create_outlet)
     mcp.tool()(rocky_set_domain)

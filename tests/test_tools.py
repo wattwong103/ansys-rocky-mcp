@@ -128,6 +128,21 @@ async def test_material_can_be_assigned_to_a_particle(study: Client) -> None:
     assert created.data["density"] == pytest.approx(2600.0)
     assert created.data["particle_id"] == particles[0]
 
+    other = await study.call_tool("rocky_create_material", {"name": "steel", "density": 7800.0})
+    pair = await study.call_tool(
+        "rocky_set_material_interaction",
+        {
+            "material_a": created.data["material_id"],
+            "material_b": other.data["material_id"],
+            "static_friction": 0.6,
+            "dynamic_friction": 0.4,
+            "restitution": 0.2,
+        },
+    )
+    assert pair.data["static_friction"] == pytest.approx(0.6)
+    assert pair.data["dynamic_friction"] == pytest.approx(0.4)
+    assert pair.data["restitution"] == pytest.approx(0.2)
+
 
 async def test_domain_and_solver_settings_are_applied(study: Client) -> None:
     """Domain and solver settings are visible in the study description."""
