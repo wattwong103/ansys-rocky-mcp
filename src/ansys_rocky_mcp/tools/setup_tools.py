@@ -654,6 +654,8 @@ async def rocky_create_inlet(
     period: float | None = None,
     velocity_x: float | None = None,
     velocity_z: float | None = None,
+    stop_all: bool | None = None,
+    force_packing: bool | None = None,
 ) -> dict[str, Any]:
     """Create a particle inlet on a surface or a feed conveyor.
 
@@ -688,6 +690,10 @@ async def rocky_create_inlet(
         Local x velocity in meters per second.
     velocity_z : float | None, default: None
         Local z velocity in meters per second.
+    stop_all : bool | None, default: None
+        Stop every particle at ``stop_time``. A stop time turns this on.
+    force_packing : bool | None, default: None
+        Pack particles into the inlet even when they overlap.
 
     """
     session = get_session(ctx)
@@ -720,6 +726,12 @@ async def rocky_create_inlet(
             inlet.SetStartTime(start_time, unit="s")
         if stop_time is not None:
             inlet.SetStopTime(stop_time, unit="s")
+            if stop_all is None:
+                stop_all = True
+        if stop_all is not None:
+            inlet.SetStopAllAtStopTime(stop_all)
+        if force_packing is not None:
+            inlet.SetForcePacking(force_packing)
         if target_velocity is not None:
             inlet.SetTargetNormalVelocity(target_velocity, unit="m/s")
         if velocity_x is not None:
@@ -762,6 +774,8 @@ async def rocky_create_inlet(
         period_s=inlet.GetPeriod("s"),
         velocity_x_m_s=inlet.GetUxLocal("m/s"),
         velocity_z_m_s=inlet.GetUzLocal("m/s"),
+        stop_all=bool(inlet.GetStopAllAtStopTime()),
+        force_packing=bool(inlet.GetForcePacking()),
     )
 
 

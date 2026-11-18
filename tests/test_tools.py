@@ -491,6 +491,7 @@ async def test_inlet_injection_duration_is_stored(study: Client) -> None:
             "period": 3.0,
             "velocity_x": 0.2,
             "velocity_z": -0.1,
+            "force_packing": True,
         },
     )
     assert created.data["injection_duration_s"] == pytest.approx(1.5)
@@ -501,6 +502,8 @@ async def test_inlet_injection_duration_is_stored(study: Client) -> None:
     assert created.data["period_s"] == pytest.approx(3.0)
     assert created.data["velocity_x_m_s"] == pytest.approx(0.2)
     assert created.data["velocity_z_m_s"] == pytest.approx(-0.1)
+    assert created.data["stop_all"] is True
+    assert created.data["force_packing"] is True
     extra = await study.call_tool(
         "rocky_create_particle",
         {"shape": "sphere", "name": "fines"},

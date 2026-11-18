@@ -627,6 +627,8 @@ class MockParticleInlet:
         self._period = 0.0
         self._ux = 0.0
         self._uz = 0.0
+        self._stop_all = False
+        self._force_packing = False
 
     def GetName(self) -> str:
         """Return the inlet name."""
@@ -755,6 +757,22 @@ class MockParticleInlet:
         """Set the local z velocity in meters per second."""
         self._velocity(unit)
         self._uz = float(value)
+
+    def GetStopAllAtStopTime(self) -> bool:
+        """Return whether every particle stops at the stop time."""
+        return self._stop_all
+
+    def SetStopAllAtStopTime(self, value: bool) -> None:
+        """Set whether every particle stops at the stop time."""
+        self._stop_all = bool(value)
+
+    def GetForcePacking(self) -> bool:
+        """Return whether the inlet force-packs particles."""
+        return self._force_packing
+
+    def SetForcePacking(self, value: bool) -> None:
+        """Set whether the inlet force-packs particles."""
+        self._force_packing = bool(value)
 
 
 class MockVolumetricInlet:
