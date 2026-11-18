@@ -49,6 +49,13 @@ ADHESION_MODELS = ("none", "constant", "linear", "JKR", "custom")
 RESTITUTION_MODELS = ("constant", "velocity_dependent")
 
 
+def _modulus_unit(unit: str) -> str:
+    """Return Rocky's Young's modulus token. ``Pa`` is the same unit as ``N/m2``."""
+    if unit in ("N/m2", "Pa", "N/m^2"):
+        return "N/m2"
+    raise ToolError(f"Unknown Young's modulus unit {unit!r}. Expected 'N/m2' or 'Pa'.")
+
+
 def _resolve(session: Any, object_id: str, category: str) -> Any:
     """Resolve a registered object id into the live Rocky object."""
     try:
@@ -1047,7 +1054,7 @@ async def rocky_create_material(
     wall_id: str | None = None,
     conveyor_id: str | None = None,
     density_unit: str = "kg/m3",
-    modulus_unit: str = "Pa",
+    modulus_unit: str = "N/m2",
 ) -> dict[str, Any]:
     """Create a solid material and optionally assign it to a particle, wall, or conveyor.
 
@@ -1069,8 +1076,9 @@ async def rocky_create_material(
         Conveyor to assign the material to, for example ``conveyor_1``.
     density_unit : str, default: "kg/m3"
         Unit of ``density``.
-    modulus_unit : str, default: "Pa"
-        Unit of ``youngs_modulus``.
+    modulus_unit : str, default: "N/m2"
+        Unit of ``youngs_modulus``. Rocky's token is ``N/m2``. ``Pa`` is accepted
+        and sent as ``N/m2``.
 
     """
     session = get_session(ctx)
@@ -1080,7 +1088,7 @@ async def rocky_create_material(
         if density is not None:
             material.SetDensity(density, unit=density_unit)
         if youngs_modulus is not None:
-            material.SetYoungsModulus(youngs_modulus, unit=modulus_unit)
+            material.SetYoungsModulus(youngs_modulus, unit=_modulus_unit(modulus_unit))
         if poisson_ratio is not None:
             material.SetPoissonRatio(poisson_ratio)
     except Exception as exc:
@@ -1125,7 +1133,7 @@ async def rocky_create_material(
         material_id=ident,
         name=material.GetName(),
         density=material.GetDensity("kg/m3"),
-        youngs_modulus=material.GetYoungsModulus("Pa"),
+        youngs_modulus=material.GetYoungsModulus("N/m2"),
         poisson_ratio=material.GetPoissonRatio(),
         particle_id=assigned,
         wall_id=assigned_wall,

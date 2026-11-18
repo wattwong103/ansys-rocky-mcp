@@ -244,11 +244,15 @@ class MockSolidMaterial:
         return self._density
 
     def SetYoungsModulus(self, value: float, unit: str | None = None) -> None:
-        """Set Young's modulus."""
+        """Set Young's modulus. Rocky's token is ``N/m2``."""
+        if unit not in (None, "N/m2"):
+            raise ValueError(f"Unsupported modulus unit {unit!r}. Expected 'N/m2'.")
         self._youngs = float(value)
 
     def GetYoungsModulus(self, unit: str | None = None) -> float:
-        """Return Young's modulus."""
+        """Return Young's modulus in N/m2."""
+        if unit not in (None, "N/m2"):
+            raise ValueError(f"Unsupported modulus unit {unit!r}. Expected 'N/m2'.")
         return self._youngs
 
     def SetPoissonRatio(self, value: float, unit: str | None = None) -> None:

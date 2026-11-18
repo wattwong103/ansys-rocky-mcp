@@ -174,7 +174,13 @@ async def test_material_can_be_assigned_to_a_particle(study: Client) -> None:
     )
     assert created.data["name"] == "sand"
     assert created.data["density"] == pytest.approx(2600.0)
+    assert created.data["youngs_modulus"] == pytest.approx(1.0e7)
     assert created.data["particle_id"] == particles[0]
+    as_pascals = await study.call_tool(
+        "rocky_create_material",
+        {"name": "soft", "youngs_modulus": 2.0e6, "modulus_unit": "Pa"},
+    )
+    assert as_pascals.data["youngs_modulus"] == pytest.approx(2.0e6)
     assert created.data["wall_id"] is None
 
     other = await study.call_tool("rocky_create_material", {"name": "steel", "density": 7800.0})
