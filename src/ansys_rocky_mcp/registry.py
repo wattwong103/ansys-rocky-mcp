@@ -23,6 +23,7 @@ CATEGORIES = (
     "selection",
     "motion",
     "material",
+    "fluid",
     "conveyor",
 )
 

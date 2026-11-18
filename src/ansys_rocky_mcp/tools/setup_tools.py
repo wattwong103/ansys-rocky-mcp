@@ -2707,6 +2707,73 @@ async def rocky_set_gravity(
     )
 
 
+FLUID_RHEOLOGY = ("newtonian", "herschel_bulkley_papanastasiou")
+
+
+async def rocky_create_fluid_material(
+    ctx: Context,
+    name: str | None = None,
+    density: float | None = None,
+    viscosity: float | None = None,
+    rheology: str | None = None,
+    assign_to_sph: bool = False,
+) -> dict[str, Any]:
+    """Create a fluid material and optionally assign it to SPH.
+
+    Parameters
+    ----------
+    name : str | None, default: None
+        Fluid name. Rocky chooses one when this is omitted.
+    density : float | None, default: None
+        Density in ``kg/m3``.
+    viscosity : float | None, default: None
+        Dynamic viscosity. Rocky's token is ``Pa.s``.
+    rheology : str | None, default: None
+        ``newtonian`` or ``herschel_bulkley_papanastasiou``.
+    assign_to_sph : bool, default: False
+        Use this fluid for SPH and turn SPH on.
+
+    """
+    session = get_session(ctx)
+    study = require_study(session)
+    if rheology is not None and rheology not in FLUID_RHEOLOGY:
+        raise ToolError(f"Unknown rheology {rheology!r}. Expected one of {FLUID_RHEOLOGY}.")
+    try:
+        fluid = study.GetMaterialCollection().AddFluidMaterial(name)
+        if density is not None:
+            fluid.SetDensity(density, unit="kg/m3")
+        if rheology is not None:
+            fluid.SetRheologicalModelType(rheology)
+        if viscosity is not None:
+            fluid.SetViscosity(viscosity, unit="Pa.s")
+            if fluid.GetRheologicalModelType() == "newtonian":
+                fluid.GetNewtonianRheologicalModel().SetViscosity(viscosity, unit="Pa.s")
+        if assign_to_sph:
+            sph = study.GetSphSettings()
+            sph.SetFluidMaterial(fluid)
+            sph.SetEnabled(True)
+    except ToolError:
+        raise
+    except Exception as exc:
+        raise ToolError(f"Could not create the fluid material: {exc}") from exc
+    ident = session.registry.add(
+        "fluid",
+        fluid,
+        label=fluid.GetName(),
+        meta={"density": fluid.GetDensity("kg/m3")},
+    )
+    return envelope(
+        session,
+        message=f"Created fluid {fluid.GetName()}.",
+        fluid_id=ident,
+        name=fluid.GetName(),
+        density_kg_m3=fluid.GetDensity("kg/m3"),
+        viscosity_pa_s=fluid.GetViscosity("Pa.s"),
+        rheology=fluid.GetRheologicalModelType(),
+        assigned_to_sph=assign_to_sph,
+    )
+
+
 async def rocky_create_material(
     ctx: Context,
     name: str | None = None,
@@ -3355,6 +3422,7 @@ def register(mcp: Any) -> None:
     mcp.tool()(rocky_create_particle)
     mcp.tool()(rocky_set_size_distribution)
     mcp.tool()(rocky_create_material)
+    mcp.tool()(rocky_create_fluid_material)
     mcp.tool()(rocky_set_material_interaction)
     mcp.tool()(rocky_create_inlet)
     mcp.tool()(rocky_add_inlet_particle)

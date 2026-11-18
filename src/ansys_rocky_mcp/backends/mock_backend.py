@@ -449,18 +449,114 @@ class MockMaterialsInteractionCollection:
         return interaction
 
 
+class MockNewtonianRheology:
+    """Stand-in for a Newtonian fluid viscosity."""
+
+    def __init__(self) -> None:
+        """Initialize a water-like viscosity."""
+        self._viscosity = 0.001
+
+    def GetViscosity(self, unit: str | None = None) -> float:
+        """Return the viscosity in pascal seconds."""
+        if unit not in (None, "Pa.s"):
+            raise ValueError(f"Unsupported viscosity unit {unit!r}. Expected 'Pa.s'.")
+        return self._viscosity
+
+    def SetViscosity(self, value: float, unit: str | None = None) -> None:
+        """Set the viscosity. Rocky's token is ``Pa.s``."""
+        if unit not in (None, "Pa.s"):
+            raise ValueError(f"Unsupported viscosity unit {unit!r}. Expected 'Pa.s'.")
+        self._viscosity = float(value)
+
+
+class MockFluidMaterial:
+    """Stand-in for a Rocky fluid material."""
+
+    def __init__(self, name: str) -> None:
+        """Initialize the fluid."""
+        self._name = name
+        self._density = 1000.0
+        self._viscosity = 0.001
+        self._rheology = "newtonian"
+        self._newtonian = MockNewtonianRheology()
+
+    def GetName(self) -> str:
+        """Return the fluid name."""
+        return self._name
+
+    def SetName(self, value: str) -> None:
+        """Set the fluid name."""
+        self._name = value
+
+    def GetDensity(self, unit: str | None = None) -> float:
+        """Return the density in kg/m3."""
+        if unit not in (None, "kg/m3"):
+            raise ValueError(f"Unsupported density unit {unit!r}. Expected 'kg/m3'.")
+        return self._density
+
+    def SetDensity(self, value: float, unit: str | None = None) -> None:
+        """Set the density. Rocky's token is ``kg/m3``."""
+        if unit not in (None, "kg/m3"):
+            raise ValueError(f"Unsupported density unit {unit!r}. Expected 'kg/m3'.")
+        self._density = float(value)
+
+    def GetViscosity(self, unit: str | None = None) -> float:
+        """Return the viscosity in pascal seconds."""
+        if unit not in (None, "Pa.s"):
+            raise ValueError(f"Unsupported viscosity unit {unit!r}. Expected 'Pa.s'.")
+        return self._viscosity
+
+    def SetViscosity(self, value: float, unit: str | None = None) -> None:
+        """Set the viscosity. Rocky's token is ``Pa.s``."""
+        if unit not in (None, "Pa.s"):
+            raise ValueError(f"Unsupported viscosity unit {unit!r}. Expected 'Pa.s'.")
+        self._viscosity = float(value)
+        self._newtonian.SetViscosity(value, unit=unit or "Pa.s")
+
+    def GetRheologicalModelType(self) -> str:
+        """Return the rheology model."""
+        return self._rheology
+
+    def SetRheologicalModelType(self, value: str) -> None:
+        """Set the rheology model."""
+        if value not in ("newtonian", "herschel_bulkley_papanastasiou"):
+            raise ValueError(
+                f"Unsupported rheology {value!r}. "
+                "Expected 'newtonian' or 'herschel_bulkley_papanastasiou'."
+            )
+        self._rheology = value
+
+    def GetNewtonianRheologicalModel(self) -> MockNewtonianRheology:
+        """Return the Newtonian viscosity model."""
+        return self._newtonian
+
+
 class MockMaterialCollection:
     """Stand-in for the study material collection."""
 
     def __init__(self) -> None:
         """Initialize an empty collection."""
         self._materials: list[MockSolidMaterial] = []
+        self._fluids: list[MockFluidMaterial] = []
 
     def AddSolidMaterial(self, name: str | None = None) -> MockSolidMaterial:
         """Create a solid material."""
         material = MockSolidMaterial(name or f"Material {len(self._materials) + 1}")
         self._materials.append(material)
         return material
+
+    def AddFluidMaterial(self, name: str | None = None) -> MockFluidMaterial:
+        """Create a fluid material."""
+        fluid = MockFluidMaterial(name or f"Fluid {len(self._fluids) + 1}")
+        self._fluids.append(fluid)
+        return fluid
+
+    def GetFluidMaterial(self, material_name: str) -> MockFluidMaterial:
+        """Return a fluid material by name."""
+        for fluid in self._fluids:
+            if fluid.GetName() == material_name:
+                return fluid
+        raise KeyError(material_name)
 
     def GetSolidMaterial(self, material_name: str) -> MockSolidMaterial:
         """Return a solid material by name."""
@@ -3889,6 +3985,7 @@ class MockSphSettings:
         self._xsph = 0.0
         self._shepard_density = False
         self._shepard_pressure = False
+        self._fluid: MockFluidMaterial | None = None
 
     def GetEnabled(self) -> bool:
         """Return whether SPH is enabled."""
@@ -3897,6 +3994,14 @@ class MockSphSettings:
     def SetEnabled(self, value: bool) -> None:
         """Set whether SPH is enabled."""
         self._enabled = bool(value)
+
+    def GetFluidMaterial(self) -> MockFluidMaterial | None:
+        """Return the fluid assigned to SPH."""
+        return self._fluid
+
+    def SetFluidMaterial(self, value: MockFluidMaterial) -> None:
+        """Assign a fluid material by object."""
+        self._fluid = value
 
     def GetSolverModel(self) -> str:
         """Return the SPH solver model."""

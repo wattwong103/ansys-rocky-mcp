@@ -280,6 +280,20 @@ async def test_domain_and_solver_settings_are_applied(study: Client) -> None:
     assert sph.data["stiff_factor"] == pytest.approx(10.0)
     assert sph.data["timestep_factor"] == pytest.approx(0.2)
     assert sph.data["shepard_density"] is True
+    water = await study.call_tool(
+        "rocky_create_fluid_material",
+        {
+            "name": "water",
+            "density": 998.0,
+            "viscosity": 0.001,
+            "rheology": "newtonian",
+            "assign_to_sph": True,
+        },
+    )
+    assert water.data["name"] == "water"
+    assert water.data["density_kg_m3"] == pytest.approx(998.0)
+    assert water.data["viscosity_pa_s"] == pytest.approx(0.001)
+    assert water.data["assigned_to_sph"] is True
     await study.call_tool("rocky_set_simulation_settings", {"duration": 4.0, "time_interval": 0.2})
     timed = await study.call_tool(
         "rocky_set_simulation_settings",

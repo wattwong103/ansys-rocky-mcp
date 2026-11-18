@@ -31,6 +31,7 @@ EXPECTED_TOOLS = {
     "rocky_create_particle",
     "rocky_set_size_distribution",
     "rocky_create_material",
+    "rocky_create_fluid_material",
     "rocky_set_material_interaction",
     "rocky_create_inlet",
     "rocky_add_inlet_particle",
