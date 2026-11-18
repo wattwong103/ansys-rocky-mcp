@@ -266,9 +266,10 @@ async def test_domain_and_solver_settings_are_applied(study: Client) -> None:
     assert cores.data["mpi_processors"] == 4
     released = await study.call_tool(
         "rocky_set_simulation_settings",
-        {"release_without_overlap_check": True},
+        {"release_without_overlap_check": True, "breakage_delay": 0.05},
     )
     assert released.data["release_without_overlap_check"] is True
+    assert released.data["breakage_delay_s"] == pytest.approx(0.05)
     listed = await study.call_tool("rocky_set_output_property", {})
     assert "Particles" in listed.data["available_standard"]
     output = await study.call_tool(

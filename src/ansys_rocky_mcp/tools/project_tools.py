@@ -142,6 +142,7 @@ def describe_study(session: Any) -> dict[str, Any]:
                 "release_without_overlap_check": _safe(
                     solver.GetReleaseParticlesWithoutOverlapCheck
                 ),
+                "breakage_delay_s": _safe(lambda: solver.GetBreakageDelayAfterRelease("s")),
             }
             if solver is not None
             else {},

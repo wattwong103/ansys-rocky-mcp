@@ -1194,6 +1194,7 @@ class MockSimulatorRun:
         self._timestep_model = "variable"
         self._use_fixed_timestep = False
         self._release_without_overlap = False
+        self._breakage_delay = 0.0
         self._standard_outputs: dict[tuple[str, ...], bool] = {}
         self._module_outputs: dict[tuple[str, ...], bool] = {}
         self._processing_unit = "CPU"
@@ -1308,6 +1309,18 @@ class MockSimulatorRun:
     def SetReleaseParticlesWithoutOverlapCheck(self, value: bool) -> None:
         """Set whether particles are released without an overlap check."""
         self._release_without_overlap = bool(value)
+
+    def GetBreakageDelayAfterRelease(self, unit: str | None = None) -> float:
+        """Return the breakage delay after release in seconds."""
+        if unit not in (None, "s"):
+            raise ValueError(f"Unsupported time unit {unit!r}. Expected 's'.")
+        return self._breakage_delay
+
+    def SetBreakageDelayAfterRelease(self, value: float, unit: str | None = None) -> None:
+        """Set the breakage delay after release in seconds."""
+        if unit not in (None, "s"):
+            raise ValueError(f"Unsupported time unit {unit!r}. Expected 's'.")
+        self._breakage_delay = float(value)
 
     @staticmethod
     def GetAvailableStandardOutputProperties() -> dict[str, list[str]]:
