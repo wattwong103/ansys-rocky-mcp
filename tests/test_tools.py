@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import math
+
 import pytest
 from fastmcp import Client
 from fastmcp.exceptions import ToolError
@@ -527,6 +529,17 @@ async def test_motion_is_applied_to_the_targets(study: Client) -> None:
         "rocky_set_motion",
         {"kind": "rotation", "targets": [surfaces[0]], "angular_velocity": [0.0, 0.5, 0.0]},
     )
+    assert motion.data["angular_velocity_rad_s"] == pytest.approx([0.0, 0.5, 0.0])
+    in_degrees = await study.call_tool(
+        "rocky_set_motion",
+        {
+            "kind": "rotation",
+            "targets": [surfaces[0]],
+            "angular_velocity": [0.0, 180.0, 0.0],
+            "unit": "deg/s",
+        },
+    )
+    assert in_degrees.data["angular_velocity_rad_s"] == pytest.approx([0.0, math.pi, 0.0])
     assert motion.data["kind"] == "rotation"
     assert motion.data["targets"] == [surfaces[0]]
 

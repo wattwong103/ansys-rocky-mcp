@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from pathlib import Path
 from typing import Any
 
@@ -47,6 +48,21 @@ TANGENTIAL_FORCE_MODELS = (
 ROLLING_RESISTANCE_MODELS = ("type_1", "type_3", "none", "custom")
 ADHESION_MODELS = ("none", "constant", "linear", "JKR", "custom")
 RESTITUTION_MODELS = ("constant", "velocity_dependent")
+
+
+def _angular_velocity_rad_s(values: list[float], unit: str) -> tuple[float, float, float]:
+    """Return an angular velocity in rad/s. Degrees per second are converted."""
+    if len(values) != 3:
+        raise ToolError("angular_velocity must be three numbers.")
+    if unit == "rad/s":
+        scale = 1.0
+    elif unit in ("deg/s", "dega/s"):
+        scale = math.pi / 180.0
+    else:
+        raise ToolError(
+            f"Unknown angular velocity unit {unit!r}. Expected 'rad/s', 'deg/s', or 'dega/s'."
+        )
+    return tuple(float(value) * scale for value in values)  # type: ignore[return-value]
 
 
 def _modulus_unit(unit: str) -> str:
@@ -942,8 +958,8 @@ async def rocky_set_motion(
     linear_velocity : list[float] | None, default: None
         Linear velocity vector as ``[vx, vy, vz]``. Required for a translation.
     unit : str, default: "rad/s"
-        Unit of the angular velocity, for example ``"rad/s"`` or ``"deg/s"``.
-        Translations always use ``"m/s"``.
+        Unit of the angular velocity. Rocky stores ``rad/s``. ``deg/s`` and
+        ``dega/s`` are converted before the call. Translations always use ``m/s``.
     start_time : float, default: 0.0
         Start time of the motion in seconds.
     stop_time : float, default: 1000.0
@@ -964,14 +980,16 @@ async def rocky_set_motion(
     except Exception as exc:
         raise ToolError(f"Could not create a motion frame: {exc}") from exc
 
+    radians: tuple[float, float, float] | None = None
     try:
         if kind == "rotation":
             if angular_velocity is None:
                 raise ToolError("A rotation requires 'angular_velocity'.")
+            radians = _angular_velocity_rad_s(angular_velocity, unit)
             frame.AddRotationMotion(
                 start_time=(start_time, "s"),
                 stop_time=(stop_time, "s"),
-                angular_velocity=(tuple(angular_velocity), unit),
+                angular_velocity=(radians, "rad/s"),
             )
         else:
             if linear_velocity is None:
@@ -1007,6 +1025,7 @@ async def rocky_set_motion(
         motion_id=ident,
         kind=kind,
         targets=applied,
+        angular_velocity_rad_s=list(radians) if kind == "rotation" else None,
     )
 
 

@@ -902,6 +902,15 @@ class MockMotionFrame:
         **kwargs: Any,
     ) -> dict[str, Any]:
         """Add a rotation motion to the frame."""
+        if (
+            isinstance(angular_velocity, tuple)
+            and len(angular_velocity) == 2
+            and isinstance(angular_velocity[1], str)
+            and angular_velocity[1] != "rad/s"
+        ):
+            raise ValueError(
+                f"Unsupported angular velocity unit {angular_velocity[1]!r}. Expected 'rad/s'."
+            )
         motion = {
             "kind": "rotation",
             "start_time": list(start_time) if isinstance(start_time, tuple) else start_time,
