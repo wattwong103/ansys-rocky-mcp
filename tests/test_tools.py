@@ -188,6 +188,31 @@ async def test_domain_and_solver_settings_are_applied(study: Client) -> None:
     assert again.data["study"]["contact_models"]["normal_force"] == "damped_hertzian"
 
 
+async def test_inlet_injection_duration_is_stored(study: Client) -> None:
+    """An inlet can stop feeding after a set duration."""
+    objects = await study.call_tool("rocky_list_processes")
+    surfaces = [
+        entry["id"]
+        for entry in objects.data["registered_objects"]
+        if entry["category"] == "surface"
+    ]
+    particles = [
+        entry["id"]
+        for entry in objects.data["registered_objects"]
+        if entry["category"] == "particle"
+    ]
+    created = await study.call_tool(
+        "rocky_create_inlet",
+        {
+            "surface_id": surfaces[0],
+            "particle_id": particles[0],
+            "mass_flow_rate": 10.0,
+            "injection_duration": 1.5,
+        },
+    )
+    assert created.data["injection_duration_s"] == pytest.approx(1.5)
+
+
 async def test_motion_is_applied_to_the_targets(study: Client) -> None:
     """A rotation motion is attached to the requested surface."""
     objects = await study.call_tool("rocky_list_processes")

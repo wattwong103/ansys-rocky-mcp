@@ -446,8 +446,8 @@ class MockParticleInlet:
         return self._injection_duration
 
     def SetInjectionDuration(self, value: float, unit: str | None = None) -> None:
-        """Set the injection duration."""
-        self._injection_duration = _length_to_m(value, unit)
+        """Set the injection duration in seconds."""
+        self._injection_duration = float(value)
 
 
 class MockOutlet:

@@ -220,6 +220,8 @@ async def rocky_create_inlet(
     particle_id: str,
     mass_flow_rate: float,
     unit: str = "t/h",
+    injection_duration: float | None = None,
+    duration_unit: str = "s",
 ) -> dict[str, Any]:
     """Create a particle inlet on a surface and set its mass flow rate.
 
@@ -233,6 +235,10 @@ async def rocky_create_inlet(
         Mass flow rate of the inlet.
     unit : str, default: "t/h"
         Unit of the mass flow rate.
+    injection_duration : float | None, default: None
+        How long the inlet feeds particles. Omit it to leave Rocky's duration.
+    duration_unit : str, default: "s"
+        Unit of ``injection_duration``.
 
     """
     session = get_session(ctx)
@@ -252,6 +258,8 @@ async def rocky_create_inlet(
         if not properties:
             raise ToolError("The created inlet exposes no input properties.")
         properties[0].SetMassFlowRate(mass_flow_rate, unit=unit)
+        if injection_duration is not None:
+            inlet.SetInjectionDuration(injection_duration, unit=duration_unit)
     except ToolError:
         raise
     except Exception as exc:
@@ -271,6 +279,7 @@ async def rocky_create_inlet(
         particle_id=particle_id,
         mass_flow_rate=mass_flow_rate,
         unit=unit,
+        injection_duration_s=inlet.GetInjectionDuration("s"),
     )
 
 
