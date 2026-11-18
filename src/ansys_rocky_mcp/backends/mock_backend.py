@@ -1975,6 +1975,7 @@ class MockDomainSettings:
         self._periodic_min = self._min
         self._periodic_max = self._max
         self._periodic_at_geometry = False
+        self._initial_angle = 0.0
 
     def GetUseBoundaryLimits(self) -> bool:
         """Return whether boundary limits are used."""
@@ -1988,29 +1989,47 @@ class MockDomainSettings:
         """Disable boundary limits."""
         self._use_boundary_limits = False
 
+    def SetUseBoundaryLimits(self, value: bool) -> None:
+        """Set whether the domain follows the geometry bounds."""
+        self._use_boundary_limits = bool(value)
+
+    def ResetDomainToGeometriesLimits(self) -> None:
+        """Fit the domain to the geometry bounding box."""
+        self._use_boundary_limits = True
+
+    def GetInitialAngle(self, unit: str | None = None) -> float:
+        """Return the cylindrical domain's starting angle in degrees."""
+        if unit not in (None, "dega"):
+            raise ValueError(f"Unsupported angle unit {unit!r}. Expected 'dega'.")
+        return self._initial_angle
+
+    def SetInitialAngle(self, value: float, unit: str | None = None) -> None:
+        """Set the cylindrical domain's starting angle. Rocky's token is ``dega``."""
+        if unit not in (None, "dega"):
+            raise ValueError(f"Unsupported angle unit {unit!r}. Expected 'dega'.")
+        self._initial_angle = float(value)
+
     def GetCoordinateLimitsMinValues(self, unit: str | None = None) -> list[float]:
         """Return the minimum domain coordinates."""
-        factor = 1.0 / _LENGTH_TO_M.get(unit or "m", 1.0)
-        return [value * factor for value in self._min]
+        factor = _LENGTH_TO_M[unit or "m"]
+        return [value / factor for value in self._min]
 
     def SetCoordinateLimitsMinValues(
         self, values: Any, unit: str | None = None, **kwargs: Any
     ) -> None:
-        """Set the minimum domain coordinates."""
-        factor = _LENGTH_TO_M.get(unit or "m", 1.0)
-        self._min = tuple(value * factor for value in _as_sequence(values))
+        """Set the minimum domain coordinates. Rocky's default token is ``m``."""
+        self._min = tuple(_length_to_m(value, unit or "m") for value in _as_sequence(values))
 
     def GetCoordinateLimitsMaxValues(self, unit: str | None = None) -> list[float]:
         """Return the maximum domain coordinates."""
-        factor = 1.0 / _LENGTH_TO_M.get(unit or "m", 1.0)
-        return [value * factor for value in self._max]
+        factor = _LENGTH_TO_M[unit or "m"]
+        return [value / factor for value in self._max]
 
     def SetCoordinateLimitsMaxValues(
         self, values: Any, unit: str | None = None, **kwargs: Any
     ) -> None:
-        """Set the maximum domain coordinates."""
-        factor = _LENGTH_TO_M.get(unit or "m", 1.0)
-        self._max = tuple(value * factor for value in _as_sequence(values))
+        """Set the maximum domain coordinates. Rocky's default token is ``m``."""
+        self._max = tuple(_length_to_m(value, unit or "m") for value in _as_sequence(values))
 
     def GetCoordinateLimitsMinMax(self) -> tuple[list[float], list[float]]:
         """Return the ``(min, max)`` domain coordinates."""

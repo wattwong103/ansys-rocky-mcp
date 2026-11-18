@@ -254,9 +254,10 @@ async def test_walls_can_be_exported_to_stl(study: Client, tmp_path) -> None:
 
 async def test_domain_and_solver_settings_are_applied(study: Client) -> None:
     """Domain and solver settings are visible in the study description."""
-    await study.call_tool(
+    box = await study.call_tool(
         "rocky_set_domain", {"min_values": [-5.0, -1.5, -1.5], "max_values": [5.0, 1.5, 1.5]}
     )
+    assert box.data["use_boundary_limits"] is False
     await study.call_tool("rocky_set_simulation_settings", {"duration": 4.0, "time_interval": 0.2})
     timed = await study.call_tool(
         "rocky_set_simulation_settings",
@@ -324,9 +325,10 @@ async def test_domain_and_solver_settings_are_applied(study: Client) -> None:
     assert described.data["study"]["domain"]["periodic_at_geometry_limits"] is False
     axis = await study.call_tool(
         "rocky_set_domain",
-        {"domain_type": "CYLINDRICAL", "periodic_directions": "Z"},
+        {"domain_type": "CYLINDRICAL", "periodic_directions": "Z", "initial_angle_deg": 15.0},
     )
     assert axis.data["cylindrical_periodic_directions"] == "Z"
+    assert axis.data["initial_angle_deg"] == pytest.approx(15.0)
     divided = await study.call_tool(
         "rocky_set_domain",
         {"domain_type": "CYLINDRICAL", "number_of_divisions": 4},

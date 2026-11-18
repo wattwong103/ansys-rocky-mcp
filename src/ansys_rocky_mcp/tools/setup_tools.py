@@ -1612,6 +1612,8 @@ async def rocky_set_domain(
     periodic_min: list[float] | None = None,
     periodic_max: list[float] | None = None,
     periodic_at_geometry_limits: bool | None = None,
+    initial_angle_deg: float | None = None,
+    fit_geometry: bool | None = None,
     unit: str = "m",
 ) -> dict[str, Any]:
     """Configure the Rocky domain limits.
@@ -1637,22 +1639,35 @@ async def rocky_set_domain(
         Maximum periodic boundary coordinates as ``[x, y, z]``.
     periodic_at_geometry_limits : bool | None, default: None
         When true, Rocky takes the periodic limits from the geometry.
+    initial_angle_deg : float | None, default: None
+        Starting angle of a cylindrical domain, in degrees. Rocky's token is ``dega``.
+    fit_geometry : bool | None, default: None
+        Fit the domain to the geometry and use those boundary limits.
     unit : str, default: "m"
-        Unit of the domain coordinates.
+        Unit of the domain coordinates. Rocky's token is ``m``.
+        Explicit coordinates turn boundary limits off so Rocky uses them.
 
     """
     session = get_session(ctx)
     study = require_study(session)
     if number_of_divisions is not None and number_of_divisions < 1:
         raise ToolError("number_of_divisions must be at least 1.")
+    if unit not in ("m", "mm", "cm", "km"):
+        raise ToolError(f"Unknown length unit {unit!r}. Expected 'm', 'mm', 'cm', or 'km'.")
+    if number_of_divisions is not None and number_of_divisions < 2 and domain_type == "CYLINDRICAL":
+        raise ToolError("A cylindrical domain needs at least 2 divisions.")
     if domain_type is not None and domain_type not in DOMAIN_TYPES:
         raise ToolError(f"Unknown domain type {domain_type!r}. Expected one of {DOMAIN_TYPES}.")
     domain = study.GetDomainSettings()
     try:
-        if use_boundary_limits is True:
-            domain.EnableUseBoundaryLimits()
-        elif use_boundary_limits is False:
-            domain.DisableUseBoundaryLimits()
+        if fit_geometry:
+            domain.ResetDomainToGeometriesLimits()
+            domain.SetUseBoundaryLimits(True)
+        boundary_limits = use_boundary_limits
+        if boundary_limits is None and (min_values is not None or max_values is not None):
+            boundary_limits = False
+        if boundary_limits is not None:
+            domain.SetUseBoundaryLimits(bool(boundary_limits))
         if min_values is not None:
             domain.SetCoordinateLimitsMinValues(list(min_values), unit=unit)
         if max_values is not None:
@@ -1676,6 +1691,8 @@ async def rocky_set_domain(
                     )
                 domain.SetCartesianPeriodicDirections(periodic_directions)
         if number_of_divisions is not None:
+            if number_of_divisions < 2 and domain.GetDomainType() == "CYLINDRICAL":
+                raise ToolError("A cylindrical domain needs at least 2 divisions.")
             domain.SetNumberOfDivisions(int(number_of_divisions))
         if periodic_min is not None:
             domain.SetPeriodicLimitsMinCoordinates(
@@ -1687,6 +1704,8 @@ async def rocky_set_domain(
             )
         if periodic_at_geometry_limits is not None:
             domain.SetPeriodicAtGeometryLimits(periodic_at_geometry_limits)
+        if initial_angle_deg is not None:
+            domain.SetInitialAngle(initial_angle_deg, unit="dega")
     except ToolError:
         raise
     except Exception as exc:
@@ -1705,6 +1724,7 @@ async def rocky_set_domain(
         periodic_min_m=list(domain.GetPeriodicLimitsMinCoordinates("m")),
         periodic_max_m=list(domain.GetPeriodicLimitsMaxCoordinates("m")),
         periodic_at_geometry_limits=bool(domain.GetPeriodicAtGeometryLimits()),
+        initial_angle_deg=domain.GetInitialAngle("dega"),
     )
 
 
