@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 
 from fastmcp import Context
@@ -15,6 +16,31 @@ from ansys_rocky_mcp.tools._common import (
 )
 
 __all__ = ["register"]
+
+_LENGTH_TO_M = {"m": 1.0, "cm": 0.01, "mm": 0.001, "km": 1000.0}
+
+
+def _three_meters(label: str, values: list[float] | None, unit: str) -> list[float] | None:
+    """Return three lengths in meters, or None when the vector is omitted."""
+    if values is None:
+        return None
+    try:
+        items = list(values)
+    except TypeError as exc:
+        raise ToolError(f"{label} requires three numbers.") from exc
+    if len(items) != 3:
+        raise ToolError(f"{label} requires three numbers, got {len(items)}.")
+    try:
+        numbers = [float(item) for item in items]
+    except (TypeError, ValueError) as exc:
+        raise ToolError(f"{label} requires three numbers.") from exc
+    try:
+        factor = _LENGTH_TO_M[unit]
+    except KeyError as exc:
+        raise ToolError(
+            f"Unsupported length unit {unit!r}. Expected one of {sorted(_LENGTH_TO_M)}."
+        ) from exc
+    return [number * factor for number in numbers]
 
 
 def _curve(source: Any, name: str, unit: str | None) -> tuple[list[float], list[float]]:
@@ -76,6 +102,85 @@ async def rocky_get_curve(
         number_of_points=len(values),
         times=times,
         values=values,
+    )
+
+
+async def rocky_list_curves(
+    ctx: Context,
+    selection_id: str | None = None,
+) -> dict[str, Any]:
+    """List the curve names available on the particles or a selection.
+
+    Parameters
+    ----------
+    selection_id : str | None, default: None
+        Selection to list. When omitted, lists the domain curves.
+
+    """
+    session = get_session(ctx)
+    study = require_study(session)
+    if selection_id:
+        try:
+            source = session.registry.resolve(selection_id, "selection")
+        except KeyError as exc:
+            raise ToolError(str(exc)) from exc
+    else:
+        source = study.GetParticles()
+    getter = getattr(source, "GetCurveNames", None)
+    if getter is None:
+        raise ToolError(
+            f"{type(source).__name__} does not list curve names. "
+            "Try rocky_get_curve with a known name such as 'Particles Count'."
+        )
+    try:
+        names = list(getter())
+    except Exception as exc:
+        raise ToolError(f"Could not list the curves: {exc}") from exc
+    return envelope(session, curves=names, selection_id=selection_id)
+
+
+async def rocky_save_curve(
+    ctx: Context,
+    name: str,
+    path: str,
+    unit: str | None = None,
+    selection_id: str | None = None,
+) -> dict[str, Any]:
+    """Write a simulation curve to a CSV file.
+
+    Parameters
+    ----------
+    name : str
+        Curve name, for example ``"Particles Count"``.
+    path : str
+        Destination CSV path.
+    unit : str | None, default: None
+        Unit of the curve values.
+    selection_id : str | None, default: None
+        Selection to read instead of the whole domain.
+
+    """
+    session = get_session(ctx)
+    study = require_study(session)
+    if selection_id:
+        try:
+            source = session.registry.resolve(selection_id, "selection")
+        except KeyError as exc:
+            raise ToolError(str(exc)) from exc
+    else:
+        source = study.GetParticles()
+    times, values = _curve(source, name, unit)
+    destination = Path(path).expanduser()
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    lines = ["time_s,value"]
+    lines.extend(f"{time},{value}" for time, value in zip(times, values, strict=True))
+    destination.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return envelope(
+        session,
+        message=f"Saved {name} to {destination}.",
+        path=str(destination),
+        name=name,
+        number_of_points=len(values),
     )
 
 
@@ -187,31 +292,30 @@ async def rocky_create_selection(
     if kind not in ("cylinder", "cube"):
         raise ToolError(f"Unknown selection kind {kind!r}. Expected 'cylinder' or 'cube'.")
 
+    size_m = _three_meters("size", size, unit)
+    center_m = _three_meters("center", center, unit)
+
     processes = study.GetUserProcessCollection()
     particles = study.GetParticles()
     try:
         if kind == "cylinder":
-            selection = processes.CreateCylinderProcess(particles, name=name)
+            arguments: dict[str, Any] = {"name": name}
+            if center_m is not None:
+                arguments["center"] = center_m
+            if size_m is not None:
+                arguments["size"] = size_m
+            if final_angle is not None:
+                arguments["final_angle"] = final_angle
+            selection = processes.CreateCylinderProcess(particles, **arguments)
         else:
-            selection = processes.CreateCubeProcess(particles, name=name)
+            arguments = {"name": name}
+            if center_m is not None:
+                arguments["center"] = center_m
+            if size_m is not None:
+                arguments["magnitude"] = size_m
+            selection = processes.CreateCubeProcess(particles, **arguments)
     except Exception as exc:
         raise ToolError(f"Could not create the selection: {exc}") from exc
-
-    try:
-        if size is not None:
-            values = list(size)
-            while len(values) < 3:
-                values.append(values[-1])
-            selection.SetSize(values[0], values[1], values[2], unit=unit)
-        if center is not None:
-            values = list(center)
-            while len(values) < 3:
-                values.append(values[-1])
-            selection.SetCenter(values[0], values[1], values[2], unit=unit)
-        if final_angle is not None:
-            selection.SetFinalAngle(final_angle)
-    except Exception as exc:
-        raise ToolError(f"Could not size the selection: {exc}") from exc
 
     ident = session.registry.add(
         "selection",
@@ -226,6 +330,54 @@ async def rocky_create_selection(
         kind=kind,
         name=getattr(selection, "GetName", lambda: name or "")(),
     )
+
+
+async def rocky_export_stl(
+    ctx: Context,
+    path: str,
+    wall_ids: list[str],
+    output_unit: str = "m",
+) -> dict[str, Any]:
+    """Export walls to an STL file through Rocky's export toolkit.
+
+    Parameters
+    ----------
+    path : str
+        Destination STL path.
+    wall_ids : list[str]
+        Wall identifiers to export, for example ``["wall_1"]``.
+    output_unit : str, default: "m"
+        Unit written into the file.
+
+    """
+    session = get_session(ctx)
+    study = require_study(session)
+    if not wall_ids:
+        raise ToolError("At least one wall id is required.")
+    walls = [_resolve_wall(session, wall_id) for wall_id in wall_ids]
+    try:
+        study.GetExportToolkit().ExportToSTL(
+            path,
+            walls,
+            output_unit=output_unit,
+        )
+    except Exception as exc:
+        raise ToolError(f"Could not export the STL: {exc}") from exc
+    return envelope(
+        session,
+        message=f"Exported {len(walls)} wall(s) to {path}.",
+        path=path,
+        wall_ids=wall_ids,
+        output_unit=output_unit,
+    )
+
+
+def _resolve_wall(session: Any, wall_id: str) -> Any:
+    """Resolve a wall id."""
+    try:
+        return session.registry.resolve(wall_id, "wall")
+    except KeyError as exc:
+        raise ToolError(str(exc)) from exc
 
 
 async def rocky_list_processes(ctx: Context) -> dict[str, Any]:
@@ -245,11 +397,12 @@ async def rocky_list_processes(ctx: Context) -> dict[str, Any]:
 
 
 async def rocky_run_python(ctx: Context, code: str, timeout: int = 60) -> str:
-    """Run arbitrary Python code in the persistent Python session.
+    """Run Python against the connected Rocky application and open study.
 
-    This is the escape hatch for anything the dedicated tools do not cover.
-    The session keeps state between calls, so variables survive from one
-    invocation to the next.
+    ``app`` and ``study`` in the snippet are the same objects the other tools
+    use. ``study`` is ``None`` until a project is open. Variables survive from
+    one call to the next. This runs in the server process so the live objects
+    stay reachable. A separate interpreter cannot hold them.
 
     Parameters
     ----------
@@ -259,23 +412,42 @@ async def rocky_run_python(ctx: Context, code: str, timeout: int = 60) -> str:
         Maximum number of seconds to wait for the code to finish.
 
     """
-    from ansys.common.mcp.tools import execute_python_code
+    import asyncio
+    import contextlib
+    import io
+    import traceback
 
-    get_session(ctx)
-    lifespan = getattr(ctx.request_context, "lifespan_context", None)
-    if getattr(lifespan, "python_session", None) is None:
+    session = get_session(ctx)
+    if not session.config.python_session:
         raise ToolError(
-            "The persistent Python session is disabled. Restart the server without "
+            "The Python session is disabled. Restart the server without "
             "'--no-python-session' to enable it."
         )
-    return await execute_python_code(ctx, code, timeout=timeout)
+    namespace = session.python_namespace()
+
+    def _run() -> str:
+        buffer = io.StringIO()
+        try:
+            with contextlib.redirect_stdout(buffer):
+                exec(code, namespace, namespace)  # noqa: S102
+        except Exception:
+            traceback.print_exc(file=buffer)
+        return buffer.getvalue()
+
+    try:
+        return await asyncio.wait_for(asyncio.to_thread(_run), timeout=timeout)
+    except TimeoutError as exc:
+        raise ToolError(f"The Python snippet exceeded {timeout} seconds.") from exc
 
 
 def register(mcp: Any) -> None:
     """Register the results tools on the MCP server."""
     mcp.tool()(rocky_get_curve)
+    mcp.tool()(rocky_list_curves)
+    mcp.tool()(rocky_save_curve)
     mcp.tool()(rocky_list_grid_functions)
     mcp.tool()(rocky_get_grid_function_stats)
     mcp.tool()(rocky_create_selection)
     mcp.tool()(rocky_list_processes)
+    mcp.tool()(rocky_export_stl)
     mcp.tool()(rocky_run_python)

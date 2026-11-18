@@ -31,6 +31,7 @@ class RockySession:
         self.registry = ObjectRegistry()
         self._backend: RockyBackend | None = None
         self._app: Any = None
+        self._python_namespace: dict[str, Any] = {}
 
     # ------------------------------------------------------------------
     # State
@@ -77,6 +78,7 @@ class RockySession:
             self._backend = create_backend(self.config)
         self._app = self._backend.connect(mode)
         self.registry.clear()
+        self._python_namespace.clear()
         return self.status()
 
     def ensure_app(self) -> Any:
@@ -92,6 +94,7 @@ class RockySession:
         self._backend = None
         self._app = None
         self.registry.clear()
+        self._python_namespace.clear()
 
     def status(self) -> BackendStatus:
         """Return the current session status."""
@@ -125,6 +128,20 @@ class RockySession:
     # ------------------------------------------------------------------
     # Convenience accessors
     # ------------------------------------------------------------------
+    def python_namespace(self) -> dict[str, Any]:
+        """Return the persistent namespace for ``rocky_run_python``.
+
+        ``app`` is the connected application object. ``study`` is the open
+        study, or ``None`` when no project is open. User variables survive
+        across calls. The objects are the same ones the other tools use.
+        """
+        self._python_namespace["app"] = self.ensure_app()
+        try:
+            self._python_namespace["study"] = self.get_study()
+        except Exception:
+            self._python_namespace["study"] = None
+        return self._python_namespace
+
     def get_project(self) -> Any:
         """Return the open project, raising a helpful error when there is none."""
         app = self.ensure_app()

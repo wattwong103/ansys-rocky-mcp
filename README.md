@@ -27,7 +27,7 @@ Rocky study, run it, and read the results.
 
 | | |
 |---|---|
-| **Tools** | 25 (session, project, setup, run control, results, Python escape hatch) |
+| **Tools** | 38 (session, project, setup, run control, results, Python escape hatch) |
 | **Transport** | `stdio` (default) and `http` |
 | **Verified** | Full workflow end-to-end over a real MCP stdio handshake, 42 automated tests |
 | **Requires** | Python ≥ 3.12, `ansys-common-mcp`, `ansys-rocky-core` |
@@ -170,14 +170,29 @@ startup_timeout_sec = 90
 
 | Tool | Purpose |
 |---|---|
-| `rocky_import_wall` | Import a geometry file as a wall. |
+| `rocky_import_wall` | Import geometry, with Y/Z swap, CAD split, and mesh size. |
 | `rocky_create_surface` | Create a circular or rectangular surface. |
-| `rocky_create_particle` | Create a particle definition (shape, sieve size). |
-| `rocky_create_inlet` | Create a particle inlet and set its mass flow rate. |
+| `rocky_create_feed_conveyor` | Create a feed conveyor, including return-belt angle and out-of-plane offset. |
+| `rocky_create_receiving_conveyor` | Create a receiving conveyor with belt motion, profile, and alignment. |
+| `rocky_create_particle` | Create a particle, including size type, rolling resistance, and breakage. |
+| `rocky_set_size_distribution` | Set a particle's size distribution, minimum size, and surface energy. |
+| `rocky_create_material` | Create a solid material, including thermal properties, and assign it. |
+| `rocky_set_material_interaction` | Set friction, restitution, adhesion distance, and stiffness between two materials. |
+| `rocky_create_inlet` | Create a particle inlet with schedule, injection velocity, and repeat period. |
+| `rocky_add_inlet_particle` | Add another particle and its mass flow to an existing inlet. |
+| `rocky_remove_inlet_particle` | Remove a particle from an existing inlet. |
+| `rocky_create_volumetric_inlet` | Fill a box or selected walls with a particle mass at the start. |
 | `rocky_create_outlet` | Create an outlet on a surface. |
-| `rocky_set_domain` | Set the domain limits and boundary-limit behaviour. |
-| `rocky_set_simulation_settings` | Duration, output interval, processors, execution mode. |
+| `rocky_set_domain` | Set limits, periodicity, periodic bounds, and cylindrical divisions. |
+| `rocky_set_simulation_settings` | Duration, timestep, processors, GPU ids, and slicing direction. |
+| `rocky_set_output_property` | Turn a standard or module output on before a run. |
+| `rocky_set_sph_boundary` | Set an SPH wall boundary and its contact angle in degrees. |
+| `rocky_set_wall_wear` | Set a wall wear model and the Archard volume per joule. |
+| `rocky_set_wall_mass` | Set a moving wall's mass and principal inertia. |
+| `rocky_set_gravity` | Set the gravity vector on the study physics. |
+| `rocky_set_contact_models` | Set contact models and whether the thermal model is on. |
 | `rocky_set_motion` | Apply a rotation or translation motion to objects. |
+| `rocky_set_temperature` | Set a particle inlet, wall, or conveyor temperature in kelvin. |
 
 ### Run control
 
@@ -186,16 +201,22 @@ startup_timeout_sec = 90
 | `rocky_run_simulation` | Start the solver (blocking or non-blocking). |
 | `rocky_simulation_status` | Progress, time set, results availability. |
 | `rocky_wait_for_completion` | Wait for the run to finish. |
+| `rocky_stop_simulation` | Stop a running simulation. |
+| `rocky_delete_results` | Delete the current results so the next run starts clean. |
+| `rocky_extend_simulation` | Add time to the simulation duration. |
 
 ### Results
 
 | Tool | Purpose |
 |---|---|
 | `rocky_get_curve` | Read a time series (`Particles Count`, `Particles Mass Flow In/Out`, …). |
+| `rocky_list_curves` | List the curve names on the domain or a selection. |
+| `rocky_save_curve` | Write a time series to a CSV file. |
 | `rocky_list_grid_functions` | List the available grid functions. |
 | `rocky_get_grid_function_stats` | Min/max of a grid function over the time set. |
 | `rocky_create_selection` | Create a cylinder or cube selection process. |
 | `rocky_list_processes` | List user processes and registered objects. |
+| `rocky_export_stl` | Export walls to an STL file. |
 | `rocky_run_python` | Run arbitrary Python in a persistent session (escape hatch). |
 
 ### Object identifiers
@@ -269,7 +290,7 @@ src/ansys_rocky_mcp/
 ```
 
 The tool layer is written against the **Rocky application object** — the same interface
-`pyrocky` returns from `RockyClient.api()` (`CreateProject`, `GetProject`, `GetVersion`,
+`pyrocky` returns from `RockyClient.api` (`CreateProject`, `GetProject`, `GetVersion`,
 …). Both backends expose that interface, so tool code is identical whether a real Rocky
 application or the simulator is behind it.
 
@@ -302,7 +323,7 @@ the server running as a subprocess.
   differences on the first run against a real installation.
 - The mock backend models bulk transport, not particle–particle contact mechanics. It is
   a simulator for interface exploration and testing, **not** a DEM solver.
-- Result export through the Rocky export toolkit is not exposed as a tool yet.
+- STL export of walls is exposed. The other export-toolkit methods (FEM forces, geometry loads, HTC) are not.
 
 ## License
 

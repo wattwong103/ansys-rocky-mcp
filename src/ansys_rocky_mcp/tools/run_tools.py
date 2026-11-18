@@ -123,8 +123,74 @@ async def rocky_wait_for_completion(
     )
 
 
+async def rocky_extend_simulation(ctx: Context, seconds: float) -> dict[str, Any]:
+    """Extend the simulation duration.
+
+    Parameters
+    ----------
+    seconds : float
+        Extra seconds to add. Must be zero or positive.
+
+    """
+    session = get_session(ctx)
+    study = require_study(session)
+    if seconds < 0:
+        raise ToolError("seconds must be zero or positive.")
+    try:
+        study.ExtendSimulation(extension_amount=seconds)
+        duration = study.GetSolver().GetSimulationDuration("s")
+    except Exception as exc:
+        raise ToolError(f"Could not extend the simulation: {exc}") from exc
+    return envelope(
+        session,
+        message=f"Simulation extended by {seconds} s.",
+        extension_s=seconds,
+        duration_s=duration,
+        has_results=bool(study.HasResults()),
+    )
+
+
+async def rocky_delete_results(ctx: Context) -> dict[str, Any]:
+    """Delete the results of the current study so the next run starts clean."""
+    session = get_session(ctx)
+    study = require_study(session)
+    try:
+        study.DeleteResults()
+    except Exception as exc:
+        raise ToolError(f"Could not delete the results: {exc}") from exc
+    return envelope(
+        session,
+        message="Simulation results deleted.",
+        has_results=bool(study.HasResults()),
+        progress_percent=study.GetProgress(),
+    )
+
+
+async def rocky_stop_simulation(ctx: Context) -> dict[str, Any]:
+    """Stop a running Rocky simulation.
+
+    If nothing is running, Rocky leaves the study as it is.
+    """
+    session = get_session(ctx)
+    study = require_study(session)
+    try:
+        study.StopSimulation()
+    except Exception as exc:
+        raise ToolError(f"Could not stop the simulation: {exc}") from exc
+    return envelope(
+        session,
+        message="Simulation stop requested.",
+        simulating=bool(study.IsSimulating()),
+        progress_percent=study.GetProgress(),
+        has_results=bool(study.HasResults()),
+    )
+
+
 def register(mcp: Any) -> None:
     """Register the run-control tools on the MCP server."""
     mcp.tool()(rocky_run_simulation)
     mcp.tool()(rocky_simulation_status)
     mcp.tool()(rocky_wait_for_completion)
+    mcp.tool()(rocky_stop_simulation)
+    mcp.tool()(rocky_delete_results)
+    mcp.tool()(rocky_extend_simulation)

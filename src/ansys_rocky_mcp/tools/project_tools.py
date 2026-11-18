@@ -72,6 +72,7 @@ def describe_study(session: Any) -> dict[str, Any]:
         elements.append(_describe_element(element))
 
     domain = _safe(study.GetDomainSettings)
+    physics = _safe(study.GetPhysics)
     solver = _safe(study.GetSolver)
     processes = _safe(study.GetUserProcessCollection)
     process_names = _safe(lambda: list(processes.GetProcessNames()), []) or [] if processes else []
@@ -93,14 +94,55 @@ def describe_study(session: Any) -> dict[str, Any]:
                 "min_m": _safe(lambda: list(domain.GetCoordinateLimitsMinValues("m")), []),
                 "max_m": _safe(lambda: list(domain.GetCoordinateLimitsMaxValues("m")), []),
                 "use_boundary_limits": _safe(domain.GetUseBoundaryLimits),
+                "domain_type": _safe(domain.GetDomainType),
+                "cartesian_periodic_directions": _safe(domain.GetCartesianPeriodicDirections),
+                "cylindrical_periodic_directions": _safe(domain.GetCylindricalPeriodicDirections),
+                "number_of_divisions": _safe(domain.GetNumberOfDivisions),
+                "periodic_min_m": _safe(
+                    lambda: list(domain.GetPeriodicLimitsMinCoordinates("m")), []
+                ),
+                "periodic_max_m": _safe(
+                    lambda: list(domain.GetPeriodicLimitsMaxCoordinates("m")), []
+                ),
+                "periodic_at_geometry_limits": _safe(domain.GetPeriodicAtGeometryLimits),
             }
             if domain is not None
             else {},
+            "gravity_m_s2": [
+                _safe(lambda: physics.GetGravityXDirection("m/s2")),
+                _safe(lambda: physics.GetGravityYDirection("m/s2")),
+                _safe(lambda: physics.GetGravityZDirection("m/s2")),
+            ]
+            if physics is not None
+            else [],
+            "contact_models": {
+                "normal_force": _safe(physics.GetNormalForceModel) if physics is not None else None,
+                "tangential_force": _safe(physics.GetTangentialForceModel)
+                if physics is not None
+                else None,
+                "rolling_resistance": _safe(physics.GetRollingResistanceModel)
+                if physics is not None
+                else None,
+                "adhesion": _safe(physics.GetAdhesionModel) if physics is not None else None,
+                "restitution_model": _safe(physics.GetRestitutionModel)
+                if physics is not None
+                else None,
+                "thermal": _safe(physics.GetEnableThermalModel) if physics is not None else None,
+            },
             "solver": {
                 "duration_s": _safe(lambda: solver.GetSimulationDuration("s")),
                 "time_interval_s": _safe(lambda: solver.GetTimeInterval("s")),
                 "processors": _safe(solver.GetNumberOfProcessors),
                 "execution_mode": _safe(solver.GetExecutionMode),
+                "curves_frequency": _safe(solver.GetSolverCurvesFrequency),
+                "timestep_model": _safe(solver.GetTimestepModel),
+                "fixed_timestep_s": _safe(lambda: solver.GetFixedTimestep("s")),
+                "use_fixed_timestep": _safe(solver.GetUseFixedTimestep),
+                "processing_unit": _safe(solver.GetProcessingUnit),
+                "release_without_overlap_check": _safe(
+                    solver.GetReleaseParticlesWithoutOverlapCheck
+                ),
+                "breakage_delay_s": _safe(lambda: solver.GetBreakageDelayAfterRelease("s")),
             }
             if solver is not None
             else {},

@@ -22,6 +22,9 @@ CATEGORIES = (
     "wall",
     "selection",
     "motion",
+    "material",
+    "fluid",
+    "conveyor",
 )
 
 

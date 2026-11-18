@@ -70,6 +70,12 @@ def _mass_flow_to_kg_s(value: float, unit: str | None) -> float:
         ) from exc
 
 
+def _require_kelvin(unit: str | None) -> None:
+    """Reject a temperature unit other than Rocky's ``K``."""
+    if unit not in (None, "K"):
+        raise ValueError(f"Unsupported temperature unit {unit!r}. Expected 'K'.")
+
+
 def _velocity_to_m_s(value: float, unit: str | None) -> float:
     """Convert a velocity to meters per second."""
     if unit is None:
@@ -171,6 +177,16 @@ class MockParticlesProcess:
         """Initialize the process bound to a study."""
         self._study = study
 
+    def GetCurveNames(self) -> list[str]:
+        """Return the curve names this process can read."""
+        return [
+            "Particles Count",
+            "Particles Mass Flow In",
+            "Particles Mass Flow Out",
+            "Total Mass",
+            "Kinetic Energy",
+        ]
+
     def GetNumpyCurve(self, curve_name: str, unit: str | None = None) -> tuple[Any, Any]:
         """Return ``(times, values)`` for a named curve."""
         times, values, base_unit, default_unit = self._study._curve_data(curve_name)
@@ -211,6 +227,490 @@ class MockParticlesProcess:
         return int(self._study._particle_count(time))
 
 
+class MockSolidMaterial:
+    """Stand-in for a Rocky solid material."""
+
+    def __init__(self, name: str) -> None:
+        """Initialize the material."""
+        self._name = name
+        self._density = 1000.0
+        self._use_bulk = False
+        self._bulk_density = 1000.0
+        self._bulk_fraction = 1.0
+        self._youngs = 1.0e8
+        self._poisson = 0.25
+        self._specific_heat = 1000.0
+        self._conductivity = 1.0
+
+    def GetName(self) -> str:
+        """Return the material name."""
+        return self._name
+
+    def SetDensity(self, value: float, unit: str | None = None) -> None:
+        """Set the solid density. Rocky's token is ``kg/m3``."""
+        if unit not in (None, "kg/m3"):
+            raise ValueError(f"Unsupported density unit {unit!r}. Expected 'kg/m3'.")
+        self._density = float(value)
+
+    def GetDensity(self, unit: str | None = None) -> float:
+        """Return the solid density in kg/m3."""
+        if unit not in (None, "kg/m3"):
+            raise ValueError(f"Unsupported density unit {unit!r}. Expected 'kg/m3'.")
+        return self._density
+
+    def GetUseBulkDensity(self) -> bool:
+        """Return whether bulk density is used."""
+        return self._use_bulk
+
+    def SetUseBulkDensity(self, value: bool) -> None:
+        """Set whether bulk density is used."""
+        self._use_bulk = bool(value)
+
+    def GetBulkDensity(self, unit: str | None = None) -> float:
+        """Return the bulk density in kg/m3."""
+        if unit not in (None, "kg/m3"):
+            raise ValueError(f"Unsupported density unit {unit!r}. Expected 'kg/m3'.")
+        return self._bulk_density
+
+    def SetBulkDensity(self, value: float, unit: str | None = None) -> None:
+        """Set the bulk density. Rocky's token is ``kg/m3``."""
+        if unit not in (None, "kg/m3"):
+            raise ValueError(f"Unsupported density unit {unit!r}. Expected 'kg/m3'.")
+        self._bulk_density = float(value)
+
+    def GetBulkSolidFraction(self) -> float:
+        """Return the bulk solid fraction."""
+        return self._bulk_fraction
+
+    def SetBulkSolidFraction(self, value: float) -> None:
+        """Set the bulk solid fraction. Rocky stores a plain number."""
+        self._bulk_fraction = float(value)
+
+    def SetYoungsModulus(self, value: float, unit: str | None = None) -> None:
+        """Set Young's modulus. Rocky's token is ``N/m2``."""
+        if unit not in (None, "N/m2"):
+            raise ValueError(f"Unsupported modulus unit {unit!r}. Expected 'N/m2'.")
+        self._youngs = float(value)
+
+    def GetYoungsModulus(self, unit: str | None = None) -> float:
+        """Return Young's modulus in N/m2."""
+        if unit not in (None, "N/m2"):
+            raise ValueError(f"Unsupported modulus unit {unit!r}. Expected 'N/m2'.")
+        return self._youngs
+
+    def SetSpecificHeat(self, value: float, unit: str | None = None) -> None:
+        """Set specific heat. Rocky's token is ``J/kg.K``."""
+        if unit not in (None, "J/kg.K"):
+            raise ValueError(f"Unsupported specific heat unit {unit!r}. Expected 'J/kg.K'.")
+        self._specific_heat = float(value)
+
+    def GetSpecificHeat(self, unit: str | None = None) -> float:
+        """Return specific heat in J/kg.K."""
+        if unit not in (None, "J/kg.K"):
+            raise ValueError(f"Unsupported specific heat unit {unit!r}. Expected 'J/kg.K'.")
+        return self._specific_heat
+
+    def SetThermalConductivity(self, value: float, unit: str | None = None) -> None:
+        """Set thermal conductivity. Rocky's token is ``W/m.K``."""
+        if unit not in (None, "W/m.K"):
+            raise ValueError(f"Unsupported conductivity unit {unit!r}. Expected 'W/m.K'.")
+        self._conductivity = float(value)
+
+    def GetThermalConductivity(self, unit: str | None = None) -> float:
+        """Return thermal conductivity in W/m.K."""
+        if unit not in (None, "W/m.K"):
+            raise ValueError(f"Unsupported conductivity unit {unit!r}. Expected 'W/m.K'.")
+        return self._conductivity
+
+    def SetPoissonRatio(self, value: float, unit: str | None = None) -> None:
+        """Set Poisson's ratio. Rocky's token is ``-``."""
+        if unit not in (None, "-"):
+            raise ValueError(f"Unsupported Poisson ratio unit {unit!r}. Expected '-'.")
+        self._poisson = float(value)
+
+    def GetPoissonRatio(self, unit: str | None = None) -> float:
+        """Return Poisson's ratio."""
+        if unit not in (None, "-"):
+            raise ValueError(f"Unsupported Poisson ratio unit {unit!r}. Expected '-'.")
+        return self._poisson
+
+
+class MockMaterialsInteraction:
+    """Stand-in for the contact pair between two materials."""
+
+    def __init__(self) -> None:
+        """Initialize neutral contact coefficients."""
+        self._static = 0.0
+        self._dynamic = 0.0
+        self._restitution = 0.0
+        self._adhesive_distance = 0.0
+        self._stiffness_ratio = 0.0
+        self._velocity_exponent = 0.0
+        self._velocity_limit = 0.0
+        self._stiffness_multiplier = 1.0
+        self._adhesive_fraction = 0.0
+        self._pair_surface_energy = 0.0
+
+    def SetStaticFriction(self, value: float, unit: str | None = None) -> None:
+        """Set the static friction coefficient."""
+        self._static = float(value)
+
+    def GetStaticFriction(self, unit: str | None = None) -> float:
+        """Return the static friction coefficient."""
+        return self._static
+
+    def SetDynamicFriction(self, value: float, unit: str | None = None) -> None:
+        """Set the dynamic friction coefficient."""
+        self._dynamic = float(value)
+
+    def GetDynamicFriction(self, unit: str | None = None) -> float:
+        """Return the dynamic friction coefficient."""
+        return self._dynamic
+
+    def SetRestitutionCoefficient(self, value: float, unit: str | None = None) -> None:
+        """Set the restitution coefficient."""
+        self._restitution = float(value)
+
+    def GetRestitutionCoefficient(self, unit: str | None = None) -> float:
+        """Return the restitution coefficient."""
+        return self._restitution
+
+    def SetAdhesiveDistance(self, value: float, unit: str | None = None) -> None:
+        """Set the adhesive distance."""
+        self._adhesive_distance = float(value)
+
+    def GetAdhesiveDistance(self, unit: str | None = None) -> float:
+        """Return the adhesive distance."""
+        return self._adhesive_distance
+
+    def SetTangentialStiffnessRatio(self, value: float, unit: str | None = None) -> None:
+        """Set the tangential stiffness ratio."""
+        self._stiffness_ratio = float(value)
+
+    def GetTangentialStiffnessRatio(self, unit: str | None = None) -> float:
+        """Return the tangential stiffness ratio."""
+        return self._stiffness_ratio
+
+    def SetVelocityExponent(self, value: float, unit: str | None = None) -> None:
+        """Set the velocity exponent."""
+        self._velocity_exponent = float(value)
+
+    def GetVelocityExponent(self, unit: str | None = None) -> float:
+        """Return the velocity exponent."""
+        return self._velocity_exponent
+
+    def SetVelocityLimit(self, value: float, unit: str | None = None) -> None:
+        """Set the velocity limit."""
+        self._velocity_limit = float(value)
+
+    def GetVelocityLimit(self, unit: str | None = None) -> float:
+        """Return the velocity limit."""
+        return self._velocity_limit
+
+    def SetContactStiffnessMultiplier(self, value: float, unit: str | None = None) -> None:
+        """Set the contact stiffness multiplier."""
+        self._stiffness_multiplier = float(value)
+
+    def GetContactStiffnessMultiplier(self, unit: str | None = None) -> float:
+        """Return the contact stiffness multiplier."""
+        return self._stiffness_multiplier
+
+    def SetAdhesiveFraction(self, value: float, unit: str | None = None) -> None:
+        """Set the adhesive fraction."""
+        self._adhesive_fraction = float(value)
+
+    def GetAdhesiveFraction(self, unit: str | None = None) -> float:
+        """Return the adhesive fraction."""
+        return self._adhesive_fraction
+
+    def SetSurfaceEnergy(self, value: float, unit: str | None = None) -> None:
+        """Set the pair surface energy."""
+        self._pair_surface_energy = float(value)
+
+    def GetSurfaceEnergy(self, unit: str | None = None) -> float:
+        """Return the pair surface energy."""
+        return self._pair_surface_energy
+
+
+class MockMaterialsInteractionCollection:
+    """Stand-in for the study material-interaction collection."""
+
+    def __init__(self) -> None:
+        """Initialize an empty pair map."""
+        self._pairs: dict[tuple[int, int], MockMaterialsInteraction] = {}
+
+    def GetMaterialsInteraction(self, material_1: Any, material_2: Any) -> MockMaterialsInteraction:
+        """Return the interaction for a material pair, creating it if needed."""
+        key = tuple(sorted((id(material_1), id(material_2))))
+        interaction = self._pairs.get(key)
+        if interaction is None:
+            interaction = MockMaterialsInteraction()
+            self._pairs[key] = interaction
+        return interaction
+
+
+class MockNewtonianRheology:
+    """Stand-in for a Newtonian fluid viscosity."""
+
+    def __init__(self) -> None:
+        """Initialize a water-like viscosity."""
+        self._viscosity = 0.001
+
+    def GetViscosity(self, unit: str | None = None) -> float:
+        """Return the viscosity in pascal seconds."""
+        if unit not in (None, "Pa.s"):
+            raise ValueError(f"Unsupported viscosity unit {unit!r}. Expected 'Pa.s'.")
+        return self._viscosity
+
+    def SetViscosity(self, value: float, unit: str | None = None) -> None:
+        """Set the viscosity. Rocky's token is ``Pa.s``."""
+        if unit not in (None, "Pa.s"):
+            raise ValueError(f"Unsupported viscosity unit {unit!r}. Expected 'Pa.s'.")
+        self._viscosity = float(value)
+
+
+class MockHerschelBulkleyRheology:
+    """Stand-in for a Herschel-Bulkley fluid."""
+
+    def __init__(self) -> None:
+        """Initialize a Newtonian-like Herschel-Bulkley fluid."""
+        self._index = 1.0
+        self._reference = 0.001
+        self._maximum = 0.001
+        self._yield = 0.0
+
+    def GetBehaviorIndex(self) -> float:
+        """Return the behavior index."""
+        return self._index
+
+    def SetBehaviorIndex(self, value: float) -> None:
+        """Set the behavior index. Rocky stores a plain number."""
+        self._index = float(value)
+
+    def _pascal_seconds(self, value: float, unit: str | None) -> float:
+        """Store a viscosity. Rocky's token is ``Pa.s``."""
+        if unit not in (None, "Pa.s"):
+            raise ValueError(f"Unsupported viscosity unit {unit!r}. Expected 'Pa.s'.")
+        return float(value)
+
+    def GetReferenceViscosity(self, unit: str | None = None) -> float:
+        """Return the reference viscosity in pascal seconds."""
+        return self._pascal_seconds(self._reference, unit)
+
+    def SetReferenceViscosity(self, value: float, unit: str | None = None) -> None:
+        """Set the reference viscosity. Rocky's token is ``Pa.s``."""
+        self._reference = self._pascal_seconds(value, unit)
+
+    def GetMaximumViscosity(self, unit: str | None = None) -> float:
+        """Return the maximum viscosity in pascal seconds."""
+        return self._pascal_seconds(self._maximum, unit)
+
+    def SetMaximumViscosity(self, value: float, unit: str | None = None) -> None:
+        """Set the maximum viscosity. Rocky's token is ``Pa.s``."""
+        self._maximum = self._pascal_seconds(value, unit)
+
+    def GetYieldStress(self, unit: str | None = None) -> float:
+        """Return the yield stress in pascals."""
+        if unit not in (None, "Pa"):
+            raise ValueError(f"Unsupported stress unit {unit!r}. Expected 'Pa'.")
+        return self._yield
+
+    def SetYieldStress(self, value: float, unit: str | None = None) -> None:
+        """Set the yield stress. Rocky's token is ``Pa``."""
+        if unit not in (None, "Pa"):
+            raise ValueError(f"Unsupported stress unit {unit!r}. Expected 'Pa'.")
+        self._yield = float(value)
+
+
+class MockFluidMaterial:
+    """Stand-in for a Rocky fluid material."""
+
+    def __init__(self, name: str) -> None:
+        """Initialize the fluid."""
+        self._name = name
+        self._density = 1000.0
+        self._viscosity = 0.001
+        self._specific_heat = 4180.0
+        self._conductivity = 0.6
+        self._rheology = "newtonian"
+        self._newtonian = MockNewtonianRheology()
+        self._herschel = MockHerschelBulkleyRheology()
+
+    def GetName(self) -> str:
+        """Return the fluid name."""
+        return self._name
+
+    def SetName(self, value: str) -> None:
+        """Set the fluid name."""
+        self._name = value
+
+    def GetDensity(self, unit: str | None = None) -> float:
+        """Return the density in kg/m3."""
+        if unit not in (None, "kg/m3"):
+            raise ValueError(f"Unsupported density unit {unit!r}. Expected 'kg/m3'.")
+        return self._density
+
+    def SetDensity(self, value: float, unit: str | None = None) -> None:
+        """Set the density. Rocky's token is ``kg/m3``."""
+        if unit not in (None, "kg/m3"):
+            raise ValueError(f"Unsupported density unit {unit!r}. Expected 'kg/m3'.")
+        self._density = float(value)
+
+    def GetViscosity(self, unit: str | None = None) -> float:
+        """Return the viscosity in pascal seconds."""
+        if unit not in (None, "Pa.s"):
+            raise ValueError(f"Unsupported viscosity unit {unit!r}. Expected 'Pa.s'.")
+        return self._viscosity
+
+    def SetViscosity(self, value: float, unit: str | None = None) -> None:
+        """Set the viscosity. Rocky's token is ``Pa.s``."""
+        if unit not in (None, "Pa.s"):
+            raise ValueError(f"Unsupported viscosity unit {unit!r}. Expected 'Pa.s'.")
+        self._viscosity = float(value)
+        self._newtonian.SetViscosity(value, unit=unit or "Pa.s")
+
+    def GetSpecificHeat(self, unit: str | None = None) -> float:
+        """Return the specific heat in J/kg.K."""
+        if unit not in (None, "J/kg.K"):
+            raise ValueError(f"Unsupported specific heat unit {unit!r}. Expected 'J/kg.K'.")
+        return self._specific_heat
+
+    def SetSpecificHeat(self, value: float, unit: str | None = None) -> None:
+        """Set the specific heat. Rocky's token is ``J/kg.K``."""
+        if unit not in (None, "J/kg.K"):
+            raise ValueError(f"Unsupported specific heat unit {unit!r}. Expected 'J/kg.K'.")
+        self._specific_heat = float(value)
+
+    def GetThermalConductivity(self, unit: str | None = None) -> float:
+        """Return the thermal conductivity in W/m.K."""
+        if unit not in (None, "W/m.K"):
+            raise ValueError(f"Unsupported conductivity unit {unit!r}. Expected 'W/m.K'.")
+        return self._conductivity
+
+    def SetThermalConductivity(self, value: float, unit: str | None = None) -> None:
+        """Set the thermal conductivity. Rocky's token is ``W/m.K``."""
+        if unit not in (None, "W/m.K"):
+            raise ValueError(f"Unsupported conductivity unit {unit!r}. Expected 'W/m.K'.")
+        self._conductivity = float(value)
+
+    def GetRheologicalModelType(self) -> str:
+        """Return the rheology model."""
+        return self._rheology
+
+    def SetRheologicalModelType(self, value: str) -> None:
+        """Set the rheology model."""
+        if value not in ("newtonian", "herschel_bulkley_papanastasiou"):
+            raise ValueError(
+                f"Unsupported rheology {value!r}. "
+                "Expected 'newtonian' or 'herschel_bulkley_papanastasiou'."
+            )
+        self._rheology = value
+
+    def GetNewtonianRheologicalModel(self) -> MockNewtonianRheology:
+        """Return the Newtonian viscosity model."""
+        return self._newtonian
+
+    def GetHerschelBulkleyRheologicalModel(self) -> MockHerschelBulkleyRheology:
+        """Return the Herschel-Bulkley model."""
+        return self._herschel
+
+
+class MockMaterialCollection:
+    """Stand-in for the study material collection."""
+
+    def __init__(self) -> None:
+        """Initialize an empty collection."""
+        self._materials: list[MockSolidMaterial] = []
+        self._fluids: list[MockFluidMaterial] = []
+
+    def AddSolidMaterial(self, name: str | None = None) -> MockSolidMaterial:
+        """Create a solid material."""
+        material = MockSolidMaterial(name or f"Material {len(self._materials) + 1}")
+        self._materials.append(material)
+        return material
+
+    def AddFluidMaterial(self, name: str | None = None) -> MockFluidMaterial:
+        """Create a fluid material."""
+        fluid = MockFluidMaterial(name or f"Fluid {len(self._fluids) + 1}")
+        self._fluids.append(fluid)
+        return fluid
+
+    def GetFluidMaterial(self, material_name: str) -> MockFluidMaterial:
+        """Return a fluid material by name."""
+        for fluid in self._fluids:
+            if fluid.GetName() == material_name:
+                return fluid
+        raise KeyError(material_name)
+
+    def GetSolidMaterial(self, material_name: str) -> MockSolidMaterial:
+        """Return a solid material by name."""
+        for material in self._materials:
+            if material.GetName() == material_name:
+                return material
+        raise KeyError(material_name)
+
+
+class MockSizeDistributionEntry:
+    """One row of a particle size table."""
+
+    def __init__(self) -> None:
+        """Initialize an empty row."""
+        self._size_m = 0.0
+        self._cumulative = 0.0
+
+    def SetSize(self, value: float, unit: str | None = None) -> None:
+        """Set the sieve size. Rocky's default token is ``m``."""
+        self._size_m = _length_to_m(float(value), unit or "m")
+
+    def GetSize(self, unit: str | None = None) -> float:
+        """Return the sieve size in the requested unit."""
+        factor = _LENGTH_TO_M.get(unit or "m")
+        if factor is None:
+            raise ValueError(
+                f"Unsupported length unit {unit!r}. Expected one of {sorted(_LENGTH_TO_M)}."
+            )
+        return self._size_m / factor
+
+    def SetCumulativePercentage(self, value: float) -> None:
+        """Set the cumulative percentage. Rocky stores a plain number."""
+        self._cumulative = float(value)
+
+    def GetCumulativePercentage(self) -> float:
+        """Return the cumulative percentage."""
+        return self._cumulative
+
+
+class MockSizeDistributionList:
+    """The size table on a particle's Size tab."""
+
+    def __init__(self, particle: MockParticle) -> None:
+        """Initialize an empty table for one particle."""
+        self._particle = particle
+        self._entries: list[MockSizeDistributionEntry] = []
+
+    def New(self) -> MockSizeDistributionEntry:
+        """Add a size row."""
+        entry = MockSizeDistributionEntry()
+        self._entries.append(entry)
+        return entry
+
+    def Clear(self) -> None:
+        """Remove every size row."""
+        self._entries.clear()
+
+    def __iter__(self) -> Any:
+        """Iterate the size rows."""
+        return iter(self._entries)
+
+    def SetSizeType(self, value: str) -> None:
+        """Set how Rocky measures size."""
+        self._particle.SetSizeType(value)
+
+    def GetSizeType(self) -> str:
+        """Return how Rocky measures size."""
+        return self._particle.GetSizeType()
+
+
 class MockParticle:
     """Stand-in for a Rocky particle definition."""
 
@@ -220,10 +720,93 @@ class MockParticle:
         self._shape = "sphere"
         self._size_type = "sieve"
         self._minimum_size = DEFAULT_SIEVE_SIZE
+        self._distribution = "gaudin_schumann"
+        self._size_ratio = 1.0
+        self._breakage_model = "none"
+        self._breakage = False
+        self._abt10_size = 0.0
+        self._abt10_energy = 0.0
+        self._tavares_a = 0.0
+        self._tavares_b = 0.0
+        self._tavares_d0 = 0.0
+        self._tavares_e_inf = 0.0
+        self._tavares_gamma = 0.0
+        self._tavares_phi = 0.0
+        self._tavares_sigma = 0.0
+        self._tavares_emax = 0.0
+        self._tavares_minimum_energy = 0.0
+        self._energy_after = 0.0
+        self._t10_formula = "it10E_50b"
+        self._abt10_t10 = 0.0
+        self._abt10_select = 0.0
+        self._cgm_scale = 1.0
+        self._shear_limit = 0.0
+        self._tensile_limit = 0.0
+        self._von_mises_limit = 0.0
+        self._plastic_limit = 0.0
+        self._porosity = 0.0
+        self._bending_deg = 0.0
+        self._torsion_deg = 0.0
+        self._flexible = False
+        self._elasticity = "isotropic"
+        self._target_elements = 1
+        self._ratio_bending = 1.0
+        self._ratio_normal = 1.0
+        self._ratio_tangential = 1.0
+        self._ratio_torsion = 1.0
+        self._element_damping = 0.0
+        self._joint_damping = 0.0
+        self._joint_elastic = 1.0
+        self._joint_thermal = 1.0
+        self._plastic_ratio = 0.0
+        self._internal_friction = 0.0
+        self._deformation = "none"
+        self._plasticity = "LinearElastic"
+        self._self_contacts = False
+        self._with_failure = False
+        self._fragment_fraction = 0.0
+        self._multiple_elements = False
+        self._failure_ratio = 1.0
+        self._random_angle = False
+        self._random_half_rad = (0.0, 0.0, 0.0)
+        self._surface_energy = 0.0
+        self._material: MockSolidMaterial | None = None
+        self._horizontal_aspect = 1.0
+        self._vertical_aspect = 1.0
+        self._thickness = 0.0
+        self._corners = 4
+        self._edge_deg = 0.0
+        self._side_angle = 0.0
+        self._smoothness = 0.0
+        self._superquadric = 2.0
+        self._rotations = True
+        self._change_mass = False
+        self._com = (0.0, 0.0, 0.0)
+        self._inertia_m5 = (0.0, 0.0, 0.0)
+        self._x_axis = (1.0, 0.0, 0.0)
+        self._y_axis = (0.0, 1.0, 0.0)
+        self._z_axis = (0.0, 0.0, 1.0)
+        self._rotational_deformations = False
+        self._remesh = False
+        self._second_bending_deg = 0.0
+        self._rolling_resistance = 0.0
+        self._size_rows = MockSizeDistributionList(self)
+
+    def GetSizeDistributionList(self) -> MockSizeDistributionList:
+        """Return the particle size table."""
+        return self._size_rows
 
     def GetName(self) -> str:
         """Return the particle name."""
         return self._name
+
+    def SetMaterial(self, value: Any) -> None:
+        """Assign a solid material by object or name."""
+        self._material = value
+
+    def GetMaterial(self) -> Any:
+        """Return the assigned material."""
+        return self._material
 
     def GetClassName(self) -> str:
         """Return the Rocky class name of the particle."""
@@ -241,13 +824,192 @@ class MockParticle:
         """Set the particle shape."""
         self._shape = value
 
+    def GetHorizontalAspectRatio(self) -> float:
+        """Return the horizontal aspect ratio."""
+        return self._horizontal_aspect
+
+    def SetHorizontalAspectRatio(self, value: float) -> None:
+        """Set the horizontal aspect ratio."""
+        self._horizontal_aspect = float(value)
+
+    def GetVerticalAspectRatio(self) -> float:
+        """Return the vertical aspect ratio."""
+        return self._vertical_aspect
+
+    def SetVerticalAspectRatio(self, value: float) -> None:
+        """Set the vertical aspect ratio."""
+        self._vertical_aspect = float(value)
+
+    def GetThickness(self, unit: str | None = None) -> float:
+        """Return the particle thickness in meters."""
+        if unit not in (None, "m"):
+            raise ValueError(f"Unsupported length unit {unit!r}. Expected 'm'.")
+        return self._thickness
+
+    def SetThickness(self, value: float, unit: str | None = None) -> None:
+        """Set the particle thickness in meters."""
+        if unit not in (None, "m"):
+            raise ValueError(f"Unsupported length unit {unit!r}. Expected 'm'.")
+        self._thickness = float(value)
+
+    def GetNumberOfCorners(self) -> int:
+        """Return the number of corners."""
+        return self._corners
+
+    def SetNumberOfCorners(self, value: int) -> None:
+        """Set the number of corners."""
+        self._corners = int(value)
+
+    def GetEdgeAngle(self, unit: str | None = None) -> float:
+        """Return the edge angle in degrees."""
+        if unit not in (None, "dega"):
+            raise ValueError(f"Unsupported angle unit {unit!r}. Expected 'dega'.")
+        return self._edge_deg
+
+    def SetEdgeAngle(self, value: float, unit: str | None = None) -> None:
+        """Set the edge angle. Rocky's degree token is ``dega``."""
+        if unit not in (None, "dega"):
+            raise ValueError(f"Unsupported angle unit {unit!r}. Expected 'dega'.")
+        self._edge_deg = float(value)
+
+    def GetSideAngle(self) -> float:
+        """Return the side angle as Rocky stores it, with no unit."""
+        return self._side_angle
+
+    def SetSideAngle(self, value: float) -> None:
+        """Set the side angle. Rocky takes a plain number."""
+        self._side_angle = float(value)
+
+    def GetSmoothness(self) -> float:
+        """Return the shape smoothness."""
+        return self._smoothness
+
+    def SetSmoothness(self, value: float) -> None:
+        """Set the shape smoothness."""
+        self._smoothness = float(value)
+
+    def GetSuperquadricDegree(self) -> float:
+        """Return the superquadric degree."""
+        return self._superquadric
+
+    def SetSuperquadricDegree(self, value: float) -> None:
+        """Set the superquadric degree."""
+        self._superquadric = float(value)
+
+    def GetEnableRotations(self) -> bool:
+        """Return whether the particle can rotate."""
+        return self._rotations
+
+    def SetEnableRotations(self, value: bool) -> None:
+        """Set whether the particle can rotate."""
+        self._rotations = bool(value)
+
+    def _triple(self, values: list[float], unit: str | None, allowed: str) -> tuple[float, ...]:
+        """Store a three-component particle vector in Rocky's unit."""
+        if unit not in (None, allowed):
+            raise ValueError(f"Unsupported particle vector unit {unit!r}. Expected {allowed!r}.")
+        if len(values) != 3:
+            raise ValueError("A particle vector must have three numbers.")
+        return tuple(float(value) for value in values)
+
+    def GetChangeMassProperties(self) -> bool:
+        """Return whether custom mass properties are used."""
+        return self._change_mass
+
+    def SetChangeMassProperties(self, value: bool) -> None:
+        """Set whether custom mass properties are used."""
+        self._change_mass = bool(value)
+
+    def GetCenterOfMassOffset(self, unit: str | None = None) -> list[float]:
+        """Return the center-of-mass offset in percent."""
+        if unit not in (None, "%"):
+            raise ValueError(f"Unsupported offset unit {unit!r}. Expected '%'.")
+        return list(self._com)
+
+    def SetCenterOfMassOffset(self, values: list[float], unit: str | None = None) -> None:
+        """Set the center-of-mass offset. Rocky's token is ``%``."""
+        self._com = self._triple(values, unit, "%")
+
+    def GetPrincipalMomentOfInertia(self, unit: str | None = None) -> list[float]:
+        """Return the principal moments. A particle uses ``m5``."""
+        if unit not in (None, "m5"):
+            raise ValueError(f"Unsupported inertia unit {unit!r}. Expected 'm5'.")
+        return list(self._inertia_m5)
+
+    def SetPrincipalMomentOfInertia(self, values: list[float], unit: str | None = None) -> None:
+        """Set the principal moments. Rocky's particle token is ``m5``."""
+        self._inertia_m5 = self._triple(values, unit, "m5")
+
+    def GetXDirection(self, unit: str | None = None) -> list[float]:
+        """Return the particle X axis."""
+        return list(self._triple(list(self._x_axis), unit, "-"))
+
+    def SetXDirection(self, values: list[float], unit: str | None = None) -> None:
+        """Set the particle X axis. Rocky's token is ``-``."""
+        self._x_axis = self._triple(values, unit, "-")
+
+    def GetYDirection(self, unit: str | None = None) -> list[float]:
+        """Return the particle Y axis."""
+        return list(self._triple(list(self._y_axis), unit, "-"))
+
+    def SetYDirection(self, values: list[float], unit: str | None = None) -> None:
+        """Set the particle Y axis. Rocky's token is ``-``."""
+        self._y_axis = self._triple(values, unit, "-")
+
+    def GetZDirection(self, unit: str | None = None) -> list[float]:
+        """Return the particle Z axis."""
+        return list(self._triple(list(self._z_axis), unit, "-"))
+
+    def SetZDirection(self, values: list[float], unit: str | None = None) -> None:
+        """Set the particle Z axis. Rocky's token is ``-``."""
+        self._z_axis = self._triple(values, unit, "-")
+
+    def GetIncludeRotationalDeformations(self) -> bool:
+        """Return whether rotational deformation is included."""
+        return self._rotational_deformations
+
+    def SetIncludeRotationalDeformations(self, value: bool) -> None:
+        """Set whether rotational deformation is included."""
+        self._rotational_deformations = bool(value)
+
+    def GetRemeshToTarget(self) -> bool:
+        """Return whether the particle is remeshed to the target count."""
+        return self._remesh
+
+    def SetRemeshToTarget(self, value: bool) -> None:
+        """Set whether the particle is remeshed to the target count."""
+        self._remesh = bool(value)
+
+    def GetSecondBendingAngleLimit(self, unit: str | None = None) -> float:
+        """Return the second bending limit in degrees."""
+        if unit not in (None, "dega"):
+            raise ValueError(f"Unsupported angle unit {unit!r}. Expected 'dega'.")
+        return self._second_bending_deg
+
+    def SetSecondBendingAngleLimit(self, value: float, unit: str | None = None) -> None:
+        """Set the second bending limit. Rocky's token is ``dega``."""
+        if unit not in (None, "dega"):
+            raise ValueError(f"Unsupported angle unit {unit!r}. Expected 'dega'.")
+        self._second_bending_deg = float(value)
+
     def GetSizeType(self) -> str:
         """Return the particle size type."""
         return self._size_type
 
     def SetSizeType(self, value: str) -> None:
         """Set the particle size type."""
+        valid = ("sieve", "equivalent_diameter", "original_size_scale")
+        if value not in valid:
+            raise ValueError(f"Unknown size type {value!r}. Expected one of {valid}.")
         self._size_type = value
+
+    def GetRollingResistance(self) -> float:
+        """Return the particle rolling resistance."""
+        return self._rolling_resistance
+
+    def SetRollingResistance(self, value: float) -> None:
+        """Set the particle rolling resistance."""
+        self._rolling_resistance = float(value)
 
     def GetMinimumSize(self, unit: str | None = None) -> float:
         """Return the sieve size in the requested unit."""
@@ -258,6 +1020,514 @@ class MockParticle:
         """Set the sieve size."""
         self._minimum_size = _length_to_m(value, unit)
 
+    def GetDistributionModel(self) -> str:
+        """Return the size distribution model."""
+        return self._distribution
+
+    def SetDistributionModel(self, value: str) -> None:
+        """Set the size distribution model."""
+        self._distribution = value
+
+    def GetMinimumSizeRatio(self) -> float:
+        """Return the minimum size as a fraction of the maximum size."""
+        return self._size_ratio
+
+    def SetMinimumSizeRatio(self, value: float) -> None:
+        """Set the minimum size as a fraction of the maximum size."""
+        self._size_ratio = float(value)
+
+    def GetBreakageModel(self) -> str:
+        """Return the breakage model."""
+        return self._breakage_model
+
+    def SetBreakageModel(self, value: str) -> None:
+        """Set the breakage model. Any model other than none enables breakage."""
+        self._breakage_model = value
+        if value != "none":
+            self._breakage = True
+
+    def GetEnableBreakage(self) -> bool:
+        """Return whether breakage is enabled."""
+        return self._breakage
+
+    def SetEnableBreakage(self, value: bool) -> None:
+        """Enable or disable breakage."""
+        self._breakage = bool(value)
+
+    def GetAbt10ReferenceSize(self, unit: str | None = None) -> float:
+        """Return the Abt10 reference size in meters."""
+        if unit not in (None, "m"):
+            raise ValueError(f"Unsupported length unit {unit!r}. Expected 'm'.")
+        return self._abt10_size
+
+    def SetAbt10ReferenceSize(self, value: float, unit: str | None = None) -> None:
+        """Set the Abt10 reference size in meters."""
+        if unit not in (None, "m"):
+            raise ValueError(f"Unsupported length unit {unit!r}. Expected 'm'.")
+        self._abt10_size = float(value)
+
+    def GetAbt10ReferenceMinimumSpecificEnergy(self, unit: str | None = None) -> float:
+        """Return the Abt10 reference energy in joules per kilogram."""
+        if unit not in (None, "J/kg"):
+            raise ValueError(f"Unsupported energy unit {unit!r}. Expected 'J/kg'.")
+        return self._abt10_energy
+
+    def SetAbt10ReferenceMinimumSpecificEnergy(self, value: float, unit: str | None = None) -> None:
+        """Set the Abt10 reference energy in joules per kilogram."""
+        if unit not in (None, "J/kg"):
+            raise ValueError(f"Unsupported energy unit {unit!r}. Expected 'J/kg'.")
+        self._abt10_energy = float(value)
+
+    def GetTavaresA(self, unit: str | None = None) -> float:
+        """Return Tavares A as a percent."""
+        if unit not in (None, "%"):
+            raise ValueError(f"Unsupported percent unit {unit!r}. Expected '%'.")
+        return self._tavares_a
+
+    def SetTavaresA(self, value: float, unit: str | None = None) -> None:
+        """Set Tavares A. Rocky's token is percent."""
+        if unit not in (None, "%"):
+            raise ValueError(f"Unsupported percent unit {unit!r}. Expected '%'.")
+        self._tavares_a = float(value)
+
+    def GetTavaresD0(self, unit: str | None = None) -> float:
+        """Return Tavares D0 in meters."""
+        if unit not in (None, "m"):
+            raise ValueError(f"Unsupported length unit {unit!r}. Expected 'm'.")
+        return self._tavares_d0
+
+    def SetTavaresD0(self, value: float, unit: str | None = None) -> None:
+        """Set Tavares D0 in meters."""
+        if unit not in (None, "m"):
+            raise ValueError(f"Unsupported length unit {unit!r}. Expected 'm'.")
+        self._tavares_d0 = float(value)
+
+    def GetTavaresEInf(self, unit: str | None = None) -> float:
+        """Return Tavares E infinity in joules per kilogram."""
+        if unit not in (None, "J/kg"):
+            raise ValueError(f"Unsupported energy unit {unit!r}. Expected 'J/kg'.")
+        return self._tavares_e_inf
+
+    def SetTavaresEInf(self, value: float, unit: str | None = None) -> None:
+        """Set Tavares E infinity in joules per kilogram."""
+        if unit not in (None, "J/kg"):
+            raise ValueError(f"Unsupported energy unit {unit!r}. Expected 'J/kg'.")
+        self._tavares_e_inf = float(value)
+
+    def _plain(self, unit: str | None) -> None:
+        """Reject a unit other than Rocky's plain-number token."""
+        if unit not in (None, "-"):
+            raise ValueError(f"Unsupported plain unit {unit!r}. Expected '-'.")
+
+    def GetTavaresB(self, unit: str | None = None) -> float:
+        """Return Tavares b."""
+        self._plain(unit)
+        return self._tavares_b
+
+    def SetTavaresB(self, value: float, unit: str | None = None) -> None:
+        """Set Tavares b. Rocky's token is ``-``."""
+        self._plain(unit)
+        self._tavares_b = float(value)
+
+    def GetTavaresGamma(self, unit: str | None = None) -> float:
+        """Return Tavares gamma."""
+        self._plain(unit)
+        return self._tavares_gamma
+
+    def SetTavaresGamma(self, value: float, unit: str | None = None) -> None:
+        """Set Tavares gamma. Rocky's token is ``-``."""
+        self._plain(unit)
+        self._tavares_gamma = float(value)
+
+    def GetTavaresPhi(self, unit: str | None = None) -> float:
+        """Return Tavares phi."""
+        self._plain(unit)
+        return self._tavares_phi
+
+    def SetTavaresPhi(self, value: float, unit: str | None = None) -> None:
+        """Set Tavares phi. Rocky's token is ``-``."""
+        self._plain(unit)
+        self._tavares_phi = float(value)
+
+    def GetTavaresSigmaSquared(self, unit: str | None = None) -> float:
+        """Return Tavares sigma squared."""
+        self._plain(unit)
+        return self._tavares_sigma
+
+    def SetTavaresSigmaSquared(self, value: float, unit: str | None = None) -> None:
+        """Set Tavares sigma squared. Rocky's token is ``-``."""
+        self._plain(unit)
+        self._tavares_sigma = float(value)
+
+    def GetTavaresRatioEmax(self, unit: str | None = None) -> float:
+        """Return the Tavares Emax ratio."""
+        self._plain(unit)
+        return self._tavares_emax
+
+    def SetTavaresRatioEmax(self, value: float, unit: str | None = None) -> None:
+        """Set the Tavares Emax ratio. Rocky's token is ``-``."""
+        self._plain(unit)
+        self._tavares_emax = float(value)
+
+    def GetTavaresMinimumEnergy(self, unit: str | None = None) -> float:
+        """Return the Tavares minimum specific energy in J/kg."""
+        if unit not in (None, "J/kg"):
+            raise ValueError(f"Unsupported energy unit {unit!r}. Expected 'J/kg'.")
+        return self._tavares_minimum_energy
+
+    def SetTavaresMinimumEnergy(self, value: float, unit: str | None = None) -> None:
+        """Set the Tavares minimum specific energy. Rocky's token is ``J/kg``."""
+        if unit not in (None, "J/kg"):
+            raise ValueError(f"Unsupported energy unit {unit!r}. Expected 'J/kg'.")
+        self._tavares_minimum_energy = float(value)
+
+    def GetRatioEnergyAfterBreakage(self, unit: str | None = None) -> float:
+        """Return the energy kept after breakage."""
+        self._plain(unit)
+        return self._energy_after
+
+    def SetRatioEnergyAfterBreakage(self, value: float, unit: str | None = None) -> None:
+        """Set the energy kept after breakage. Rocky's token is ``-``."""
+        self._plain(unit)
+        self._energy_after = float(value)
+
+    def GetT10Formula(self) -> str:
+        """Return the t10 formula."""
+        return self._t10_formula
+
+    def SetT10Formula(self, value: str) -> None:
+        """Set the t10 formula."""
+        if value not in ("it10E_50b", "it10E_fract"):
+            raise ValueError(
+                f"Unsupported t10 formula {value!r}. Expected 'it10E_50b' or 'it10E_fract'."
+            )
+        self._t10_formula = value
+
+    def GetAbt10MaximumT10Value(self, unit: str | None = None) -> float:
+        """Return the maximum t10 as a percent."""
+        if unit not in (None, "%"):
+            raise ValueError(f"Unsupported percent unit {unit!r}. Expected '%'.")
+        return self._abt10_t10
+
+    def SetAbt10MaximumT10Value(self, value: float, unit: str | None = None) -> None:
+        """Set the maximum t10. Rocky's token is ``%``."""
+        if unit not in (None, "%"):
+            raise ValueError(f"Unsupported percent unit {unit!r}. Expected '%'.")
+        self._abt10_t10 = float(value)
+
+    def GetAbt10SelectFunctionCoefficient(self, unit: str | None = None) -> float:
+        """Return the selection function coefficient in kg/J."""
+        if unit not in (None, "kg/J"):
+            raise ValueError(f"Unsupported coefficient unit {unit!r}. Expected 'kg/J'.")
+        return self._abt10_select
+
+    def SetAbt10SelectFunctionCoefficient(self, value: float, unit: str | None = None) -> None:
+        """Set the selection function coefficient. Rocky's token is ``kg/J``."""
+        if unit not in (None, "kg/J"):
+            raise ValueError(f"Unsupported coefficient unit {unit!r}. Expected 'kg/J'.")
+        self._abt10_select = float(value)
+
+    def GetCgmScaleFactor(self) -> float:
+        """Return the coarse-grain scale factor."""
+        return self._cgm_scale
+
+    def SetCgmScaleFactor(self, value: float) -> None:
+        """Set the coarse-grain scale factor."""
+        self._cgm_scale = float(value)
+
+    def _stress(self, unit: str | None) -> None:
+        """Reject a stress unit other than newtons per square meter."""
+        if unit not in (None, "N/m2"):
+            raise ValueError(f"Unsupported stress unit {unit!r}. Expected 'N/m2'.")
+
+    def GetShearStressLimit(self, unit: str | None = None) -> float:
+        """Return the shear stress limit in N/m2."""
+        self._stress(unit)
+        return self._shear_limit
+
+    def SetShearStressLimit(self, value: float, unit: str | None = None) -> None:
+        """Set the shear stress limit in N/m2."""
+        self._stress(unit)
+        self._shear_limit = float(value)
+
+    def GetTensileStressLimit(self, unit: str | None = None) -> float:
+        """Return the tensile stress limit in N/m2."""
+        self._stress(unit)
+        return self._tensile_limit
+
+    def SetTensileStressLimit(self, value: float, unit: str | None = None) -> None:
+        """Set the tensile stress limit in N/m2."""
+        self._stress(unit)
+        self._tensile_limit = float(value)
+
+    def GetVonMisesStressLimit(self, unit: str | None = None) -> float:
+        """Return the von Mises stress limit in N/m2."""
+        self._stress(unit)
+        return self._von_mises_limit
+
+    def SetVonMisesStressLimit(self, value: float, unit: str | None = None) -> None:
+        """Set the von Mises stress limit in N/m2."""
+        self._stress(unit)
+        self._von_mises_limit = float(value)
+
+    def GetPlasticLimit(self, unit: str | None = None) -> float:
+        """Return the plastic limit in pascals. Rocky's token is ``Pa``."""
+        if unit not in (None, "Pa"):
+            raise ValueError(f"Unsupported plastic-limit unit {unit!r}. Expected 'Pa'.")
+        return self._plastic_limit
+
+    def SetPlasticLimit(self, value: float, unit: str | None = None) -> None:
+        """Set the plastic limit. Rocky's token is ``Pa``, not ``N/m2``."""
+        if unit not in (None, "Pa"):
+            raise ValueError(f"Unsupported plastic-limit unit {unit!r}. Expected 'Pa'.")
+        self._plastic_limit = float(value)
+
+    def GetPorosity(self, unit: str | None = None) -> float:
+        """Return porosity. Rocky's token is ``<fraction>``."""
+        if unit not in (None, "<fraction>"):
+            raise ValueError(f"Unsupported porosity unit {unit!r}. Expected '<fraction>'.")
+        return self._porosity
+
+    def SetPorosity(self, value: float, unit: str | None = None) -> None:
+        """Set porosity. Rocky's token is ``<fraction>``."""
+        if unit not in (None, "<fraction>"):
+            raise ValueError(f"Unsupported porosity unit {unit!r}. Expected '<fraction>'.")
+        self._porosity = float(value)
+
+    def GetBendingAngleLimit(self, unit: str | None = None) -> float:
+        """Return the bending angle limit in degrees."""
+        if unit not in (None, "dega"):
+            raise ValueError(f"Unsupported angle unit {unit!r}. Expected 'dega'.")
+        return self._bending_deg
+
+    def SetBendingAngleLimit(self, value: float, unit: str | None = None) -> None:
+        """Set the bending angle limit. Rocky's degree token is ``dega``."""
+        if unit not in (None, "dega"):
+            raise ValueError(f"Unsupported angle unit {unit!r}. Expected 'dega'.")
+        self._bending_deg = float(value)
+
+    def GetTorsionAngleLimit(self, unit: str | None = None) -> float:
+        """Return the torsion angle limit in degrees."""
+        if unit not in (None, "dega"):
+            raise ValueError(f"Unsupported angle unit {unit!r}. Expected 'dega'.")
+        return self._torsion_deg
+
+    def SetTorsionAngleLimit(self, value: float, unit: str | None = None) -> None:
+        """Set the torsion angle limit. Rocky's degree token is ``dega``."""
+        if unit not in (None, "dega"):
+            raise ValueError(f"Unsupported angle unit {unit!r}. Expected 'dega'.")
+        self._torsion_deg = float(value)
+
+    def GetFlexible(self) -> bool:
+        """Return whether the particle is flexible."""
+        return self._flexible
+
+    def SetFlexible(self, value: bool) -> None:
+        """Set whether the particle is flexible."""
+        self._flexible = bool(value)
+
+    def GetElasticity(self) -> str:
+        """Return the elasticity model."""
+        return self._elasticity
+
+    def SetElasticity(self, value: str) -> None:
+        """Set the elasticity model."""
+        if value not in ("isotropic", "anisotropic"):
+            raise ValueError(f"Unknown elasticity {value!r}.")
+        self._elasticity = value
+
+    def GetTargetNumberOfElements(self) -> int:
+        """Return the target number of fiber elements."""
+        return self._target_elements
+
+    def SetTargetNumberOfElements(self, value: int) -> None:
+        """Set the target number of fiber elements."""
+        count = int(value)
+        if count < 1:
+            raise ValueError("Target number of elements must be at least 1.")
+        self._target_elements = count
+
+    def GetElasticRatioBending(self) -> float:
+        """Return the bending stiffness ratio."""
+        return self._ratio_bending
+
+    def SetElasticRatioBending(self, value: float) -> None:
+        """Set the bending stiffness ratio."""
+        self._ratio_bending = float(value)
+
+    def GetElasticRatioNormal(self) -> float:
+        """Return the normal stiffness ratio."""
+        return self._ratio_normal
+
+    def SetElasticRatioNormal(self, value: float) -> None:
+        """Set the normal stiffness ratio."""
+        self._ratio_normal = float(value)
+
+    def GetElasticRatioTangential(self) -> float:
+        """Return the tangential stiffness ratio."""
+        return self._ratio_tangential
+
+    def SetElasticRatioTangential(self, value: float) -> None:
+        """Set the tangential stiffness ratio."""
+        self._ratio_tangential = float(value)
+
+    def GetElasticRatioTorsion(self) -> float:
+        """Return the torsion stiffness ratio."""
+        return self._ratio_torsion
+
+    def SetElasticRatioTorsion(self, value: float) -> None:
+        """Set the torsion stiffness ratio."""
+        self._ratio_torsion = float(value)
+
+    def GetElementDampingRatio(self) -> float:
+        """Return the element damping ratio."""
+        return self._element_damping
+
+    def SetElementDampingRatio(self, value: float) -> None:
+        """Set the element damping ratio."""
+        self._element_damping = float(value)
+
+    def GetJointDampingRatio(self) -> float:
+        """Return the joint damping ratio."""
+        return self._joint_damping
+
+    def SetJointDampingRatio(self, value: float) -> None:
+        """Set the joint damping ratio."""
+        self._joint_damping = float(value)
+
+    def GetJointElasticRatio(self) -> float:
+        """Return the joint elastic ratio."""
+        return self._joint_elastic
+
+    def SetJointElasticRatio(self, value: float) -> None:
+        """Set the joint elastic ratio."""
+        self._joint_elastic = float(value)
+
+    def GetJointThermalRatio(self) -> float:
+        """Return the joint thermal ratio."""
+        return self._joint_thermal
+
+    def SetJointThermalRatio(self, value: float) -> None:
+        """Set the joint thermal ratio."""
+        self._joint_thermal = float(value)
+
+    def GetPlasticRatio(self) -> float:
+        """Return the plastic ratio."""
+        return self._plastic_ratio
+
+    def SetPlasticRatio(self, value: float) -> None:
+        """Set the plastic ratio."""
+        self._plastic_ratio = float(value)
+
+    def GetInternalFriction(self) -> float:
+        """Return the internal friction."""
+        return self._internal_friction
+
+    def SetInternalFriction(self, value: float) -> None:
+        """Set the internal friction."""
+        self._internal_friction = float(value)
+
+    def GetDeformationModel(self) -> str:
+        """Return the deformation model."""
+        return self._deformation
+
+    def SetDeformationModel(self, value: str) -> None:
+        """Set the deformation model."""
+        if value not in ("none", "elastic", "plastic"):
+            raise ValueError(
+                f"Unsupported deformation model {value!r}. "
+                "Expected 'none', 'elastic', or 'plastic'."
+            )
+        self._deformation = value
+
+    def GetPlasticityModel(self) -> str:
+        """Return the plasticity model."""
+        return self._plasticity
+
+    def SetPlasticityModel(self, value: str) -> None:
+        """Set the plasticity model."""
+        if value not in ("LinearElastic", "BilinearElastoplastic", "Custom"):
+            raise ValueError(
+                f"Unsupported plasticity model {value!r}. "
+                "Expected 'LinearElastic', 'BilinearElastoplastic', or 'Custom'."
+            )
+        self._plasticity = value
+
+    def GetAllowSelfContacts(self) -> bool:
+        """Return whether the particle can contact itself."""
+        return self._self_contacts
+
+    def SetAllowSelfContacts(self, value: bool) -> None:
+        """Set whether the particle can contact itself."""
+        self._self_contacts = bool(value)
+
+    def GetWithFailure(self) -> bool:
+        """Return whether the fiber can fail."""
+        return self._with_failure
+
+    def SetWithFailure(self, value: bool) -> None:
+        """Set whether the fiber can fail."""
+        self._with_failure = bool(value)
+
+    def GetFailureRatio(self) -> float:
+        """Return the failure ratio."""
+        return self._failure_ratio
+
+    def GetMinimumVolumeFractionForFragmentDisabling(self) -> float:
+        """Return the fragment volume fraction below which pieces are disabled."""
+        return self._fragment_fraction
+
+    def SetMinimumVolumeFractionForFragmentDisabling(self, value: float) -> None:
+        """Set the fragment volume fraction. Rocky stores a plain number."""
+        self._fragment_fraction = float(value)
+
+    def GetUseMultipleElements(self) -> bool:
+        """Return whether the particle is made of multiple elements."""
+        return self._multiple_elements
+
+    def SetUseMultipleElements(self, value: bool) -> None:
+        """Set multiple-element composition."""
+        self._multiple_elements = bool(value)
+
+    def SetFailureRatio(self, value: float) -> None:
+        """Set the failure ratio."""
+        self._failure_ratio = float(value)
+
+    def GetEnableRandomAngle(self) -> bool:
+        """Return whether the particle is given a random orientation."""
+        return self._random_angle
+
+    def SetEnableRandomAngle(self, value: bool) -> None:
+        """Set whether the particle is given a random orientation."""
+        self._random_angle = bool(value)
+
+    def GetRandomAnglesHalfRange(self, unit: str | None = None) -> list[float]:
+        """Return the random-angle half ranges in radians, or degrees when asked."""
+        if unit in ("deg", "dega"):
+            return [math.degrees(value) for value in self._random_half_rad]
+        if unit not in (None, "rad"):
+            raise ValueError(f"Unsupported angle unit {unit!r}.")
+        return list(self._random_half_rad)
+
+    def SetRandomAnglesHalfRange(self, values: list[float], unit: str | None = None) -> None:
+        """Set the random-angle half ranges. Degrees use Rocky's ``dega`` token."""
+        if len(values) != 3:
+            raise ValueError("Random angle half range must have three numbers.")
+        if unit in ("deg", "dega"):
+            self._random_half_rad = tuple(math.radians(float(value)) for value in values)
+        elif unit in (None, "rad"):
+            self._random_half_rad = tuple(float(value) for value in values)
+        else:
+            raise ValueError(f"Unsupported angle unit {unit!r}.")
+
+    def GetSurfaceEnergy(self, unit: str | None = None) -> float:
+        """Return the surface energy."""
+        return self._surface_energy
+
+    def SetSurfaceEnergy(self, value: float, unit: str | None = None) -> None:
+        """Set the surface energy."""
+        self._surface_energy = float(value)
+
 
 class MockParticleInletProperties:
     """Stand-in for a particle inlet property set."""
@@ -266,6 +1536,7 @@ class MockParticleInletProperties:
         """Initialize the properties for a particle."""
         self._particle = particle
         self._mass_flow_tph = 0.0
+        self._temperature_k = 298.15
 
     def GetParticle(self) -> MockParticle:
         """Return the particle bound to these properties."""
@@ -285,6 +1556,16 @@ class MockParticleInletProperties:
         """Set the mass flow rate."""
         self._mass_flow_tph = _mass_flow_to_kg_s(value, unit) * 3.6
 
+    def GetTemperature(self, unit: str | None = None) -> float:
+        """Return the inlet temperature in kelvin."""
+        _require_kelvin(unit)
+        return self._temperature_k
+
+    def SetTemperature(self, value: float, unit: str | None = None) -> None:
+        """Set the inlet temperature in kelvin."""
+        _require_kelvin(unit)
+        self._temperature_k = float(value)
+
 
 class MockParticleInlet:
     """Stand-in for a Rocky particle inlet."""
@@ -294,8 +1575,20 @@ class MockParticleInlet:
         self._entry_point = entry_point
         self._particle = particle
         self._name = "Particle Inlet"
-        self._properties = MockParticleInletProperties(particle)
+        self._properties = [MockParticleInletProperties(particle)]
         self._injection_duration = 0.0
+        self._start_time = 0.0
+        self._stop_time = 0.0
+        self._target_velocity = 0.0
+        self._use_target_velocity = False
+        self._periodic = False
+        self._period = 0.0
+        self._ux = 0.0
+        self._uz = 0.0
+        self._stop_all = False
+        self._force_packing = False
+        self._sph_temperature = 298.15
+        self._sph_injection = False
 
     def GetName(self) -> str:
         """Return the inlet name."""
@@ -317,17 +1610,213 @@ class MockParticleInlet:
         """Return the particle fed by the inlet."""
         return self._particle
 
+    def AddParticle(self, particle: MockParticle) -> list[MockParticleInletProperties]:
+        """Add another particle to this inlet."""
+        if not isinstance(particle, MockParticle):
+            raise TypeError("AddParticle requires a particle definition.")
+        self._properties.append(MockParticleInletProperties(particle))
+        return self._properties
+
+    def RemoveParticle(self, particle: MockParticle | str) -> None:
+        """Remove a particle from this inlet."""
+        name = particle if isinstance(particle, str) else particle.GetName()
+        kept: list[MockParticleInletProperties] = []
+        removed = False
+        for properties in self._properties:
+            current = properties.GetParticle()
+            if current is particle or current.GetName() == name:
+                removed = True
+                continue
+            kept.append(properties)
+        if not removed:
+            raise ValueError(f"Particle {name!r} is not on this inlet.")
+        self._properties = kept
+
     def GetInputPropertiesList(self) -> list[MockParticleInletProperties]:
         """Return the inlet property list."""
-        return [self._properties]
+        return self._properties
 
     def GetInjectionDuration(self, unit: str | None = None) -> float:
         """Return the injection duration."""
         return self._injection_duration
 
     def SetInjectionDuration(self, value: float, unit: str | None = None) -> None:
-        """Set the injection duration."""
-        self._injection_duration = _length_to_m(value, unit)
+        """Set the injection duration in seconds."""
+        self._injection_duration = float(value)
+
+    def GetStartTime(self, unit: str | None = None) -> float:
+        """Return the inlet start time in seconds."""
+        if unit not in (None, "s"):
+            raise ValueError(f"Unsupported time unit {unit!r}. Expected 's'.")
+        return self._start_time
+
+    def SetStartTime(self, value: float, unit: str | None = None) -> None:
+        """Set the inlet start time in seconds."""
+        if unit not in (None, "s"):
+            raise ValueError(f"Unsupported time unit {unit!r}. Expected 's'.")
+        self._start_time = float(value)
+
+    def GetStopTime(self, unit: str | None = None) -> float:
+        """Return the inlet stop time in seconds."""
+        if unit not in (None, "s"):
+            raise ValueError(f"Unsupported time unit {unit!r}. Expected 's'.")
+        return self._stop_time
+
+    def SetStopTime(self, value: float, unit: str | None = None) -> None:
+        """Set the inlet stop time in seconds."""
+        if unit not in (None, "s"):
+            raise ValueError(f"Unsupported time unit {unit!r}. Expected 's'.")
+        self._stop_time = float(value)
+
+    def GetTargetNormalVelocity(self, unit: str | None = None) -> float:
+        """Return the target injection speed in meters per second."""
+        if unit not in (None, "m/s"):
+            raise ValueError(f"Unsupported velocity unit {unit!r}. Expected 'm/s'.")
+        return self._target_velocity
+
+    def SetTargetNormalVelocity(self, value: float, unit: str | None = None) -> None:
+        """Set the target injection speed in meters per second."""
+        if unit not in (None, "m/s"):
+            raise ValueError(f"Unsupported velocity unit {unit!r}. Expected 'm/s'.")
+        self._target_velocity = float(value)
+
+    def SetUseTargetNormalVelocity(self, value: bool) -> None:
+        """Enable or disable the target injection speed."""
+        self._use_target_velocity = bool(value)
+
+    def GetUseTargetNormalVelocity(self) -> bool:
+        """Return whether the target injection speed is used."""
+        return self._use_target_velocity
+
+    def GetPeriodic(self) -> bool:
+        """Return whether the inlet repeats."""
+        return self._periodic
+
+    def SetPeriodic(self, value: bool) -> None:
+        """Enable or disable a repeating inlet."""
+        self._periodic = bool(value)
+
+    def GetPeriod(self, unit: str | None = None) -> float:
+        """Return the repeat period in seconds."""
+        if unit not in (None, "s"):
+            raise ValueError(f"Unsupported time unit {unit!r}. Expected 's'.")
+        return self._period
+
+    def SetPeriod(self, value: float, unit: str | None = None) -> None:
+        """Set the repeat period in seconds."""
+        if unit not in (None, "s"):
+            raise ValueError(f"Unsupported time unit {unit!r}. Expected 's'.")
+        self._period = float(value)
+
+    def _velocity(self, unit: str | None) -> None:
+        """Reject a velocity unit other than meters per second."""
+        if unit not in (None, "m/s"):
+            raise ValueError(f"Unsupported velocity unit {unit!r}. Expected 'm/s'.")
+
+    def GetUxLocal(self, unit: str | None = None) -> float:
+        """Return the local x velocity in meters per second."""
+        self._velocity(unit)
+        return self._ux
+
+    def SetUxLocal(self, value: float, unit: str | None = None) -> None:
+        """Set the local x velocity in meters per second."""
+        self._velocity(unit)
+        self._ux = float(value)
+
+    def GetUzLocal(self, unit: str | None = None) -> float:
+        """Return the local z velocity in meters per second."""
+        self._velocity(unit)
+        return self._uz
+
+    def SetUzLocal(self, value: float, unit: str | None = None) -> None:
+        """Set the local z velocity in meters per second."""
+        self._velocity(unit)
+        self._uz = float(value)
+
+    def GetStopAllAtStopTime(self) -> bool:
+        """Return whether every particle stops at the stop time."""
+        return self._stop_all
+
+    def SetStopAllAtStopTime(self, value: bool) -> None:
+        """Set whether every particle stops at the stop time."""
+        self._stop_all = bool(value)
+
+    def GetForcePacking(self) -> bool:
+        """Return whether the inlet force-packs particles."""
+        return self._force_packing
+
+    def SetForcePacking(self, value: bool) -> None:
+        """Set whether the inlet force-packs particles."""
+        self._force_packing = bool(value)
+
+    def GetSphInjectionEnabled(self) -> bool:
+        """Return whether SPH injection is enabled."""
+        return self._sph_injection
+
+    def SetSphInjectionEnabled(self, value: bool) -> None:
+        """Enable or disable SPH injection."""
+        self._sph_injection = bool(value)
+
+    def GetSphTemperature(self, unit: str | None = None) -> float:
+        """Return the SPH temperature in kelvin."""
+        _require_kelvin(unit)
+        return self._sph_temperature
+
+    def SetSphTemperature(self, value: float, unit: str | None = None) -> None:
+        """Set the SPH temperature in kelvin."""
+        _require_kelvin(unit)
+        self._sph_temperature = float(value)
+
+
+class MockVolumetricInlet:
+    """Stand-in for a Rocky volumetric inlet."""
+
+    def __init__(
+        self,
+        particle: MockParticle | None,
+        name: str | None,
+        mass: float,
+        seed_coordinates: list[float] | None,
+        geometries: list[Any] | None,
+        use_geometries_to_compute: bool,
+        box_center: list[float] | None,
+        box_dimensions: list[float] | None,
+        use_box_center_as_seed_point: bool,
+    ) -> None:
+        """Store the fill definition."""
+        self._particle = particle
+        self._name = name or "Volumetric Inlet"
+        self._mass = float(mass)
+        self._seed = seed_coordinates
+        self._geometries = list(geometries or [])
+        self._use_geometries = use_geometries_to_compute
+        self._box_center = box_center
+        self._box_dimensions = box_dimensions
+        self._use_box_center = use_box_center_as_seed_point
+
+    def GetName(self) -> str:
+        """Return the inlet name."""
+        return self._name
+
+    def SetName(self, value: str) -> None:
+        """Set the inlet name."""
+        self._name = value
+
+    def GetMass(self) -> float:
+        """Return the fill mass in kilograms."""
+        return self._mass
+
+    def UsesGeometries(self) -> bool:
+        """Return whether the fill is bounded by geometries."""
+        return self._use_geometries
+
+    def GetBoxCenter(self) -> list[float] | None:
+        """Return the limit-box center in meters."""
+        return self._box_center
+
+    def GetBoxDimensions(self) -> list[float] | None:
+        """Return the limit-box dimensions in meters."""
+        return self._box_dimensions
 
 
 class MockOutlet:
@@ -424,6 +1913,25 @@ class MockWall:
         """Initialize the wall."""
         self._filename = filename
         self._name = name
+        self._material: Any = None
+        self._temperature_k = 298.15
+        self._convert_yz = False
+        self._split_method = "BODY"
+        self._normal_angle = 16.0
+        self._max_edge: float | None = None
+        self._sph_boundary = "free_slip"
+        self._contact_angle_deg = 0.0
+        self._wear_model = "none"
+        self._wear_ratio = 0.0
+        self._thermal_boundary = "adiabatic"
+        self._mass = 0.0
+        self._inertia = (0.0, 0.0, 0.0)
+        self._disable_time = 0.0
+        self._triangle_size = 0.0
+        self._translation = (0.0, 0.0, 0.0)
+        self._rotation = (0.0, 0.0, 0.0)
+        self._periodic_replication = False
+        self._capillary_friction = 0.0
 
     def GetName(self) -> str:
         """Return the wall name."""
@@ -437,6 +1945,200 @@ class MockWall:
         """Return the source file of the wall."""
         return self._filename
 
+    def GetConvertYZ(self) -> bool:
+        """Return whether the import swapped Y and Z."""
+        return self._convert_yz
+
+    def GetGeometrySplitMethod(self) -> str:
+        """Return the CAD split method used at import."""
+        return self._split_method
+
+    def GetNormalAngleTolerance(self) -> float:
+        """Return the CAD mesh angle tolerance in degrees."""
+        return self._normal_angle
+
+    def GetMaxEdgeSize(self) -> float | None:
+        """Return the CAD mesh maximum edge size in meters."""
+        return self._max_edge
+
+    def GetValidSphBoundaryTypeValues(self) -> list[str]:
+        """Return the SPH boundary types this stand-in accepts."""
+        return ["free_slip", "no_slip_laminar", "no_slip_turbulent"]
+
+    def GetSphBoundaryType(self) -> str:
+        """Return the SPH boundary type."""
+        return self._sph_boundary
+
+    def SetSphBoundaryType(self, value: str) -> None:
+        """Set the SPH boundary type."""
+        valid = self.GetValidSphBoundaryTypeValues()
+        if value not in valid:
+            raise ValueError(f"Unknown SPH boundary type {value!r}. Expected one of {valid}.")
+        self._sph_boundary = value
+
+    def GetSurfaceTensionContactAngle(self, unit: str | None = None) -> float:
+        """Return the contact angle in degrees."""
+        if unit not in (None, "dega"):
+            raise ValueError(f"Unsupported angle unit {unit!r}. Expected 'dega'.")
+        return self._contact_angle_deg
+
+    def SetSurfaceTensionContactAngle(self, value: float, unit: str | None = None) -> None:
+        """Set the contact angle. Rocky's degree token is ``dega``."""
+        if unit not in (None, "dega"):
+            raise ValueError(f"Unsupported angle unit {unit!r}. Expected 'dega'.")
+        self._contact_angle_deg = float(value)
+
+    def GetWearModel(self) -> str:
+        """Return the wear model."""
+        return self._wear_model
+
+    def SetWearModel(self, value: str) -> None:
+        """Set the wear model."""
+        if value not in ("none", "archard", "custom"):
+            raise ValueError(f"Unknown wear model {value!r}.")
+        self._wear_model = value
+
+    def GetVolumeShearWorkRatio(self, unit: str | None = None) -> float:
+        """Return the Archard volume per energy. Rocky's token is ``m3/J``."""
+        if unit not in (None, "m3/J"):
+            raise ValueError(f"Unsupported wear unit {unit!r}. Expected 'm3/J'.")
+        return self._wear_ratio
+
+    def SetVolumeShearWorkRatio(self, value: float, unit: str | None = None) -> None:
+        """Set the Archard volume per energy. Rocky's token is ``m3/J``."""
+        if unit not in (None, "m3/J"):
+            raise ValueError(f"Unsupported wear unit {unit!r}. Expected 'm3/J'.")
+        self._wear_ratio = float(value)
+
+    def GetThermalBoundaryConditionType(self) -> str:
+        """Return the thermal boundary condition."""
+        return self._thermal_boundary
+
+    def SetThermalBoundaryConditionType(self, value: str) -> None:
+        """Set the thermal boundary condition."""
+        valid = ("adiabatic", "prescribed_temperature", "cfd_coupled_temperature")
+        if value not in valid:
+            raise ValueError(f"Unknown thermal boundary {value!r}. Expected one of {valid}.")
+        self._thermal_boundary = value
+
+    def GetBoundaryMass(self, unit: str | None = None) -> float:
+        """Return the boundary mass in kilograms."""
+        if unit not in (None, "kg"):
+            raise ValueError(f"Unsupported mass unit {unit!r}. Expected 'kg'.")
+        return self._mass
+
+    def SetBoundaryMass(self, value: float, unit: str | None = None) -> None:
+        """Set the boundary mass in kilograms."""
+        if unit not in (None, "kg"):
+            raise ValueError(f"Unsupported mass unit {unit!r}. Expected 'kg'.")
+        self._mass = float(value)
+
+    def GetPrincipalMomentOfInertia(self, unit: str | None = None) -> list[float]:
+        """Return the principal inertia. Rocky's token is ``kg.m2``."""
+        if unit not in (None, "kg.m2"):
+            raise ValueError(f"Unsupported inertia unit {unit!r}. Expected 'kg.m2'.")
+        return list(self._inertia)
+
+    def SetPrincipalMomentOfInertia(self, values: list[float], unit: str | None = None) -> None:
+        """Set the principal inertia. Rocky's token is ``kg.m2``."""
+        if unit not in (None, "kg.m2"):
+            raise ValueError(f"Unsupported inertia unit {unit!r}. Expected 'kg.m2'.")
+        if len(values) != 3:
+            raise ValueError("Principal inertia must have three numbers.")
+        self._inertia = tuple(float(value) for value in values)
+
+    def GetDisableTime(self, unit: str | None = None) -> float:
+        """Return the time when the wall stops interacting, in seconds."""
+        if unit not in (None, "s"):
+            raise ValueError(f"Unsupported time unit {unit!r}. Expected 's'.")
+        return self._disable_time
+
+    def SetDisableTime(self, value: float, unit: str | None = None) -> None:
+        """Set the time when the wall stops interacting, in seconds."""
+        if unit not in (None, "s"):
+            raise ValueError(f"Unsupported time unit {unit!r}. Expected 's'.")
+        self._disable_time = float(value)
+
+    def GetTriangleSize(self, unit: str | None = None) -> float:
+        """Return the wall triangle size in meters."""
+        if unit not in (None, "m"):
+            raise ValueError(f"Unsupported length unit {unit!r}. Expected 'm'.")
+        return self._triangle_size
+
+    def SetTriangleSize(self, value: float, unit: str | None = None) -> None:
+        """Set the wall triangle size in meters."""
+        if unit not in (None, "m"):
+            raise ValueError(f"Unsupported length unit {unit!r}. Expected 'm'.")
+        self._triangle_size = float(value)
+
+    def GetTranslation(self, unit: str | None = None) -> list[float]:
+        """Return the wall translation in meters."""
+        if unit not in (None, "m"):
+            raise ValueError(f"Unsupported length unit {unit!r}. Expected 'm'.")
+        return list(self._translation)
+
+    def SetTranslation(self, values: list[float], unit: str | None = None) -> None:
+        """Set the wall translation in meters."""
+        if unit not in (None, "m"):
+            raise ValueError(f"Unsupported length unit {unit!r}. Expected 'm'.")
+        if len(values) != 3:
+            raise ValueError("Translation must have three numbers.")
+        self._translation = tuple(float(value) for value in values)
+
+    def GetOrientation(self, unit: str | None = None) -> list[float]:
+        """Return the wall orientation in degrees."""
+        if unit not in (None, "dega"):
+            raise ValueError(f"Unsupported angle unit {unit!r}. Expected 'dega'.")
+        return list(self._rotation)
+
+    def SetOrientationFromAngles(
+        self,
+        rotation: list[float],
+        unit: str | None = None,
+        local_angles: bool = True,
+        order: str = "XYZ",
+    ) -> None:
+        """Set the wall orientation. Rocky's default angle token is ``dega``."""
+        if unit not in (None, "dega"):
+            raise ValueError(f"Unsupported angle unit {unit!r}. Expected 'dega'.")
+        if len(rotation) != 3:
+            raise ValueError("Orientation must have three numbers.")
+        self._rotation = tuple(float(value) for value in rotation)
+
+    def GetPeriodicReplication(self) -> bool:
+        """Return whether the wall is copied across periodic boundaries."""
+        return self._periodic_replication
+
+    def SetPeriodicReplication(self, value: bool) -> None:
+        """Set whether the wall is copied across periodic boundaries."""
+        self._periodic_replication = bool(value)
+
+    def GetCapillaryFrictionCoefficient(self) -> float:
+        """Return the capillary friction coefficient."""
+        return self._capillary_friction
+
+    def SetCapillaryFrictionCoefficient(self, value: float) -> None:
+        """Set the capillary friction coefficient."""
+        self._capillary_friction = float(value)
+
+    def SetMaterial(self, value: Any) -> None:
+        """Assign a solid material."""
+        self._material = value
+
+    def GetTemperature(self, unit: str | None = None) -> float:
+        """Return the wall temperature in kelvin."""
+        _require_kelvin(unit)
+        return self._temperature_k
+
+    def SetTemperature(self, value: float, unit: str | None = None) -> None:
+        """Set the wall temperature in kelvin."""
+        _require_kelvin(unit)
+        self._temperature_k = float(value)
+
+    def GetMaterial(self) -> Any:
+        """Return the assigned material."""
+        return self._material
+
 
 class MockDomainSettings:
     """Stand-in for Rocky domain settings."""
@@ -446,7 +2148,14 @@ class MockDomainSettings:
         self._use_boundary_limits = True
         self._min = (-DEFAULT_DOMAIN_LENGTH / 2.0, -1.0, -1.0)
         self._max = (DEFAULT_DOMAIN_LENGTH / 2.0, 1.0, 1.0)
-        self._domain_type = "rectangular"
+        self._domain_type = "NONE"
+        self._cartesian_periodic = "NONE"
+        self._cylindrical_periodic = "Y"
+        self._divisions = 1
+        self._periodic_min = self._min
+        self._periodic_max = self._max
+        self._periodic_at_geometry = False
+        self._initial_angle = 0.0
 
     def GetUseBoundaryLimits(self) -> bool:
         """Return whether boundary limits are used."""
@@ -460,29 +2169,47 @@ class MockDomainSettings:
         """Disable boundary limits."""
         self._use_boundary_limits = False
 
+    def SetUseBoundaryLimits(self, value: bool) -> None:
+        """Set whether the domain follows the geometry bounds."""
+        self._use_boundary_limits = bool(value)
+
+    def ResetDomainToGeometriesLimits(self) -> None:
+        """Fit the domain to the geometry bounding box."""
+        self._use_boundary_limits = True
+
+    def GetInitialAngle(self, unit: str | None = None) -> float:
+        """Return the cylindrical domain's starting angle in degrees."""
+        if unit not in (None, "dega"):
+            raise ValueError(f"Unsupported angle unit {unit!r}. Expected 'dega'.")
+        return self._initial_angle
+
+    def SetInitialAngle(self, value: float, unit: str | None = None) -> None:
+        """Set the cylindrical domain's starting angle. Rocky's token is ``dega``."""
+        if unit not in (None, "dega"):
+            raise ValueError(f"Unsupported angle unit {unit!r}. Expected 'dega'.")
+        self._initial_angle = float(value)
+
     def GetCoordinateLimitsMinValues(self, unit: str | None = None) -> list[float]:
         """Return the minimum domain coordinates."""
-        factor = 1.0 / _LENGTH_TO_M.get(unit or "m", 1.0)
-        return [value * factor for value in self._min]
+        factor = _LENGTH_TO_M[unit or "m"]
+        return [value / factor for value in self._min]
 
     def SetCoordinateLimitsMinValues(
         self, values: Any, unit: str | None = None, **kwargs: Any
     ) -> None:
-        """Set the minimum domain coordinates."""
-        factor = _LENGTH_TO_M.get(unit or "m", 1.0)
-        self._min = tuple(value * factor for value in _as_sequence(values))
+        """Set the minimum domain coordinates. Rocky's default token is ``m``."""
+        self._min = tuple(_length_to_m(value, unit or "m") for value in _as_sequence(values))
 
     def GetCoordinateLimitsMaxValues(self, unit: str | None = None) -> list[float]:
         """Return the maximum domain coordinates."""
-        factor = 1.0 / _LENGTH_TO_M.get(unit or "m", 1.0)
-        return [value * factor for value in self._max]
+        factor = _LENGTH_TO_M[unit or "m"]
+        return [value / factor for value in self._max]
 
     def SetCoordinateLimitsMaxValues(
         self, values: Any, unit: str | None = None, **kwargs: Any
     ) -> None:
-        """Set the maximum domain coordinates."""
-        factor = _LENGTH_TO_M.get(unit or "m", 1.0)
-        self._max = tuple(value * factor for value in _as_sequence(values))
+        """Set the maximum domain coordinates. Rocky's default token is ``m``."""
+        self._max = tuple(_length_to_m(value, unit or "m") for value in _as_sequence(values))
 
     def GetCoordinateLimitsMinMax(self) -> tuple[list[float], list[float]]:
         """Return the ``(min, max)`` domain coordinates."""
@@ -496,6 +2223,120 @@ class MockDomainSettings:
         """Set the domain type."""
         self._domain_type = value
 
+    def GetCartesianPeriodicDirections(self) -> str:
+        """Return the Cartesian periodic directions."""
+        return self._cartesian_periodic
+
+    def SetCartesianPeriodicDirections(self, value: str) -> None:
+        """Set the Cartesian periodic directions."""
+        self._cartesian_periodic = value
+
+    def GetCylindricalPeriodicDirections(self) -> str:
+        """Return the cylindrical periodic axis."""
+        return self._cylindrical_periodic
+
+    def SetCylindricalPeriodicDirections(self, value: str) -> None:
+        """Set the cylindrical periodic axis."""
+        self._cylindrical_periodic = value
+
+    def GetPeriodicLimitsMinCoordinates(self, unit: str | None = None) -> list[float]:
+        """Return the minimum periodic coordinates."""
+        factor = 1.0 / _LENGTH_TO_M.get(unit or "m", 1.0)
+        return [value * factor for value in self._periodic_min]
+
+    def SetPeriodicLimitsMinCoordinates(
+        self, values: Any, unit: str | None = None, **kwargs: Any
+    ) -> None:
+        """Set the minimum periodic coordinates."""
+        factor = _LENGTH_TO_M.get(unit or "m", 1.0)
+        self._periodic_min = tuple(value * factor for value in _as_sequence(values))
+
+    def GetPeriodicLimitsMaxCoordinates(self, unit: str | None = None) -> list[float]:
+        """Return the maximum periodic coordinates."""
+        factor = 1.0 / _LENGTH_TO_M.get(unit or "m", 1.0)
+        return [value * factor for value in self._periodic_max]
+
+    def SetPeriodicLimitsMaxCoordinates(
+        self, values: Any, unit: str | None = None, **kwargs: Any
+    ) -> None:
+        """Set the maximum periodic coordinates."""
+        factor = _LENGTH_TO_M.get(unit or "m", 1.0)
+        self._periodic_max = tuple(value * factor for value in _as_sequence(values))
+
+    def GetPeriodicAtGeometryLimits(self) -> bool:
+        """Return whether periodic limits follow the geometry."""
+        return self._periodic_at_geometry
+
+    def SetPeriodicAtGeometryLimits(self, value: bool) -> None:
+        """Set whether periodic limits follow the geometry."""
+        self._periodic_at_geometry = bool(value)
+
+    def GetNumberOfDivisions(self) -> int:
+        """Return the number of cylindrical divisions."""
+        return self._divisions
+
+    def SetNumberOfDivisions(self, value: int | str) -> None:
+        """Set the number of cylindrical divisions."""
+        count = int(value)
+        if count < 1:
+            raise ValueError("Number of divisions must be at least 1.")
+        self._divisions = count
+
+
+class MockExecutionSettings:
+    """Stand-in for local or MPI processor settings."""
+
+    def __init__(self, processors: int = 1) -> None:
+        """Initialize the processor count."""
+        self._processors = processors
+        self._processing_unit = "CPU"
+        self._target_gpus: list[int] = []
+        self._gpu_slicing = "X"
+
+    def GetNumberOfProcessors(self) -> int:
+        """Return the processor count for this execution path."""
+        return self._processors
+
+    def SetNumberOfProcessors(self, value: int | str) -> None:
+        """Set the processor count for this execution path."""
+        self._processors = int(value)
+
+    def GetValidProcessingUnitValues(self) -> list[str]:
+        """Return the processing units this settings object accepts."""
+        return ["CPU", "GPU"]
+
+    def GetProcessingUnit(self) -> str:
+        """Return the processing unit."""
+        return self._processing_unit
+
+    def SetProcessingUnit(self, value: str) -> None:
+        """Set the processing unit."""
+        if value not in self.GetValidProcessingUnitValues():
+            raise ValueError(f"Unknown processing unit {value!r}.")
+        self._processing_unit = value
+
+    def GetTargetGpus(self) -> list[int]:
+        """Return the selected GPU ids."""
+        return list(self._target_gpus)
+
+    def SetTargetGpus(self, gpus: list[int]) -> None:
+        """Set the GPU ids."""
+        self._target_gpus = [int(gpu) for gpu in gpus]
+
+    def GetValidMultiGpuSlicingDirectionValues(self) -> list[str]:
+        """Return the slicing directions this settings object accepts."""
+        return ["X", "Y", "Z"]
+
+    def GetMultiGpuSlicingDirection(self) -> str:
+        """Return the slicing direction."""
+        return self._gpu_slicing
+
+    def SetMultiGpuSlicingDirection(self, value: str) -> None:
+        """Set the slicing direction."""
+        if value not in self.GetValidMultiGpuSlicingDirectionValues():
+            raise ValueError(f"Unknown slicing direction {value!r}.")
+        self._gpu_slicing = value
+
 
 class MockSimulatorRun:
     """Stand-in for the Rocky solver / simulator run object."""
@@ -505,23 +2346,87 @@ class MockSimulatorRun:
         self._duration = DEFAULT_DURATION
         self._time_interval = DEFAULT_DURATION / 20.0
         self._processors = 1
-        self._execution_mode = "parallel"
+        self._local_settings = MockExecutionSettings(1)
+        self._mpi_settings = MockExecutionSettings(1)
+        self._curves_frequency = 1
+        self._execution_mode = "local"
         self._gpu = 0
+        self._fixed_timestep = 1e-4
+        self._timestep_model = "variable"
+        self._use_fixed_timestep = False
+        self._release_without_overlap = False
+        self._breakage_delay = 0.0
+        self._loading_steps = 1
+        self._breakage_start = 0.0
+        self._wear_start = 0.0
+        self._wear_interval = 0.0
+        self._neighbor_search = "BVH"
+        self._resume_frequency = 1
+        self._mass_matrix = "lumped"
+        self._breakage_overlap = 0.0
+        self._use_breakage_overlap = False
+        self._particle_neighbor = 0.0
+        self._use_particle_neighbor = False
+        self._triangle_neighbor = 0.0
+        self._use_triangle_neighbor = False
+        self._overlap_delay = 0.0
+        self._negate_overlaps = False
+        self._wide_psd = False
+        self._reorder_size = 0.0
+        self._drag_limiter = 0.0
+        self._use_drag_limiter = False
+        self._sorting_distance = 1.0
+        self._use_sorting_distance = False
+        self._arrays_growth = 1.0
+        self._use_arrays_growth = False
+        self._refine_concave = False
+        self._non_round_torque = False
+        self._disable_periodic_triangles = False
+        self._max_iterations = 1
+        self._over_relaxation = 1.0
+        self._use_mpi = False
+        self._mpi_processes = 1
+        self._mpi_threads = 1
+        self._mpi_hosts = ""
+        self._mpi_hostfile = ""
+        self._mpi_heterogeneous = False
+        self._mpi_within_scheduler = False
+        self._compressed_files = False
+        self._sor_tolerance = 0.0
+        self._solver_joint_elastic = 1.0
+        self._min_length_tolerance = 0.0
+        self._min_volume_tolerance = 0.0
+        self._linear_hyst_damp = 0.0
+        self._reset_physical_contacts = False
+        self._fluent_multiplier = 1
+        self._standard_outputs: dict[tuple[str, ...], bool] = {}
+        self._module_outputs: dict[tuple[str, ...], bool] = {}
+        self._processing_unit = "CPU"
+        self._target_gpus: list[int] = []
+        self._gpu_slicing = "X"
 
     def GetSimulationDuration(self, unit: str | None = None) -> float:
-        """Return the simulation duration."""
+        """Return the simulation duration in seconds."""
+        if unit not in (None, "s"):
+            raise ValueError(f"Unsupported time unit {unit!r}. Expected 's'.")
         return self._duration
 
     def SetSimulationDuration(self, value: float, unit: str | None = None) -> None:
-        """Set the simulation duration."""
+        """Set the simulation duration. Rocky's token is ``s``."""
+        if unit not in (None, "s"):
+            raise ValueError(f"Unsupported time unit {unit!r}. Expected 's'.")
         self._duration = float(value)
 
     def GetTimeInterval(self, unit: str | None = None) -> float:
-        """Return the output time interval."""
+        """Return the output time interval in seconds."""
+        if unit not in (None, "s"):
+            raise ValueError(f"Unsupported time unit {unit!r}. Expected 's'.")
         return self._time_interval
 
     def SetTimeInterval(self, value: float, unit: str | None = None) -> None:
-        """Set the output time interval."""
+        """Set the output time interval. Rocky's token is ``s``."""
+        if unit not in (None, "s"):
+            raise ValueError(f"Unsupported time unit {unit!r}. Expected 's'.")
         self._time_interval = float(value)
 
     def SetTimeConfiguration(self, duration: float, time_interval: float) -> None:
@@ -537,17 +2442,39 @@ class MockSimulatorRun:
         """Set the number of processors."""
         self._processors = int(value)
 
+    def GetLocalExecutionSettings(self) -> MockExecutionSettings:
+        """Return the local execution settings."""
+        return self._local_settings
+
+    def GetMpiSettings(self) -> MockExecutionSettings:
+        """Return the MPI execution settings."""
+        return self._mpi_settings
+
+    def GetSolverCurvesFrequency(self) -> int:
+        """Return how often solver curves are stored."""
+        return self._curves_frequency
+
+    def SetSolverCurvesFrequency(self, value: int | str) -> None:
+        """Set how often solver curves are stored."""
+        frequency = int(value)
+        if frequency < 1:
+            raise ValueError("Solver curves frequency must be at least 1.")
+        self._curves_frequency = frequency
+
     def GetExecutionMode(self) -> str:
         """Return the execution mode."""
         return self._execution_mode
 
     def SetExecutionMode(self, value: str) -> None:
         """Set the execution mode."""
+        if value not in self.GetValidExecutionModeValues():
+            legal = ", ".join(self.GetValidExecutionModeValues())
+            raise ValueError(f"Invalid execution mode {value!r}. Expected one of {legal}.")
         self._execution_mode = value
 
     def GetValidExecutionModeValues(self) -> list[str]:
         """Return the supported execution modes."""
-        return ["parallel", "serial"]
+        return ["local", "single_mpi", "multi_mpi"]
 
     def GetTargetGpu(self) -> int:
         """Return the target GPU index."""
@@ -558,11 +2485,493 @@ class MockSimulatorRun:
         self._gpu = int(value)
 
     def GetFixedTimestep(self, unit: str | None = None) -> float:
-        """Return the fixed timestep."""
-        return 1e-4
+        """Return the fixed timestep in seconds."""
+        if unit not in (None, "s"):
+            raise ValueError(f"Unsupported time unit {unit!r}. Expected 's'.")
+        return self._fixed_timestep
 
     def SetFixedTimestep(self, value: float, unit: str | None = None) -> None:
-        """Set the fixed timestep (recorded but not used by the mock)."""
+        """Set the fixed timestep in seconds."""
+        if unit not in (None, "s"):
+            raise ValueError(f"Unsupported time unit {unit!r}. Expected 's'.")
+        self._fixed_timestep = float(value)
+
+    def GetTimestepModel(self) -> str:
+        """Return the timestep model."""
+        return self._timestep_model
+
+    def SetTimestepModel(self, value: str) -> None:
+        """Set the timestep model."""
+        if value not in ("constant", "variable"):
+            raise ValueError(f"Unknown timestep model {value!r}.")
+        self._timestep_model = value
+
+    def GetUseFixedTimestep(self) -> bool:
+        """Return whether the fixed timestep is used."""
+        return self._use_fixed_timestep
+
+    def SetUseFixedTimestep(self, value: bool) -> None:
+        """Enable or disable the fixed timestep."""
+        self._use_fixed_timestep = bool(value)
+
+    def GetReleaseParticlesWithoutOverlapCheck(self) -> bool:
+        """Return whether particles are released without an overlap check."""
+        return self._release_without_overlap
+
+    def SetReleaseParticlesWithoutOverlapCheck(self, value: bool) -> None:
+        """Set whether particles are released without an overlap check."""
+        self._release_without_overlap = bool(value)
+
+    def GetBreakageDelayAfterRelease(self, unit: str | None = None) -> float:
+        """Return the breakage delay after release in seconds."""
+        if unit not in (None, "s"):
+            raise ValueError(f"Unsupported time unit {unit!r}. Expected 's'.")
+        return self._breakage_delay
+
+    def SetBreakageDelayAfterRelease(self, value: float, unit: str | None = None) -> None:
+        """Set the breakage delay after release in seconds."""
+        if unit not in (None, "s"):
+            raise ValueError(f"Unsupported time unit {unit!r}. Expected 's'.")
+        self._breakage_delay = float(value)
+
+    def _seconds(self, value: float, unit: str | None) -> float:
+        """Store a time. Rocky's token is ``s``."""
+        if unit not in (None, "s"):
+            raise ValueError(f"Unsupported time unit {unit!r}. Expected 's'.")
+        return float(value)
+
+    def GetLoadingNSteps(self) -> int:
+        """Return the number of loading steps."""
+        return self._loading_steps
+
+    def SetLoadingNSteps(self, value: int) -> None:
+        """Set the number of loading steps."""
+        self._loading_steps = int(value)
+
+    def GetBreakageStart(self, unit: str | None = None) -> float:
+        """Return when breakage starts, in seconds."""
+        return self._seconds(self._breakage_start, unit)
+
+    def SetBreakageStart(self, value: float, unit: str | None = None) -> None:
+        """Set when breakage starts. Rocky's token is ``s``."""
+        self._breakage_start = self._seconds(value, unit)
+
+    def GetWearStart(self, unit: str | None = None) -> float:
+        """Return when wear starts, in seconds."""
+        return self._seconds(self._wear_start, unit)
+
+    def SetWearStart(self, value: float, unit: str | None = None) -> None:
+        """Set when wear starts. Rocky's token is ``s``."""
+        self._wear_start = self._seconds(value, unit)
+
+    def GetWearGeometryUpdateInterval(self, unit: str | None = None) -> float:
+        """Return how often worn geometry is updated, in seconds."""
+        return self._seconds(self._wear_interval, unit)
+
+    def SetWearGeometryUpdateInterval(self, value: float, unit: str | None = None) -> None:
+        """Set how often worn geometry is updated. Rocky's token is ``s``."""
+        self._wear_interval = self._seconds(value, unit)
+
+    def GetNeighborSearchModel(self) -> str:
+        """Return the neighbor search model."""
+        return self._neighbor_search
+
+    def SetNeighborSearchModel(self, value: str) -> None:
+        """Set the neighbor search model."""
+        if value not in ("BVH", "RegularGrid", "SparseGrid"):
+            raise ValueError(
+                f"Unsupported neighbor search {value!r}. "
+                "Expected 'BVH', 'RegularGrid', or 'SparseGrid'."
+            )
+        self._neighbor_search = value
+
+    def GetResumeDataFrequency(self) -> int:
+        """Return how often resume data is written."""
+        return self._resume_frequency
+
+    def SetResumeDataFrequency(self, value: int) -> None:
+        """Set how often resume data is written."""
+        self._resume_frequency = int(value)
+
+    def GetDeformableMassMatrixType(self) -> str:
+        """Return the deformable mass matrix type."""
+        return self._mass_matrix
+
+    def SetDeformableMassMatrixType(self, value: str) -> None:
+        """Set the deformable mass matrix type."""
+        if value not in ("lumped", "consistent"):
+            raise ValueError(
+                f"Unsupported mass matrix {value!r}. Expected 'lumped' or 'consistent'."
+            )
+        self._mass_matrix = value
+
+    def GetBreakageOverlapFactor(self) -> float:
+        """Return the breakage overlap factor."""
+        return self._breakage_overlap
+
+    def SetBreakageOverlapFactor(self, value: float) -> None:
+        """Set the breakage overlap factor."""
+        self._breakage_overlap = float(value)
+
+    def GetUseBreakageOverlapFactor(self) -> bool:
+        """Return whether the breakage overlap factor is used."""
+        return self._use_breakage_overlap
+
+    def SetUseBreakageOverlapFactor(self, value: bool) -> None:
+        """Set whether the breakage overlap factor is used."""
+        self._use_breakage_overlap = bool(value)
+
+    def _meters(self, value: float, unit: str | None) -> float:
+        """Store a length. Rocky's token is ``m``."""
+        if unit not in (None, "m"):
+            raise ValueError(f"Unsupported length unit {unit!r}. Expected 'm'.")
+        return float(value)
+
+    def GetContactNeighboringDistanceBetweenParticles(self, unit: str | None = None) -> float:
+        """Return the particle contact search distance in meters."""
+        return self._meters(self._particle_neighbor, unit)
+
+    def SetContactNeighboringDistanceBetweenParticles(
+        self, value: float, unit: str | None = None
+    ) -> None:
+        """Set the particle contact search distance. Rocky's token is ``m``."""
+        self._particle_neighbor = self._meters(value, unit)
+
+    def GetUseContactNeighboringDistanceBetweenParticles(self) -> bool:
+        """Return whether the particle contact search distance is used."""
+        return self._use_particle_neighbor
+
+    def SetUseContactNeighboringDistanceBetweenParticles(self, value: bool) -> None:
+        """Set whether the particle contact search distance is used."""
+        self._use_particle_neighbor = bool(value)
+
+    def GetContactNeighboringDistanceBetweenParticlesAndTriangles(
+        self, unit: str | None = None
+    ) -> float:
+        """Return the particle-triangle contact search distance in meters."""
+        return self._meters(self._triangle_neighbor, unit)
+
+    def SetContactNeighboringDistanceBetweenParticlesAndTriangles(
+        self, value: float, unit: str | None = None
+    ) -> None:
+        """Set the particle-triangle contact search distance. Rocky's token is ``m``."""
+        self._triangle_neighbor = self._meters(value, unit)
+
+    def GetUseContactNeighboringDistanceBetweenParticlesAndTriangles(self) -> bool:
+        """Return whether the particle-triangle search distance is used."""
+        return self._use_triangle_neighbor
+
+    def SetUseContactNeighboringDistanceBetweenParticlesAndTriangles(self, value: bool) -> None:
+        """Set whether the particle-triangle search distance is used."""
+        self._use_triangle_neighbor = bool(value)
+
+    def GetOverlapParticlesDelay(self, unit: str | None = None) -> float:
+        """Return the overlap delay in seconds."""
+        return self._seconds(self._overlap_delay, unit)
+
+    def SetOverlapParticlesDelay(self, value: float, unit: str | None = None) -> None:
+        """Set the overlap delay. Rocky's token is ``s``."""
+        self._overlap_delay = self._seconds(value, unit)
+
+    def GetNegateInitialOverlaps(self) -> bool:
+        """Return whether initial overlaps are removed."""
+        return self._negate_overlaps
+
+    def SetNegateInitialOverlaps(self, value: bool) -> None:
+        """Set whether initial overlaps are removed."""
+        self._negate_overlaps = bool(value)
+
+    def GetSpecialReorderingForWidePsd(self) -> bool:
+        """Return whether wide size distributions use special reordering."""
+        return self._wide_psd
+
+    def SetSpecialReorderingForWidePsd(self, value: bool) -> None:
+        """Set whether wide size distributions use special reordering."""
+        self._wide_psd = bool(value)
+
+    def GetParticleSizeLimitForReordering(self, unit: str | None = None) -> float:
+        """Return the reorder size limit in meters."""
+        return self._meters(self._reorder_size, unit)
+
+    def SetParticleSizeLimitForReordering(self, value: float, unit: str | None = None) -> None:
+        """Set the reorder size limit. Rocky's token is ``m``."""
+        self._reorder_size = self._meters(value, unit)
+
+    def GetDragLimiterFactor(self) -> float:
+        """Return the drag limiter factor."""
+        return self._drag_limiter
+
+    def SetDragLimiterFactor(self, value: float) -> None:
+        """Set the drag limiter factor."""
+        self._drag_limiter = float(value)
+
+    def GetUseDragLimiterFactor(self) -> bool:
+        """Return whether the drag limiter is used."""
+        return self._use_drag_limiter
+
+    def SetUseDragLimiterFactor(self, value: bool) -> None:
+        """Set whether the drag limiter is used."""
+        self._use_drag_limiter = bool(value)
+
+    def GetSortingDistanceFactor(self) -> float:
+        """Return the sorting distance factor."""
+        return self._sorting_distance
+
+    def SetSortingDistanceFactor(self, value: float) -> None:
+        """Set the sorting distance factor."""
+        self._sorting_distance = float(value)
+
+    def GetUseSortingDistanceFactor(self) -> bool:
+        """Return whether the sorting distance factor is used."""
+        return self._use_sorting_distance
+
+    def SetUseSortingDistanceFactor(self, value: bool) -> None:
+        """Set whether the sorting distance factor is used."""
+        self._use_sorting_distance = bool(value)
+
+    def GetArraysGrowthRate(self) -> float:
+        """Return the array growth rate."""
+        return self._arrays_growth
+
+    def SetArraysGrowthRate(self, value: float) -> None:
+        """Set the array growth rate."""
+        self._arrays_growth = float(value)
+
+    def GetUseArraysGrowthRate(self) -> bool:
+        """Return whether array growth is used."""
+        return self._use_arrays_growth
+
+    def SetUseArraysGrowthRate(self, value: bool) -> None:
+        """Set whether array growth is used."""
+        self._use_arrays_growth = bool(value)
+
+    def GetRefineConcaveSearch(self) -> bool:
+        """Return whether concave contact search is refined."""
+        return self._refine_concave
+
+    def SetRefineConcaveSearch(self, value: bool) -> None:
+        """Set whether concave contact search is refined."""
+        self._refine_concave = bool(value)
+
+    def GetUseNonRoundTorqueCorrection(self) -> bool:
+        """Return whether non-round torque correction is used."""
+        return self._non_round_torque
+
+    def SetUseNonRoundTorqueCorrection(self, value: bool) -> None:
+        """Set whether non-round torque correction is used."""
+        self._non_round_torque = bool(value)
+
+    def GetDisableTrianglesOnPeriodicBoundaries(self) -> bool:
+        """Return whether triangles on periodic boundaries are disabled."""
+        return self._disable_periodic_triangles
+
+    def SetDisableTrianglesOnPeriodicBoundaries(self, value: bool) -> None:
+        """Set whether triangles on periodic boundaries are disabled."""
+        self._disable_periodic_triangles = bool(value)
+
+    def GetMaximumNumberOfIterations(self) -> int:
+        """Return the maximum number of iterations."""
+        return self._max_iterations
+
+    def SetMaximumNumberOfIterations(self, value: int) -> None:
+        """Set the maximum number of iterations."""
+        self._max_iterations = int(value)
+
+    def GetOverRelaxationCoefficient(self) -> float:
+        """Return the over-relaxation coefficient."""
+        return self._over_relaxation
+
+    def SetOverRelaxationCoefficient(self, value: float) -> None:
+        """Set the over-relaxation coefficient."""
+        self._over_relaxation = float(value)
+
+    def GetUseMpi(self) -> bool:
+        """Return whether MPI is used."""
+        return self._use_mpi
+
+    def SetUseMpi(self, value: bool) -> None:
+        """Set whether MPI is used."""
+        self._use_mpi = bool(value)
+
+    def GetMpiNumberOfProcesses(self) -> int:
+        """Return the number of MPI processes."""
+        return self._mpi_processes
+
+    def SetMpiNumberOfProcesses(self, value: int) -> None:
+        """Set the number of MPI processes."""
+        self._mpi_processes = int(value)
+
+    def GetMpiNumberOfThreads(self) -> int:
+        """Return the threads per MPI process."""
+        return self._mpi_threads
+
+    def SetMpiNumberOfThreads(self, value: int) -> None:
+        """Set the threads per MPI process."""
+        self._mpi_threads = int(value)
+
+    def GetMpiHosts(self) -> str:
+        """Return the MPI host list."""
+        return self._mpi_hosts
+
+    def SetMpiHosts(self, value: str) -> None:
+        """Set the MPI host list."""
+        self._mpi_hosts = str(value)
+
+    def GetMpiHostfile(self) -> str:
+        """Return the MPI hostfile path."""
+        return self._mpi_hostfile
+
+    def SetMpiHostfile(self, value: str) -> None:
+        """Set the MPI hostfile path."""
+        self._mpi_hostfile = str(value)
+
+    def GetMpiHeterogeneous(self) -> bool:
+        """Return whether MPI ranks may use different hardware."""
+        return self._mpi_heterogeneous
+
+    def SetMpiHeterogeneous(self, value: bool) -> None:
+        """Set whether MPI ranks may use different hardware."""
+        self._mpi_heterogeneous = bool(value)
+
+    def GetMpiWithinScheduler(self) -> bool:
+        """Return whether the scheduler places the MPI ranks."""
+        return self._mpi_within_scheduler
+
+    def SetMpiWithinScheduler(self, value: bool) -> None:
+        """Set whether the scheduler places the MPI ranks."""
+        self._mpi_within_scheduler = bool(value)
+
+    def GetUseCompressedFiles(self) -> bool:
+        """Return whether result files are compressed."""
+        return self._compressed_files
+
+    def SetUseCompressedFiles(self, value: bool) -> None:
+        """Set whether result files are compressed."""
+        self._compressed_files = bool(value)
+
+    def GetSuccessiveOverRelaxationTolerance(self) -> float:
+        """Return the successive over-relaxation tolerance."""
+        return self._sor_tolerance
+
+    def SetSuccessiveOverRelaxationTolerance(self, value: float) -> None:
+        """Set the successive over-relaxation tolerance."""
+        self._sor_tolerance = float(value)
+
+    def GetJointElasticRatio(self) -> float:
+        """Return the solver joint elastic ratio."""
+        return self._solver_joint_elastic
+
+    def SetJointElasticRatio(self, value: float) -> None:
+        """Set the solver joint elastic ratio."""
+        self._solver_joint_elastic = float(value)
+
+    def GetMinimumLengthDeformationTolerance(self) -> float:
+        """Return the minimum length deformation tolerance."""
+        return self._min_length_tolerance
+
+    def SetMinimumLengthDeformationTolerance(self, value: float) -> None:
+        """Set the minimum length deformation tolerance."""
+        self._min_length_tolerance = float(value)
+
+    def GetMinimumVolumeTolerance(self) -> float:
+        """Return the minimum volume tolerance."""
+        return self._min_volume_tolerance
+
+    def SetMinimumVolumeTolerance(self, value: float) -> None:
+        """Set the minimum volume tolerance."""
+        self._min_volume_tolerance = float(value)
+
+    def GetLinearHystDamp(self) -> float:
+        """Return the linear hysteresis damping."""
+        return self._linear_hyst_damp
+
+    def SetLinearHystDamp(self, value: float) -> None:
+        """Set the linear hysteresis damping."""
+        self._linear_hyst_damp = float(value)
+
+    def GetResetOnlyPhysicalContactsData(self) -> bool:
+        """Return whether only physical contacts are reset."""
+        return self._reset_physical_contacts
+
+    def SetResetOnlyPhysicalContactsData(self, value: bool) -> None:
+        """Set whether only physical contacts are reset."""
+        self._reset_physical_contacts = bool(value)
+
+    def GetFluentOutputsMultiplier(self) -> int:
+        """Return how many Rocky outputs fit in one Fluent output."""
+        return self._fluent_multiplier
+
+    def SetFluentOutputsMultiplier(self, value: int) -> None:
+        """Set how many Rocky outputs fit in one Fluent output."""
+        self._fluent_multiplier = int(value)
+
+    @staticmethod
+    def GetAvailableStandardOutputProperties() -> dict[str, list[str]]:
+        """Return a small set of standard output names."""
+        return {"Particles": ["Count", "Mass Flow In", "Mass Flow Out"]}
+
+    @staticmethod
+    def GetAvailableModulesOutputProperties() -> dict[str, list[str]]:
+        """Return a small set of module output names."""
+        return {"Breakage": ["Fragments"]}
+
+    def SetStandardOutputPropertyEnabled(self, *output_property: str, enabled: bool = True) -> None:
+        """Enable or disable a standard output property."""
+        if not output_property:
+            raise ValueError("An output property name is required.")
+        self._standard_outputs[tuple(output_property)] = bool(enabled)
+
+    def GetStandardOutputPropertyEnabled(self, *output_property: str) -> bool:
+        """Return whether a standard output property is enabled."""
+        return self._standard_outputs.get(tuple(output_property), False)
+
+    def SetModulesOutputPropertyEnabled(self, *output_property: str, enabled: bool = True) -> None:
+        """Enable or disable a module output property."""
+        if not output_property:
+            raise ValueError("An output property name is required.")
+        self._module_outputs[tuple(output_property)] = bool(enabled)
+
+    def GetModulesOutputPropertyEnabled(self, *output_property: str) -> bool:
+        """Return whether a module output property is enabled."""
+        return self._module_outputs.get(tuple(output_property), False)
+
+    def GetValidProcessingUnitValues(self) -> list[str]:
+        """Return the processing units this stand-in accepts."""
+        return ["CPU", "GPU"]
+
+    def GetProcessingUnit(self) -> str:
+        """Return the processing unit."""
+        return self._processing_unit
+
+    def SetProcessingUnit(self, value: str) -> None:
+        """Set the processing unit."""
+        valid = self.GetValidProcessingUnitValues()
+        if value not in valid:
+            raise ValueError(f"Unknown processing unit {value!r}. Expected one of {valid}.")
+        self._processing_unit = value
+
+    def GetTargetGpus(self) -> list[int]:
+        """Return the selected GPU ids."""
+        return list(self._target_gpus)
+
+    def SetTargetGpus(self, gpus: list[int]) -> None:
+        """Set the GPU ids used by a local simulation."""
+        self._target_gpus = [int(gpu) for gpu in gpus]
+
+    def GetValidMultiGpuSlicingDirectionValues(self) -> list[str]:
+        """Return the multi-GPU slicing directions this stand-in accepts."""
+        return ["X", "Y", "Z"]
+
+    def GetMultiGpuSlicingDirection(self) -> str:
+        """Return the multi-GPU slicing direction."""
+        return self._gpu_slicing
+
+    def SetMultiGpuSlicingDirection(self, value: str) -> None:
+        """Set the multi-GPU slicing direction."""
+        valid = self.GetValidMultiGpuSlicingDirectionValues()
+        if value not in valid:
+            raise ValueError(f"Unknown slicing direction {value!r}. Expected one of {valid}.")
+        self._gpu_slicing = value
 
 
 class MockMotionFrame:
@@ -572,6 +2981,18 @@ class MockMotionFrame:
         """Initialize the frame."""
         self._motions: list[dict[str, Any]] = []
         self._applied_to: list[str] = []
+        self._period = 0.0
+        self._period_start = 0.0
+        self._period_stop = 0.0
+        self._periodic = False
+        self._origin = (0.0, 0.0, 0.0)
+        self._orientation = (0.0, 0.0, 0.0)
+        self._linear_limits = False
+        self._angular_limits = False
+        self._min_linear = (0.0, 0.0, 0.0)
+        self._max_linear = (0.0, 0.0, 0.0)
+        self._min_angular = (0.0, 0.0, 0.0)
+        self._max_angular = (0.0, 0.0, 0.0)
 
     def AddRotationMotion(
         self,
@@ -582,6 +3003,25 @@ class MockMotionFrame:
         **kwargs: Any,
     ) -> dict[str, Any]:
         """Add a rotation motion to the frame."""
+        if (
+            isinstance(angular_velocity, tuple)
+            and len(angular_velocity) == 2
+            and isinstance(angular_velocity[1], str)
+            and angular_velocity[1] != "rad/s"
+        ):
+            raise ValueError(
+                f"Unsupported angular velocity unit {angular_velocity[1]!r}. Expected 'rad/s'."
+            )
+        if (
+            isinstance(angular_acceleration, tuple)
+            and len(angular_acceleration) == 2
+            and isinstance(angular_acceleration[1], str)
+            and angular_acceleration[1] != "rad/s2"
+        ):
+            raise ValueError(
+                "Unsupported angular acceleration unit "
+                f"{angular_acceleration[1]!r}. Expected 'rad/s2'."
+            )
         motion = {
             "kind": "rotation",
             "start_time": list(start_time) if isinstance(start_time, tuple) else start_time,
@@ -603,6 +3043,25 @@ class MockMotionFrame:
         **kwargs: Any,
     ) -> dict[str, Any]:
         """Add a translation motion to the frame."""
+        if define_as not in (
+            "fixed_velocity",
+            "initial_velocity_and_acceleration",
+            "initial_and_final_velocity",
+        ):
+            raise ValueError(
+                f"Unsupported translation definition {define_as!r}. "
+                "Expected 'fixed_velocity', 'initial_velocity_and_acceleration', "
+                "or 'initial_and_final_velocity'."
+            )
+        if (
+            isinstance(acceleration, tuple)
+            and len(acceleration) == 2
+            and isinstance(acceleration[1], str)
+            and acceleration[1] != "m/s2"
+        ):
+            raise ValueError(
+                f"Unsupported linear acceleration unit {acceleration[1]!r}. Expected 'm/s2'."
+            )
         motion = {
             "kind": "translation",
             "start_time": list(start_time) if isinstance(start_time, tuple) else start_time,
@@ -611,6 +3070,214 @@ class MockMotionFrame:
             "acceleration": list(acceleration),
             "define_as": define_as,
             "final_velocity": list(final_velocity),
+        }
+        self._motions.append(motion)
+        return motion
+
+    def GetPeriodicMotionPeriod(self, unit: str | None = None) -> float:
+        """Return the motion repeat period in seconds."""
+        if unit not in (None, "s"):
+            raise ValueError(f"Unsupported time unit {unit!r}. Expected 's'.")
+        return self._period
+
+    def SetPeriodicMotionPeriod(self, value: float, unit: str | None = None) -> None:
+        """Set the motion repeat period in seconds."""
+        if unit not in (None, "s"):
+            raise ValueError(f"Unsupported time unit {unit!r}. Expected 's'.")
+        self._period = float(value)
+
+    def GetPeriodicMotionStartTime(self, unit: str | None = None) -> float:
+        """Return when the repeating motion starts, in seconds."""
+        if unit not in (None, "s"):
+            raise ValueError(f"Unsupported time unit {unit!r}. Expected 's'.")
+        return self._period_start
+
+    def SetPeriodicMotionStartTime(self, value: float, unit: str | None = None) -> None:
+        """Set when the repeating motion starts, in seconds."""
+        if unit not in (None, "s"):
+            raise ValueError(f"Unsupported time unit {unit!r}. Expected 's'.")
+        self._period_start = float(value)
+
+    def GetPeriodicMotionStopTime(self, unit: str | None = None) -> float:
+        """Return when the repeating motion stops, in seconds."""
+        if unit not in (None, "s"):
+            raise ValueError(f"Unsupported time unit {unit!r}. Expected 's'.")
+        return self._period_stop
+
+    def SetPeriodicMotionStopTime(self, value: float, unit: str | None = None) -> None:
+        """Set when the repeating motion stops, in seconds."""
+        if unit not in (None, "s"):
+            raise ValueError(f"Unsupported time unit {unit!r}. Expected 's'.")
+        self._period_stop = float(value)
+
+    def GetEnablePeriodicMotion(self) -> bool:
+        """Return whether Rocky will repeat the motion."""
+        return self._periodic
+
+    def SetEnablePeriodicMotion(self, value: bool) -> None:
+        """Set whether Rocky will repeat the motion."""
+        self._periodic = bool(value)
+
+    def GetEnableFbmLinearLimits(self) -> bool:
+        """Return whether free-body travel is limited."""
+        return self._linear_limits
+
+    def SetEnableFbmLinearLimits(self, value: bool) -> None:
+        """Set whether free-body travel is limited."""
+        self._linear_limits = bool(value)
+
+    def GetEnableFbmAngularLimits(self) -> bool:
+        """Return whether free-body rotation is limited."""
+        return self._angular_limits
+
+    def SetEnableFbmAngularLimits(self, value: bool) -> None:
+        """Set whether free-body rotation is limited."""
+        self._angular_limits = bool(value)
+
+    def _limit_vector(
+        self, values: list[float], unit: str | None, allowed: str
+    ) -> tuple[float, ...]:
+        """Store a three-component limit in Rocky's unit."""
+        if unit not in (None, allowed):
+            raise ValueError(f"Unsupported limit unit {unit!r}. Expected {allowed!r}.")
+        if len(values) != 3:
+            raise ValueError("A free-body limit must have three numbers.")
+        return tuple(float(value) for value in values)
+
+    def GetFbmMinLinearLimits(self, unit: str | None = None) -> list[float]:
+        """Return the minimum free-body travel in meters."""
+        if unit not in (None, "m"):
+            raise ValueError(f"Unsupported length unit {unit!r}. Expected 'm'.")
+        return list(self._min_linear)
+
+    def SetFbmMinLinearLimits(self, values: list[float], unit: str | None = None) -> None:
+        """Set the minimum free-body travel. Rocky's token is ``m``."""
+        self._min_linear = self._limit_vector(values, unit, "m")
+
+    def GetFbmMaxLinearLimits(self, unit: str | None = None) -> list[float]:
+        """Return the maximum free-body travel in meters."""
+        if unit not in (None, "m"):
+            raise ValueError(f"Unsupported length unit {unit!r}. Expected 'm'.")
+        return list(self._max_linear)
+
+    def SetFbmMaxLinearLimits(self, values: list[float], unit: str | None = None) -> None:
+        """Set the maximum free-body travel. Rocky's token is ``m``."""
+        self._max_linear = self._limit_vector(values, unit, "m")
+
+    def GetFbmMinAngularLimits(self, unit: str | None = None) -> list[float]:
+        """Return the minimum free-body angles in degrees."""
+        if unit not in (None, "dega"):
+            raise ValueError(f"Unsupported angle unit {unit!r}. Expected 'dega'.")
+        return list(self._min_angular)
+
+    def SetFbmMinAngularLimits(self, values: list[float], unit: str | None = None) -> None:
+        """Set the minimum free-body angles. Rocky's token is ``dega``."""
+        self._min_angular = self._limit_vector(values, unit, "dega")
+
+    def GetFbmMaxAngularLimits(self, unit: str | None = None) -> list[float]:
+        """Return the maximum free-body angles in degrees."""
+        if unit not in (None, "dega"):
+            raise ValueError(f"Unsupported angle unit {unit!r}. Expected 'dega'.")
+        return list(self._max_angular)
+
+    def SetFbmMaxAngularLimits(self, values: list[float], unit: str | None = None) -> None:
+        """Set the maximum free-body angles. Rocky's token is ``dega``."""
+        self._max_angular = self._limit_vector(values, unit, "dega")
+
+    def GetRelativePosition(self, unit: str | None = None) -> list[float]:
+        """Return the frame position in meters."""
+        if unit not in (None, "m"):
+            raise ValueError(f"Unsupported length unit {unit!r}. Expected 'm'.")
+        return list(self._origin)
+
+    def SetRelativePosition(self, values: list[float], unit: str | None = None) -> None:
+        """Set the frame position. Rocky's default length token is ``m``."""
+        if unit not in (None, "m"):
+            raise ValueError(f"Unsupported length unit {unit!r}. Expected 'm'.")
+        if len(values) != 3:
+            raise ValueError("Relative position must have three numbers.")
+        self._origin = tuple(float(value) for value in values)
+
+    def GetOrientationFromAngles(self, unit: str | None = None) -> list[float]:
+        """Return the frame orientation in degrees."""
+        if unit not in (None, "dega"):
+            raise ValueError(f"Unsupported angle unit {unit!r}. Expected 'dega'.")
+        return list(self._orientation)
+
+    def SetOrientationFromAngles(
+        self,
+        rotation: list[float] | tuple[float, float, float],
+        unit: str | None = None,
+        local_angles: bool = True,
+        order: str = "XYZ",
+    ) -> None:
+        """Set the frame orientation. Rocky's default angle token is ``dega``."""
+        if unit not in (None, "dega"):
+            raise ValueError(f"Unsupported angle unit {unit!r}. Expected 'dega'.")
+        if len(rotation) != 3:
+            raise ValueError("Orientation must have three numbers.")
+        self._orientation = tuple(float(value) for value in rotation)
+
+    def _require_unit(self, value: Any, expected: str, label: str) -> None:
+        """Reject a quantity whose unit token is not the one Rocky stores."""
+        if (
+            isinstance(value, tuple)
+            and len(value) == 2
+            and isinstance(value[1], str)
+            and value[1] != expected
+        ):
+            raise ValueError(f"Unsupported {label} unit {value[1]!r}. Expected {expected!r}.")
+
+    def AddVibrationMotion(
+        self,
+        start_time: Any = (0.0, "s"),
+        stop_time: Any = (1000.0, "s"),
+        initial_frequency: Any = (0.0, "Hz"),
+        initial_amplitude: Any = (0.0, "m"),
+        direction: Any = ((0.0, 0.0, 0.0), "m"),
+        frequency_variation: Any = (0.0, "Hz/s"),
+        amplitude_variation: Any = (0.0, "m/s"),
+        **kwargs: Any,
+    ) -> dict[str, Any]:
+        """Add a vibration motion to the frame."""
+        self._require_unit(initial_frequency, "Hz", "frequency")
+        self._require_unit(initial_amplitude, "m", "amplitude")
+        self._require_unit(direction, "m", "direction")
+        self._require_unit(frequency_variation, "Hz/s", "frequency variation")
+        self._require_unit(amplitude_variation, "m/s", "amplitude variation")
+        motion = {
+            "kind": "vibration",
+            "initial_frequency": list(initial_frequency),
+            "initial_amplitude": list(initial_amplitude),
+            "direction": list(direction),
+        }
+        self._motions.append(motion)
+        return motion
+
+    def AddPendulumMotion(
+        self,
+        start_time: Any = (0.0, "s"),
+        stop_time: Any = (1000.0, "s"),
+        initial_frequency: Any = (0.0, "Hz"),
+        angular_initial_amplitude: Any = (0.0, "rad"),
+        direction: Any = ((0.0, 0.0, 0.0), "m"),
+        angular_initial_phase: Any = (0.0, "rad"),
+        frequency_variation: Any = (0.0, "Hz/s"),
+        angular_amplitude_variation: Any = (0.0, "rad/s"),
+        **kwargs: Any,
+    ) -> dict[str, Any]:
+        """Add a pendulum motion to the frame."""
+        self._require_unit(initial_frequency, "Hz", "frequency")
+        self._require_unit(angular_initial_amplitude, "rad", "amplitude")
+        self._require_unit(direction, "m", "direction")
+        self._require_unit(angular_initial_phase, "rad", "phase")
+        self._require_unit(frequency_variation, "Hz/s", "frequency variation")
+        self._require_unit(angular_amplitude_variation, "rad/s", "amplitude variation")
+        motion = {
+            "kind": "pendulum",
+            "angular_initial_amplitude": list(angular_initial_amplitude),
+            "angular_initial_phase": list(angular_initial_phase),
+            "direction": list(direction),
         }
         self._motions.append(motion)
         return motion
@@ -691,6 +3358,10 @@ class MockSelectionProcess(_VectorMixin):
     def GetRotation(self, unit: str | None = None) -> list[float]:
         """Return the rotation of the selection."""
         return list(self._rotation)
+
+    def GetCurveNames(self) -> list[str]:
+        """Return the curve names this selection can read."""
+        return self._study.GetParticles().GetCurveNames()
 
     def GetNumpyCurve(self, curve_name: str, unit: str | None = None) -> tuple[Any, Any]:
         """Return the curve restricted to the selection."""
@@ -791,7 +3462,7 @@ class MockUserProcessCollection:
         parent: Any = None,
         name: str | None = None,
         center: Any = None,
-        size: Any = None,
+        magnitude: Any = None,
         **kwargs: Any,
     ) -> MockCubeProcess:
         """Create a cube selection process."""
@@ -799,8 +3470,8 @@ class MockUserProcessCollection:
         process._study = self._study
         if center is not None:
             process.SetCenter(center)
-        if size is not None:
-            sx, sy, sz = _as_sequence(size)
+        if magnitude is not None:
+            sx, sy, sz = _as_sequence(magnitude)
             process.SetSize(sx, sy, sz)
         self._study._selections.append(process)
         return process
@@ -831,6 +3502,783 @@ class MockCubeProcess(MockSelectionProcess):
         self._study: MockStudy | None = None
 
 
+class MockPhysics:
+    """Stand-in for Rocky physics, including the gravity vector."""
+
+    def __init__(self) -> None:
+        """Initialize gravity at rest."""
+        self._gravity = [0.0, 0.0, 0.0]
+        self._normal_force = "damped_hertzian"
+        self._tangential_force = "mindlin_deresiewicz"
+        self._rolling_resistance = "none"
+        self._adhesion = "none"
+        self._restitution_model = "constant"
+        self._thermal = False
+        self._gravity_start = 0.0
+        self._gravity_stop = 0.0
+        self._thermal_correction = "none"
+        self._softening = 1.0
+        self._coarse_grain = False
+        self._search_distance = 1.0
+        self._update_distance = 1.0
+        self._impact_energy = "default"
+        self._sph_thermal = "cleary"
+        self._use_radl = False
+        self._exponent_limit = 0.0
+        self._volume_fraction_limit = 0.0
+        self._close_packing = 0.0
+
+    def _gravity_component(self, value: float, unit: str | None) -> float:
+        """Store one gravity component. Rocky's token is ``m/s2``."""
+        if unit not in (None, "m/s2"):
+            raise ValueError(f"Unsupported gravity unit {unit!r}. Expected 'm/s2'.")
+        return float(value)
+
+    def GetGravityXDirection(self, unit: str | None = None) -> float:
+        """Return the X component of gravity."""
+        self._gravity_component(0.0, unit)
+        return self._gravity[0]
+
+    def SetGravityXDirection(self, value: float, unit: str | None = None) -> None:
+        """Set the X component of gravity."""
+        self._gravity[0] = self._gravity_component(value, unit)
+
+    def GetGravityYDirection(self, unit: str | None = None) -> float:
+        """Return the Y component of gravity."""
+        self._gravity_component(0.0, unit)
+        return self._gravity[1]
+
+    def SetGravityYDirection(self, value: float, unit: str | None = None) -> None:
+        """Set the Y component of gravity."""
+        self._gravity[1] = self._gravity_component(value, unit)
+
+    def GetGravityZDirection(self, unit: str | None = None) -> float:
+        """Return the Z component of gravity."""
+        self._gravity_component(0.0, unit)
+        return self._gravity[2]
+
+    def SetGravityZDirection(self, value: float, unit: str | None = None) -> None:
+        """Set the Z component of gravity."""
+        self._gravity[2] = self._gravity_component(value, unit)
+
+    def GetGravityStartTime(self, unit: str | None = None) -> float:
+        """Return when gravity starts, in seconds."""
+        if unit not in (None, "s"):
+            raise ValueError(f"Unsupported time unit {unit!r}. Expected 's'.")
+        return self._gravity_start
+
+    def SetGravityStartTime(self, value: float, unit: str | None = None) -> None:
+        """Set when gravity starts. Rocky's token is ``s``."""
+        if unit not in (None, "s"):
+            raise ValueError(f"Unsupported time unit {unit!r}. Expected 's'.")
+        self._gravity_start = float(value)
+
+    def GetGravityStopTime(self, unit: str | None = None) -> float:
+        """Return when gravity stops, in seconds."""
+        if unit not in (None, "s"):
+            raise ValueError(f"Unsupported time unit {unit!r}. Expected 's'.")
+        return self._gravity_stop
+
+    def SetGravityStopTime(self, value: float, unit: str | None = None) -> None:
+        """Set when gravity stops. Rocky's token is ``s``."""
+        if unit not in (None, "s"):
+            raise ValueError(f"Unsupported time unit {unit!r}. Expected 's'.")
+        self._gravity_stop = float(value)
+
+    def GetNormalForceModel(self) -> str:
+        """Return the normal force model."""
+        return self._normal_force
+
+    def SetNormalForceModel(self, value: str) -> None:
+        """Set the normal force model."""
+        self._normal_force = value
+
+    def GetTangentialForceModel(self) -> str:
+        """Return the tangential force model."""
+        return self._tangential_force
+
+    def SetTangentialForceModel(self, value: str) -> None:
+        """Set the tangential force model."""
+        self._tangential_force = value
+
+    def GetRollingResistanceModel(self) -> str:
+        """Return the rolling resistance model."""
+        return self._rolling_resistance
+
+    def SetRollingResistanceModel(self, value: str) -> None:
+        """Set the rolling resistance model."""
+        self._rolling_resistance = value
+
+    def GetAdhesionModel(self) -> str:
+        """Return the adhesion model."""
+        return self._adhesion
+
+    def SetAdhesionModel(self, value: str) -> None:
+        """Set the adhesion model."""
+        self._adhesion = value
+
+    def GetRestitutionModel(self) -> str:
+        """Return the restitution model."""
+        return self._restitution_model
+
+    def SetRestitutionModel(self, value: str) -> None:
+        """Set the restitution model."""
+        self._restitution_model = value
+
+    def GetEnableThermalModel(self) -> bool:
+        """Return whether the thermal model is enabled."""
+        return self._thermal
+
+    def SetEnableThermalModel(self, value: bool) -> None:
+        """Enable or disable the thermal model."""
+        self._thermal = bool(value)
+
+    def GetThermalCorrectionModel(self) -> str:
+        """Return the thermal correction model."""
+        return self._thermal_correction
+
+    def SetThermalCorrectionModel(self, value: str) -> None:
+        """Set the thermal correction model."""
+        if value not in ("none", "morris_et_al_area", "morris_et_al_area_time"):
+            raise ValueError(
+                f"Unsupported thermal correction {value!r}. "
+                "Expected 'none', 'morris_et_al_area', or 'morris_et_al_area_time'."
+            )
+        self._thermal_correction = value
+
+    def GetNumericalSofteningFactor(self) -> float:
+        """Return the numerical softening factor."""
+        return self._softening
+
+    def SetNumericalSofteningFactor(self, value: float) -> None:
+        """Set the numerical softening factor."""
+        self._softening = float(value)
+
+    def GetEnableCoarseGrainModeling(self) -> bool:
+        """Return whether coarse-grain modeling is enabled."""
+        return self._coarse_grain
+
+    def SetEnableCoarseGrainModeling(self, value: bool) -> None:
+        """Enable or disable coarse-grain modeling."""
+        self._coarse_grain = bool(value)
+
+    def GetSearchDistanceMultiplier(self) -> float:
+        """Return the neighbor-search distance multiplier."""
+        return self._search_distance
+
+    def SetSearchDistanceMultiplier(self, value: float) -> None:
+        """Set the neighbor-search distance multiplier."""
+        self._search_distance = float(value)
+
+    def GetUpdateDistanceMultiplier(self) -> float:
+        """Return the neighbor-list update distance multiplier."""
+        return self._update_distance
+
+    def SetUpdateDistanceMultiplier(self, value: float) -> None:
+        """Set the neighbor-list update distance multiplier."""
+        self._update_distance = float(value)
+
+    def GetImpactEnergyModel(self) -> str:
+        """Return the impact energy model."""
+        return self._impact_energy
+
+    def SetImpactEnergyModel(self, value: str) -> None:
+        """Set the impact energy model."""
+        if value not in ("default", "custom"):
+            raise ValueError(
+                f"Unsupported impact energy model {value!r}. Expected 'default' or 'custom'."
+            )
+        self._impact_energy = value
+
+    def GetSphThermalTransferModel(self) -> str:
+        """Return the SPH thermal transfer model."""
+        return self._sph_thermal
+
+    def SetSphThermalTransferModel(self, value: str) -> None:
+        """Set the SPH thermal transfer model."""
+        if value not in ("cleary", "custom"):
+            raise ValueError(
+                f"Unsupported SPH thermal model {value!r}. Expected 'cleary' or 'custom'."
+            )
+        self._sph_thermal = value
+
+    def GetUseRadlEtAl(self) -> bool:
+        """Return whether the Radl et al. model is enabled."""
+        return self._use_radl
+
+    def SetUseRadlEtAl(self, value: bool) -> None:
+        """Enable or disable the Radl et al. model."""
+        self._use_radl = bool(value)
+
+    def GetExponentLimit(self) -> float:
+        """Return the exponent limit."""
+        return self._exponent_limit
+
+    def SetExponentLimit(self, value: float) -> None:
+        """Set the exponent limit."""
+        self._exponent_limit = float(value)
+
+    def GetVolumeFractionLimit(self) -> float:
+        """Return the volume-fraction limit."""
+        return self._volume_fraction_limit
+
+    def SetVolumeFractionLimit(self, value: float) -> None:
+        """Set the volume-fraction limit."""
+        self._volume_fraction_limit = float(value)
+
+    def GetClosePackingVolumeFraction(self) -> float:
+        """Return the close-packing volume fraction."""
+        return self._close_packing
+
+    def SetClosePackingVolumeFraction(self, value: float) -> None:
+        """Set the close-packing volume fraction."""
+        self._close_packing = float(value)
+
+
+class MockExportToolkit:
+    """Stand-in for the Rocky export toolkit."""
+
+    def __init__(self, study: MockStudy) -> None:
+        """Initialize the toolkit for one study."""
+        self._study = study
+
+    def ExportToSTL(
+        self,
+        stl_filename: str,
+        entities: Any,
+        time_to_export: Any = None,
+        output_unit: str | None = None,
+    ) -> None:
+        """Write a stand-in STL that records which entities were requested."""
+        items = entities if isinstance(entities, list) else [entities]
+        names = []
+        for item in items:
+            get_name = getattr(item, "GetName", None)
+            names.append(get_name() if get_name is not None else str(item))
+        path = Path(stl_filename)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("solid mock\n" + "\n".join(names) + "\nendsolid mock\n", encoding="utf-8")
+
+
+class MockFeedConveyor:
+    """Stand-in for a Rocky feed conveyor."""
+
+    def __init__(self, name: str) -> None:
+        """Initialize a stopped conveyor."""
+        self._name = name
+        self._speed = 0.0
+        self._start_time = 0.0
+        self._stop_time = 0.0
+        self._acceleration = 0.0
+        self._deceleration = 0.0
+        self._profile = "Three Rolls"
+        self._width = 1.0
+        self._loading_length = 0.0
+        self._drop = [0.0, 0.0, 0.0]
+        self._skirtboard = 0.0
+        self._transition = 0.0
+        self._triangle = 0.05
+        self._thickness = 0.01
+        self._diameter = 0.3
+        self._wall_thickness = 0.01
+        self._face_width = 0.3
+        self._alignment_rad = 0.0
+        self._return_belt_rad = 0.0
+        self._out_of_plane = 0.0
+        self._temperature_k = 298.15
+        self._incline_rad = 0.0
+        self._horizontal_offset = 0.0
+        self._vertical_offset = 0.0
+        self._material: Any = None
+
+    def GetName(self) -> str:
+        """Return the conveyor name."""
+        return self._name
+
+    def SetName(self, value: str) -> None:
+        """Set the conveyor name."""
+        self._name = value
+
+    def SetBeltSpeed(self, value: float, unit: str | None = None) -> None:
+        """Set the belt speed in meters per second."""
+        self._speed = float(value)
+
+    def GetBeltSpeed(self, unit: str | None = None) -> float:
+        """Return the belt speed in meters per second."""
+        return self._speed
+
+    def GetTemperature(self, unit: str | None = None) -> float:
+        """Return the belt temperature in kelvin."""
+        _require_kelvin(unit)
+        return self._temperature_k
+
+    def SetTemperature(self, value: float, unit: str | None = None) -> None:
+        """Set the belt temperature in kelvin."""
+        _require_kelvin(unit)
+        self._temperature_k = float(value)
+
+    def SetBeginningStartTime(self, value: float, unit: str | None = None) -> None:
+        """Set when the belt starts, in seconds."""
+        self._start_time = float(value)
+
+    def GetBeginningStartTime(self, unit: str | None = None) -> float:
+        """Return when the belt starts, in seconds."""
+        return self._start_time
+
+    def SetAccelerationPeriod(self, value: float, unit: str | None = None) -> None:
+        """Set how long the belt takes to reach speed, in seconds."""
+        self._acceleration = float(value)
+
+    def GetAccelerationPeriod(self, unit: str | None = None) -> float:
+        """Return how long the belt takes to reach speed, in seconds."""
+        return self._acceleration
+
+    def SetBeginningStopTime(self, value: float, unit: str | None = None) -> None:
+        """Set when the belt starts to stop, in seconds."""
+        self._stop_time = float(value)
+
+    def GetBeginningStopTime(self, unit: str | None = None) -> float:
+        """Return when the belt starts to stop, in seconds."""
+        return self._stop_time
+
+    def SetDecelerationPeriod(self, value: float, unit: str | None = None) -> None:
+        """Set how long the belt takes to stop, in seconds."""
+        self._deceleration = float(value)
+
+    def GetDecelerationPeriod(self, unit: str | None = None) -> float:
+        """Return how long the belt takes to stop, in seconds."""
+        return self._deceleration
+
+    def GetValidBeltProfileNames(self) -> list[str]:
+        """Return the belt profiles this stand-in accepts."""
+        return ["One Roll", "Two Rolls", "Three Rolls", "Five Rolls"]
+
+    def SetBeltProfile(self, belt_profile_name: str) -> str:
+        """Set the belt profile by name."""
+        if belt_profile_name not in self.GetValidBeltProfileNames():
+            raise ValueError(
+                f"Unknown belt profile {belt_profile_name!r}. "
+                f"Expected one of {self.GetValidBeltProfileNames()}."
+            )
+        self._profile = belt_profile_name
+        return belt_profile_name
+
+    def GetBeltProfileName(self) -> str:
+        """Return the belt profile name."""
+        return self._profile
+
+    def SetBeltWidth(self, value: float, unit: str | None = None) -> None:
+        """Set the belt width in meters."""
+        self._width = float(value)
+
+    def GetBeltWidth(self, unit: str | None = None) -> float:
+        """Return the belt width in meters."""
+        return self._width
+
+    def SetLoadingLength(self, value: float, unit: str | None = None) -> None:
+        """Set the loading length in meters."""
+        self._loading_length = float(value)
+
+    def GetLoadingLength(self, unit: str | None = None) -> float:
+        """Return the loading length in meters."""
+        return self._loading_length
+
+    def SetDropBoxLength(self, value: float, unit: str | None = None) -> None:
+        """Set the drop box length in meters."""
+        self._drop[0] = float(value)
+
+    def GetDropBoxLength(self, unit: str | None = None) -> float:
+        """Return the drop box length in meters."""
+        return self._drop[0]
+
+    def SetDropBoxWidth(self, value: float, unit: str | None = None) -> None:
+        """Set the drop box width in meters."""
+        self._drop[1] = float(value)
+
+    def GetDropBoxWidth(self, unit: str | None = None) -> float:
+        """Return the drop box width in meters."""
+        return self._drop[1]
+
+    def SetDropBoxHeight(self, value: float, unit: str | None = None) -> None:
+        """Set the drop box height in meters."""
+        self._drop[2] = float(value)
+
+    def GetDropBoxHeight(self, unit: str | None = None) -> float:
+        """Return the drop box height in meters."""
+        return self._drop[2]
+
+    def SetSkirtboardHeight(self, value: float, unit: str | None = None) -> None:
+        """Set the skirtboard height in meters."""
+        self._skirtboard = float(value)
+
+    def GetSkirtboardHeight(self, unit: str | None = None) -> float:
+        """Return the skirtboard height in meters."""
+        return self._skirtboard
+
+    def SetTransitionLength(self, value: float, unit: str | None = None) -> None:
+        """Set the transition length in meters."""
+        self._transition = float(value)
+
+    def GetTransitionLength(self, unit: str | None = None) -> float:
+        """Return the transition length in meters."""
+        return self._transition
+
+    def SetTriangleSize(self, value: float, unit: str | None = None) -> None:
+        """Set the belt mesh triangle size in meters."""
+        self._triangle = float(value)
+
+    def GetTriangleSize(self, unit: str | None = None) -> float:
+        """Return the belt mesh triangle size in meters."""
+        return self._triangle
+
+    def SetBeltThickness(self, value: float, unit: str | None = None) -> None:
+        """Set the belt thickness in meters."""
+        self._thickness = float(value)
+
+    def GetBeltThickness(self, unit: str | None = None) -> float:
+        """Return the belt thickness in meters."""
+        return self._thickness
+
+    def SetDiameter(self, value: float, unit: str | None = None) -> None:
+        """Set the pulley diameter in meters."""
+        self._diameter = float(value)
+
+    def GetDiameter(self, unit: str | None = None) -> float:
+        """Return the pulley diameter in meters."""
+        return self._diameter
+
+    def SetWallThickness(self, value: float, unit: str | None = None) -> None:
+        """Set the conveyor wall thickness in meters."""
+        self._wall_thickness = float(value)
+
+    def GetWallThickness(self, unit: str | None = None) -> float:
+        """Return the conveyor wall thickness in meters."""
+        return self._wall_thickness
+
+    def SetFaceWidth(self, value: float, unit: str | None = None) -> None:
+        """Set the pulley face width in meters."""
+        self._face_width = float(value)
+
+    def GetFaceWidth(self, unit: str | None = None) -> float:
+        """Return the pulley face width in meters."""
+        return self._face_width
+
+    def SetAlignmentAngle(self, value: float, unit: str | None = None) -> None:
+        """Set the conveyor alignment angle. Degrees use Rocky's ``dega`` token."""
+        angle = float(value)
+        if unit in ("deg", "dega"):
+            angle = math.radians(angle)
+        elif unit not in (None, "rad"):
+            raise ValueError(f"Unsupported angle unit {unit!r}.")
+        self._alignment_rad = angle
+
+    def SetReturnBeltAngle(self, value: float, unit: str | None = None) -> None:
+        """Set the return belt angle. Rocky's degree token is ``dega``."""
+        angle = float(value)
+        if unit in ("deg", "dega"):
+            angle = math.radians(angle)
+        elif unit not in (None, "rad"):
+            raise ValueError(f"Unsupported angle unit {unit!r}.")
+        self._return_belt_rad = angle
+
+    def SetOutOfPlaneOffset(self, value: float, unit: str | None = None) -> None:
+        """Set the out-of-plane offset in meters."""
+        if unit not in (None, "m"):
+            raise ValueError(f"Unsupported length unit {unit!r}. Expected 'm'.")
+        self._out_of_plane = float(value)
+
+    def GetOutOfPlaneOffset(self, unit: str | None = None) -> float:
+        """Return the out-of-plane offset in meters."""
+        if unit not in (None, "m"):
+            raise ValueError(f"Unsupported length unit {unit!r}. Expected 'm'.")
+        return self._out_of_plane
+
+    def GetReturnBeltAngle(self, unit: str | None = None) -> float:
+        """Return the return belt angle in radians, or degrees when asked."""
+        if unit in ("deg", "dega"):
+            return math.degrees(self._return_belt_rad)
+        return self._return_belt_rad
+
+    def GetAlignmentAngle(self, unit: str | None = None) -> float:
+        """Return the alignment angle in radians, or degrees when asked."""
+        if unit in ("deg", "dega"):
+            return math.degrees(self._alignment_rad)
+        return self._alignment_rad
+
+    def SetBeltInclineAngle(self, value: float, unit: str | None = None) -> None:
+        """Set the belt incline. Degrees are accepted as ``deg``."""
+        angle = float(value)
+        if unit in ("deg", "dega"):
+            angle = math.radians(angle)
+        elif unit not in (None, "rad"):
+            raise ValueError(f"Unsupported angle unit {unit!r}.")
+        self._incline_rad = angle
+
+    def GetBeltInclineAngle(self, unit: str | None = None) -> float:
+        """Return the belt incline in radians, or degrees when asked."""
+        if unit in ("deg", "dega"):
+            return math.degrees(self._incline_rad)
+        return self._incline_rad
+
+    def SetHorizontalOffset(self, value: float, unit: str | None = None) -> None:
+        """Set the horizontal offset in meters."""
+        self._horizontal_offset = float(value)
+
+    def GetHorizontalOffset(self, unit: str | None = None) -> float:
+        """Return the horizontal offset in meters."""
+        return self._horizontal_offset
+
+    def SetVerticalOffset(self, value: float, unit: str | None = None) -> None:
+        """Set the vertical offset in meters."""
+        self._vertical_offset = float(value)
+
+    def GetVerticalOffset(self, unit: str | None = None) -> float:
+        """Return the vertical offset in meters."""
+        return self._vertical_offset
+
+    def SetMaterial(self, value: Any) -> None:
+        """Assign a solid material to the belt."""
+        self._material = value
+
+    def GetMaterial(self) -> Any:
+        """Return the belt material."""
+        return self._material
+
+
+class MockSphSettings:
+    """Stand-in for Rocky SPH settings."""
+
+    def __init__(self) -> None:
+        """Initialize SPH as disabled."""
+        self._enabled = False
+        self._solver = "WCSPH"
+        self._size = 0.0
+        self._sound = 0.0
+        self._max_velocity = 0.0
+        self._kernel = "cubic"
+        self._position = "none"
+        self._turbulence = "laminar"
+        self._viscosity = "cleary"
+        self._integration = "explicit"
+        self._tension = "none"
+        self._tension_coefficient = 0.0
+        self._tension_angle = 0.0
+        self._stiff = 1.0
+        self._timestep_factor = 1.0
+        self._kernel_distance = 1.0
+        self._xsph = 0.0
+        self._shepard_density = False
+        self._shepard_pressure = False
+        self._fluid: MockFluidMaterial | None = None
+
+    def GetEnabled(self) -> bool:
+        """Return whether SPH is enabled."""
+        return self._enabled
+
+    def SetEnabled(self, value: bool) -> None:
+        """Set whether SPH is enabled."""
+        self._enabled = bool(value)
+
+    def GetFluidMaterial(self) -> MockFluidMaterial | None:
+        """Return the fluid assigned to SPH."""
+        return self._fluid
+
+    def SetFluidMaterial(self, value: MockFluidMaterial) -> None:
+        """Assign a fluid material by object."""
+        self._fluid = value
+
+    def GetSolverModel(self) -> str:
+        """Return the SPH solver model."""
+        return self._solver
+
+    def SetSolverModel(self, value: str) -> None:
+        """Set the SPH solver model."""
+        if value not in ("WCSPH", "IISPH", "DFSPH"):
+            raise ValueError(
+                f"Unsupported SPH solver {value!r}. Expected 'WCSPH', 'IISPH', or 'DFSPH'."
+            )
+        self._solver = value
+
+    def GetSize(self, unit: str | None = None) -> float:
+        """Return the SPH particle size in meters."""
+        if unit not in (None, "m"):
+            raise ValueError(f"Unsupported length unit {unit!r}. Expected 'm'.")
+        return self._size
+
+    def SetSize(self, value: float, unit: str | None = None) -> None:
+        """Set the SPH particle size. Rocky's token is ``m``."""
+        if unit not in (None, "m"):
+            raise ValueError(f"Unsupported length unit {unit!r}. Expected 'm'.")
+        self._size = float(value)
+
+    def _speed(self, value: float, unit: str | None) -> float:
+        """Store a speed. Rocky's token is ``m/s``."""
+        if unit not in (None, "m/s"):
+            raise ValueError(f"Unsupported velocity unit {unit!r}. Expected 'm/s'.")
+        return float(value)
+
+    def GetSoundSpeed(self, unit: str | None = None) -> float:
+        """Return the sound speed in m/s."""
+        return self._speed(self._sound, unit)
+
+    def SetSoundSpeed(self, value: float, unit: str | None = None) -> None:
+        """Set the sound speed. Rocky's token is ``m/s``."""
+        self._sound = self._speed(value, unit)
+
+    def GetMaximumExpectedVelocity(self, unit: str | None = None) -> float:
+        """Return the maximum expected velocity in m/s."""
+        return self._speed(self._max_velocity, unit)
+
+    def SetMaximumExpectedVelocity(self, value: float, unit: str | None = None) -> None:
+        """Set the maximum expected velocity. Rocky's token is ``m/s``."""
+        self._max_velocity = self._speed(value, unit)
+
+    def GetKernelType(self) -> str:
+        """Return the SPH kernel."""
+        return self._kernel
+
+    def SetKernelType(self, value: str) -> None:
+        """Set the SPH kernel."""
+        if value not in ("cubic", "quintic", "wendland"):
+            raise ValueError(
+                f"Unsupported SPH kernel {value!r}. Expected 'cubic', 'quintic', or 'wendland'."
+            )
+        self._kernel = value
+
+    def GetPosCorrectionType(self) -> str:
+        """Return the position correction."""
+        return self._position
+
+    def SetPosCorrectionType(self, value: str) -> None:
+        """Set the position correction."""
+        if value not in ("none", "xsph", "shift"):
+            raise ValueError(
+                f"Unsupported position correction {value!r}. Expected 'none', 'xsph', or 'shift'."
+            )
+        self._position = value
+
+    def GetTurbulenceType(self) -> str:
+        """Return the turbulence model."""
+        return self._turbulence
+
+    def SetTurbulenceType(self, value: str) -> None:
+        """Set the turbulence model."""
+        if value not in ("laminar", "les"):
+            raise ValueError(
+                f"Unsupported turbulence model {value!r}. Expected 'laminar' or 'les'."
+            )
+        self._turbulence = value
+
+    def GetViscosityType(self) -> str:
+        """Return the viscosity model."""
+        return self._viscosity
+
+    def SetViscosityType(self, value: str) -> None:
+        """Set the viscosity model."""
+        if value not in ("cleary", "morris", "custom"):
+            raise ValueError(
+                f"Unsupported viscosity model {value!r}. Expected 'cleary', 'morris', or 'custom'."
+            )
+        self._viscosity = value
+
+    def GetViscousForceIntegration(self) -> str:
+        """Return the viscous force integration."""
+        return self._integration
+
+    def SetViscousForceIntegration(self, value: str) -> None:
+        """Set the viscous force integration."""
+        if value not in ("explicit", "implicit"):
+            raise ValueError(
+                f"Unsupported viscous integration {value!r}. Expected 'explicit' or 'implicit'."
+            )
+        self._integration = value
+
+    def GetSurfaceTensionType(self) -> str:
+        """Return the surface tension model."""
+        return self._tension
+
+    def SetSurfaceTensionType(self, value: str) -> None:
+        """Set the surface tension model."""
+        if value not in ("none", "CSF", "CSS", "custom", "pairwise_potential"):
+            raise ValueError(
+                f"Unsupported surface tension {value!r}. "
+                "Expected 'none', 'CSF', 'CSS', 'custom', or 'pairwise_potential'."
+            )
+        self._tension = value
+
+    def GetSurfaceTensionCoefficient(self, unit: str | None = None) -> float:
+        """Return the surface tension coefficient in N/m."""
+        if unit not in (None, "N/m"):
+            raise ValueError(f"Unsupported surface tension unit {unit!r}. Expected 'N/m'.")
+        return self._tension_coefficient
+
+    def SetSurfaceTensionCoefficient(self, value: float, unit: str | None = None) -> None:
+        """Set the surface tension coefficient. Rocky's token is ``N/m``."""
+        if unit not in (None, "N/m"):
+            raise ValueError(f"Unsupported surface tension unit {unit!r}. Expected 'N/m'.")
+        self._tension_coefficient = float(value)
+
+    def GetSurfaceTensionBoundaryAngle(self, unit: str | None = None) -> float:
+        """Return the surface tension boundary angle in degrees."""
+        if unit not in (None, "dega"):
+            raise ValueError(f"Unsupported angle unit {unit!r}. Expected 'dega'.")
+        return self._tension_angle
+
+    def SetSurfaceTensionBoundaryAngle(self, value: float, unit: str | None = None) -> None:
+        """Set the surface tension boundary angle. Rocky's token is ``dega``."""
+        if unit not in (None, "dega"):
+            raise ValueError(f"Unsupported angle unit {unit!r}. Expected 'dega'.")
+        self._tension_angle = float(value)
+
+    def GetStiffFactor(self) -> float:
+        """Return the equation-of-state stiffness."""
+        return self._stiff
+
+    def SetStiffFactor(self, value: float) -> None:
+        """Set the equation-of-state stiffness."""
+        self._stiff = float(value)
+
+    def GetTimestepFactor(self) -> float:
+        """Return the SPH timestep factor."""
+        return self._timestep_factor
+
+    def SetTimestepFactor(self, value: float) -> None:
+        """Set the SPH timestep factor."""
+        self._timestep_factor = float(value)
+
+    def GetKernelDistFactor(self) -> float:
+        """Return the kernel distance factor."""
+        return self._kernel_distance
+
+    def SetKernelDistFactor(self, value: float) -> None:
+        """Set the kernel distance factor."""
+        self._kernel_distance = float(value)
+
+    def GetXsphFactor(self) -> float:
+        """Return the XSPH factor."""
+        return self._xsph
+
+    def SetXsphFactor(self, value: float) -> None:
+        """Set the XSPH factor."""
+        self._xsph = float(value)
+
+    def GetShepardFilterOnDensityEnabled(self) -> bool:
+        """Return whether density is Shepard-filtered."""
+        return self._shepard_density
+
+    def SetShepardFilterOnDensityEnabled(self, value: bool) -> None:
+        """Set whether density is Shepard-filtered."""
+        self._shepard_density = bool(value)
+
+    def GetShepardFilterOnPressureEnabled(self) -> bool:
+        """Return whether pressure is Shepard-filtered."""
+        return self._shepard_pressure
+
+    def SetShepardFilterOnPressureEnabled(self, value: bool) -> None:
+        """Set whether pressure is Shepard-filtered."""
+        self._shepard_pressure = bool(value)
+
+
 class MockStudy:
     """Stand-in for a Rocky study, the container of a DEM simulation."""
 
@@ -839,12 +4287,17 @@ class MockStudy:
         self._name = name
         self._particles: list[MockParticle] = []
         self._surfaces: list[MockSurface] = []
-        self._inlets: list[MockParticleInlet] = []
+        self._inlets: list[MockParticleInlet | MockVolumetricInlet] = []
         self._outlets: list[MockOutlet] = []
         self._walls: list[MockWall] = []
+        self._conveyors: list[MockFeedConveyor] = []
         self._selections: list[MockSelectionProcess] = []
         self._domain = MockDomainSettings()
+        self._physics = MockPhysics()
+        self._materials = MockMaterialCollection()
+        self._interactions = MockMaterialsInteractionCollection()
         self._solver = MockSimulatorRun()
+        self._sph = MockSphSettings()
         self._motion_source = MockMotionFrameSource()
         self._processes = MockUserProcessCollection(self)
         self._particles_process = MockParticlesProcess(self)
@@ -868,6 +4321,21 @@ class MockStudy:
         """Return the Rocky class name of the study."""
         return "RAStudy"
 
+    def CreateFeedConveyor(self) -> MockFeedConveyor:
+        """Create a feed conveyor."""
+        return self._new_conveyor("Feed Conveyor")
+
+    def CreateReceivingConveyor(self) -> MockFeedConveyor:
+        """Create a receiving conveyor."""
+        return self._new_conveyor("Receiving Conveyor")
+
+    def _new_conveyor(self, label: str) -> MockFeedConveyor:
+        """Create a conveyor with the next index."""
+        conveyor = MockFeedConveyor(f"{label} {len(self._conveyors) + 1}")
+        conveyor._is_feed = label.startswith("Feed")
+        self._conveyors.append(conveyor)
+        return conveyor
+
     def CreateParticle(self) -> MockParticle:
         """Create a particle definition."""
         particle = MockParticle(f"Particle {len(self._particles) + 1}")
@@ -889,18 +4357,52 @@ class MockStudy:
     def CreateParticleInlet(
         self, entry_point: Any = None, particle: Any = None, **kwargs: Any
     ) -> MockParticleInlet:
-        """Create a particle inlet on a surface."""
+        """Create a particle inlet on a surface or a feed conveyor."""
         if entry_point is None:
             entry_point = kwargs.get("entry_point")
         if particle is None:
             particle = kwargs.get("particle")
         if entry_point is None or particle is None:
             raise ValueError("CreateParticleInlet requires an entry_point and a particle.")
-        if not isinstance(entry_point, MockSurface):
-            raise TypeError("The entry point of a particle inlet must be a surface.")
+        if isinstance(entry_point, MockFeedConveyor):
+            if not getattr(entry_point, "_is_feed", False):
+                raise TypeError("A particle inlet entry point must be a feed conveyor.")
+        elif not isinstance(entry_point, MockSurface):
+            raise TypeError(
+                "The entry point of a particle inlet must be a surface or a feed conveyor."
+            )
         if not isinstance(particle, MockParticle):
             raise TypeError("The particle of a particle inlet must be a particle definition.")
         inlet = MockParticleInlet(entry_point, particle)
+        self._inlets.append(inlet)
+        return inlet
+
+    def CreateVolumetricInlet(
+        self,
+        particle: MockParticle | None = None,
+        name: str | None = None,
+        mass: float = 100.0,
+        seed_coordinates: list[float] | None = None,
+        geometries: list[Any] | None = None,
+        use_geometries_to_compute: bool = False,
+        box_center: list[float] | None = None,
+        box_dimensions: list[float] | None = None,
+        use_box_center_as_seed_point: bool = False,
+    ) -> MockVolumetricInlet:
+        """Create a volumetric fill inlet."""
+        if particle is not None and not isinstance(particle, MockParticle):
+            raise TypeError("The particle of a volumetric inlet must be a particle definition.")
+        inlet = MockVolumetricInlet(
+            particle,
+            name,
+            mass,
+            seed_coordinates,
+            geometries,
+            use_geometries_to_compute,
+            box_center,
+            box_dimensions,
+            use_box_center_as_seed_point,
+        )
         self._inlets.append(inlet)
         return inlet
 
@@ -928,6 +4430,12 @@ class MockStudy:
         path = Path(custom_filename)
         prefix = custom_name_prefix or path.stem
         wall = MockWall(str(path), f"{prefix}")
+        wall._convert_yz = bool(convert_yz)
+        wall._split_method = str(kwargs.get("geometry_split_method", "BODY"))
+        if "normal_angle_tolerance" in kwargs:
+            wall._normal_angle = float(kwargs["normal_angle_tolerance"])
+        if kwargs.get("max_edge_size") is not None:
+            wall._max_edge = float(kwargs["max_edge_size"])
         self._walls.append(wall)
         return [wall]
 
@@ -937,6 +4445,22 @@ class MockStudy:
     def GetDomainSettings(self) -> MockDomainSettings:
         """Return the domain settings."""
         return self._domain
+
+    def GetSphSettings(self) -> MockSphSettings:
+        """Return the SPH settings."""
+        return self._sph
+
+    def GetPhysics(self) -> MockPhysics:
+        """Return the physics settings."""
+        return self._physics
+
+    def GetMaterialCollection(self) -> MockMaterialCollection:
+        """Return the material collection."""
+        return self._materials
+
+    def GetMaterialsInteractionCollection(self) -> MockMaterialsInteractionCollection:
+        """Return the material interaction collection."""
+        return self._interactions
 
     def GetSolver(self) -> MockSimulatorRun:
         """Return the solver."""
@@ -958,9 +4482,9 @@ class MockStudy:
         """Return the user process collection."""
         return self._processes
 
-    def GetExportToolkit(self) -> Any:
-        """Return an export toolkit stub."""
-        raise NotImplementedError("The mock backend does not implement result export.")
+    def GetExportToolkit(self) -> MockExportToolkit:
+        """Return the export toolkit."""
+        return MockExportToolkit(self)
 
     def GetElementNames(self, type_name: str | None = None) -> list[str]:
         """Return the names of the study elements."""
@@ -1051,6 +4575,7 @@ class MockStudy:
     def StopSimulation(self) -> None:
         """Stop a running simulation."""
         self._stop_event.set()
+        self._simulating = False
 
     def IsSimulating(self) -> bool:
         """Return whether a simulation is running."""
@@ -1068,6 +4593,17 @@ class MockStudy:
         """Refresh the available results."""
         if self._elapsed > 0:
             self._has_results = True
+
+    def ExtendSimulation(self, extension_amount: float = 0, **kwargs: Any) -> None:
+        """Extend the solver duration, and the finished time set when results exist."""
+        extra = float(extension_amount)
+        if extra < 0:
+            raise ValueError("extension_amount must be zero or positive.")
+        duration = self._solver.GetSimulationDuration() + extra
+        self._solver.SetSimulationDuration(duration)
+        if self._has_results and not self._simulating:
+            self._elapsed = duration
+            self._progress = 100.0
 
     def DeleteResults(self) -> None:
         """Delete the computed results."""
@@ -1122,8 +4658,11 @@ class MockStudy:
         mass_flow_kg_s = 0.0
         inlet_radius = DEFAULT_INLET_RADIUS
         for inlet in self._inlets:
-            properties = inlet.GetInputPropertiesList()[0]
-            mass_flow_kg_s += properties.GetMassFlowRate("kg/s")
+            getter = getattr(inlet, "GetInputPropertiesList", None)
+            if getter is None:
+                continue
+            for properties in getter():
+                mass_flow_kg_s += properties.GetMassFlowRate("kg/s")
             surface = inlet.GetEntryPoint()
             if isinstance(surface, MockSurface):
                 inlet_radius = max(surface.GetMaxRadius("m"), 1e-6)

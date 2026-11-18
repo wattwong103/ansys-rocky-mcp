@@ -123,12 +123,16 @@ class PyRockyBackend(RockyBackend):
     # ------------------------------------------------------------------
     # Internals
     # ------------------------------------------------------------------
+    def _store_client(self, client: Any) -> None:
+        """Store the client and the application proxy from ``RockyClient.api``."""
+        self._client = client
+        self._app = client.api
+
     def _attach(self) -> None:
         """Connect to an already running Rocky session."""
         from ansys.rocky.core import client as rocky_client
 
-        self._client = rocky_client.connect(port=self._config.rocky_port)
-        self._app = self._client.api()
+        self._store_client(rocky_client.connect(port=self._config.rocky_port))
 
     def _launch(self) -> None:
         """Launch a new Rocky application."""
@@ -137,7 +141,7 @@ class PyRockyBackend(RockyBackend):
         kwargs: dict[str, Any] = {
             "headless": self._config.headless,
             "server_port": self._config.rocky_port,
-            "connect_timeout": int(self._config.connect_timeout),
+            "connect_timeout": int(self._config.launch_timeout),
         }
         if self._config.rocky_exe:
             kwargs["rocky_exe"] = self._config.rocky_exe
@@ -152,4 +156,4 @@ class PyRockyBackend(RockyBackend):
                 f"installed and licensed, and that AWP_ROOT242 (or newer) is set. "
                 f"Original error: {exc}"
             ) from exc
-        self._app = self._client.api()
+        self._store_client(self._client)

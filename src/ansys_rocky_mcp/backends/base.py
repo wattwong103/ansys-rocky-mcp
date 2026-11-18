@@ -62,7 +62,7 @@ class RockyBackend(ABC):
     """Interface implemented by the real and mock Rocky backends.
 
     A backend exposes the Rocky *application* object - the same object that
-    ``pyrocky`` returns from ``RockyClient.api()``. Its methods are
+    ``pyrocky`` returns from ``RockyClient.api``. Its methods are
     ``CreateProject()``, ``GetProject()``, ``GetVersion()`` and friends. Tool
     code is written against that single interface, so it behaves identically
     whether a real Rocky application or the mock simulator is behind it.
