@@ -170,7 +170,7 @@ startup_timeout_sec = 90
 
 | Tool | Purpose |
 |---|---|
-| `rocky_import_wall` | Import a geometry file as a wall. |
+| `rocky_import_wall` | Import a geometry file, with optional Y/Z swap and CAD split. |
 | `rocky_create_surface` | Create a circular or rectangular surface. |
 | `rocky_create_feed_conveyor` | Create a feed conveyor, including return-belt angle in degrees. |
 | `rocky_create_receiving_conveyor` | Create a receiving conveyor with belt motion, profile, and alignment. |

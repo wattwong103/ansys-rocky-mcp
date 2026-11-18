@@ -922,6 +922,8 @@ class MockWall:
         self._name = name
         self._material: Any = None
         self._temperature_k = 298.15
+        self._convert_yz = False
+        self._split_method = "BODY"
 
     def GetName(self) -> str:
         """Return the wall name."""
@@ -934,6 +936,14 @@ class MockWall:
     def GetFilename(self) -> str:
         """Return the source file of the wall."""
         return self._filename
+
+    def GetConvertYZ(self) -> bool:
+        """Return whether the import swapped Y and Z."""
+        return self._convert_yz
+
+    def GetGeometrySplitMethod(self) -> str:
+        """Return the CAD split method used at import."""
+        return self._split_method
 
     def SetMaterial(self, value: Any) -> None:
         """Assign a solid material."""
@@ -2040,6 +2050,8 @@ class MockStudy:
         path = Path(custom_filename)
         prefix = custom_name_prefix or path.stem
         wall = MockWall(str(path), f"{prefix}")
+        wall._convert_yz = bool(convert_yz)
+        wall._split_method = str(kwargs.get("geometry_split_method", "BODY"))
         self._walls.append(wall)
         return [wall]
 

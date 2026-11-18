@@ -686,8 +686,13 @@ async def test_import_wall_creates_identified_walls(study: Client, tmp_path) -> 
     geometry = tmp_path / "wall.stl"
     geometry.write_text("solid wall\nendsolid wall\n", encoding="utf-8")
 
-    result = await study.call_tool("rocky_import_wall", {"path": str(geometry)})
+    result = await study.call_tool(
+        "rocky_import_wall",
+        {"path": str(geometry), "convert_yz": True, "geometry_split_method": "PARTS"},
+    )
     assert result.data["wall_ids"]
+    assert result.data["convert_yz"] is True
+    assert result.data["geometry_split_method"] == "PARTS"
     assert result.data["walls"][0]["id"] == result.data["wall_ids"][0]
 
 

@@ -80,11 +80,16 @@ def _resolve(session: Any, object_id: str, category: str) -> Any:
         raise ToolError(str(exc)) from exc
 
 
+_GEOMETRY_SPLIT_METHODS = ("MODEL", "ASSEMBLY", "PARTS", "BODY")
+
+
 async def rocky_import_wall(
     ctx: Context,
     path: str,
     scale: float = 1.0,
     name_prefix: str | None = None,
+    convert_yz: bool = False,
+    geometry_split_method: str = "BODY",
 ) -> dict[str, Any]:
     """Import a geometry file as a Rocky wall.
 
@@ -96,6 +101,10 @@ async def rocky_import_wall(
         Import scale factor applied to the geometry.
     name_prefix : str | None, default: None
         Prefix for the created wall names.
+    convert_yz : bool, default: False
+        Swap Y and Z on import. Use this for geometry saved Z-up.
+    geometry_split_method : str, default: "BODY"
+        How a CAD file is split: ``MODEL``, ``ASSEMBLY``, ``PARTS``, or ``BODY``.
 
     """
     session = get_session(ctx)
@@ -103,11 +112,18 @@ async def rocky_import_wall(
     target = Path(path).expanduser()
     if not target.exists():
         raise ToolError(f"Geometry file not found: {target}")
+    if geometry_split_method not in _GEOMETRY_SPLIT_METHODS:
+        raise ToolError(
+            f"Unknown geometry split method {geometry_split_method!r}. "
+            f"Expected one of {_GEOMETRY_SPLIT_METHODS}."
+        )
     try:
         walls = study.ImportWall(
             str(target),
             import_scale=scale,
+            convert_yz=convert_yz,
             custom_name_prefix=name_prefix,
+            geometry_split_method=geometry_split_method,
         )
     except TypeError:
         # Older Rocky builds do not accept every keyword argument.
@@ -121,6 +137,10 @@ async def rocky_import_wall(
         session,
         message=f"Imported {len(walls)} wall(s) from {target}.",
         wall_ids=ids,
+        convert_yz=bool(walls[0].GetConvertYZ()) if walls else convert_yz,
+        geometry_split_method=(
+            walls[0].GetGeometrySplitMethod() if walls else geometry_split_method
+        ),
         walls=[
             {"id": ident, "name": getattr(wall, "GetName", lambda: "")()}
             for ident, wall in zip(ids, walls, strict=True)
