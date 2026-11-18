@@ -469,6 +469,59 @@ class MockNewtonianRheology:
         self._viscosity = float(value)
 
 
+class MockHerschelBulkleyRheology:
+    """Stand-in for a Herschel-Bulkley fluid."""
+
+    def __init__(self) -> None:
+        """Initialize a Newtonian-like Herschel-Bulkley fluid."""
+        self._index = 1.0
+        self._reference = 0.001
+        self._maximum = 0.001
+        self._yield = 0.0
+
+    def GetBehaviorIndex(self) -> float:
+        """Return the behavior index."""
+        return self._index
+
+    def SetBehaviorIndex(self, value: float) -> None:
+        """Set the behavior index. Rocky stores a plain number."""
+        self._index = float(value)
+
+    def _pascal_seconds(self, value: float, unit: str | None) -> float:
+        """Store a viscosity. Rocky's token is ``Pa.s``."""
+        if unit not in (None, "Pa.s"):
+            raise ValueError(f"Unsupported viscosity unit {unit!r}. Expected 'Pa.s'.")
+        return float(value)
+
+    def GetReferenceViscosity(self, unit: str | None = None) -> float:
+        """Return the reference viscosity in pascal seconds."""
+        return self._pascal_seconds(self._reference, unit)
+
+    def SetReferenceViscosity(self, value: float, unit: str | None = None) -> None:
+        """Set the reference viscosity. Rocky's token is ``Pa.s``."""
+        self._reference = self._pascal_seconds(value, unit)
+
+    def GetMaximumViscosity(self, unit: str | None = None) -> float:
+        """Return the maximum viscosity in pascal seconds."""
+        return self._pascal_seconds(self._maximum, unit)
+
+    def SetMaximumViscosity(self, value: float, unit: str | None = None) -> None:
+        """Set the maximum viscosity. Rocky's token is ``Pa.s``."""
+        self._maximum = self._pascal_seconds(value, unit)
+
+    def GetYieldStress(self, unit: str | None = None) -> float:
+        """Return the yield stress in pascals."""
+        if unit not in (None, "Pa"):
+            raise ValueError(f"Unsupported stress unit {unit!r}. Expected 'Pa'.")
+        return self._yield
+
+    def SetYieldStress(self, value: float, unit: str | None = None) -> None:
+        """Set the yield stress. Rocky's token is ``Pa``."""
+        if unit not in (None, "Pa"):
+            raise ValueError(f"Unsupported stress unit {unit!r}. Expected 'Pa'.")
+        self._yield = float(value)
+
+
 class MockFluidMaterial:
     """Stand-in for a Rocky fluid material."""
 
@@ -481,6 +534,7 @@ class MockFluidMaterial:
         self._conductivity = 0.6
         self._rheology = "newtonian"
         self._newtonian = MockNewtonianRheology()
+        self._herschel = MockHerschelBulkleyRheology()
 
     def GetName(self) -> str:
         """Return the fluid name."""
@@ -555,6 +609,10 @@ class MockFluidMaterial:
     def GetNewtonianRheologicalModel(self) -> MockNewtonianRheology:
         """Return the Newtonian viscosity model."""
         return self._newtonian
+
+    def GetHerschelBulkleyRheologicalModel(self) -> MockHerschelBulkleyRheology:
+        """Return the Herschel-Bulkley model."""
+        return self._herschel
 
 
 class MockMaterialCollection:

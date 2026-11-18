@@ -2718,6 +2718,10 @@ async def rocky_create_fluid_material(
     specific_heat: float | None = None,
     thermal_conductivity: float | None = None,
     rheology: str | None = None,
+    behavior_index: float | None = None,
+    reference_viscosity: float | None = None,
+    maximum_viscosity: float | None = None,
+    yield_stress: float | None = None,
     assign_to_sph: bool = False,
 ) -> dict[str, Any]:
     """Create a fluid material and optionally assign it to SPH.
@@ -2735,13 +2739,32 @@ async def rocky_create_fluid_material(
     thermal_conductivity : float | None, default: None
         Thermal conductivity. Rocky's token is ``W/m.K``.
     rheology : str | None, default: None
-        ``newtonian`` or ``herschel_bulkley_papanastasiou``.
+        ``newtonian`` or ``herschel_bulkley_papanastasiou``. A Herschel-Bulkley
+        parameter selects the second model when this is omitted.
+    behavior_index : float | None, default: None
+        Herschel-Bulkley behavior index. Rocky stores a plain number.
+    reference_viscosity : float | None, default: None
+        Herschel-Bulkley reference viscosity. Rocky's token is ``Pa.s``.
+    maximum_viscosity : float | None, default: None
+        Herschel-Bulkley maximum viscosity. Rocky's token is ``Pa.s``.
+    yield_stress : float | None, default: None
+        Herschel-Bulkley yield stress. Rocky's token is ``Pa``.
     assign_to_sph : bool, default: False
         Use this fluid for SPH and turn SPH on.
 
     """
     session = get_session(ctx)
     study = require_study(session)
+    herschel = any(
+        value is not None
+        for value in (behavior_index, reference_viscosity, maximum_viscosity, yield_stress)
+    )
+    if herschel and rheology is None:
+        rheology = "herschel_bulkley_papanastasiou"
+    if herschel and rheology == "newtonian":
+        raise ToolError(
+            "Herschel-Bulkley parameters need rheology 'herschel_bulkley_papanastasiou'."
+        )
     if rheology is not None and rheology not in FLUID_RHEOLOGY:
         raise ToolError(f"Unknown rheology {rheology!r}. Expected one of {FLUID_RHEOLOGY}.")
     try:
@@ -2758,6 +2781,16 @@ async def rocky_create_fluid_material(
             fluid.SetSpecificHeat(specific_heat, unit="J/kg.K")
         if thermal_conductivity is not None:
             fluid.SetThermalConductivity(thermal_conductivity, unit="W/m.K")
+        if herschel:
+            model = fluid.GetHerschelBulkleyRheologicalModel()
+            if behavior_index is not None:
+                model.SetBehaviorIndex(behavior_index)
+            if reference_viscosity is not None:
+                model.SetReferenceViscosity(reference_viscosity, unit="Pa.s")
+            if maximum_viscosity is not None:
+                model.SetMaximumViscosity(maximum_viscosity, unit="Pa.s")
+            if yield_stress is not None:
+                model.SetYieldStress(yield_stress, unit="Pa")
         if assign_to_sph:
             sph = study.GetSphSettings()
             sph.SetFluidMaterial(fluid)
@@ -2782,6 +2815,24 @@ async def rocky_create_fluid_material(
         specific_heat_j_kg_k=fluid.GetSpecificHeat("J/kg.K"),
         thermal_conductivity_w_m_k=fluid.GetThermalConductivity("W/m.K"),
         rheology=fluid.GetRheologicalModelType(),
+        behavior_index=(
+            fluid.GetHerschelBulkleyRheologicalModel().GetBehaviorIndex() if herschel else None
+        ),
+        reference_viscosity_pa_s=(
+            fluid.GetHerschelBulkleyRheologicalModel().GetReferenceViscosity("Pa.s")
+            if reference_viscosity is not None
+            else None
+        ),
+        maximum_viscosity_pa_s=(
+            fluid.GetHerschelBulkleyRheologicalModel().GetMaximumViscosity("Pa.s")
+            if maximum_viscosity is not None
+            else None
+        ),
+        yield_stress_pa=(
+            fluid.GetHerschelBulkleyRheologicalModel().GetYieldStress("Pa")
+            if yield_stress is not None
+            else None
+        ),
         assigned_to_sph=assign_to_sph,
     )
 

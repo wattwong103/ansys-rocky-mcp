@@ -298,6 +298,19 @@ async def test_domain_and_solver_settings_are_applied(study: Client) -> None:
     assert water.data["specific_heat_j_kg_k"] == pytest.approx(4180.0)
     assert water.data["thermal_conductivity_w_m_k"] == pytest.approx(0.6)
     assert water.data["assigned_to_sph"] is True
+    slurry = await study.call_tool(
+        "rocky_create_fluid_material",
+        {
+            "name": "slurry",
+            "behavior_index": 0.6,
+            "reference_viscosity": 0.05,
+            "yield_stress": 20.0,
+        },
+    )
+    assert slurry.data["rheology"] == "herschel_bulkley_papanastasiou"
+    assert slurry.data["behavior_index"] == pytest.approx(0.6)
+    assert slurry.data["reference_viscosity_pa_s"] == pytest.approx(0.05)
+    assert slurry.data["yield_stress_pa"] == pytest.approx(20.0)
     await study.call_tool("rocky_set_simulation_settings", {"duration": 4.0, "time_interval": 0.2})
     timed = await study.call_tool(
         "rocky_set_simulation_settings",
