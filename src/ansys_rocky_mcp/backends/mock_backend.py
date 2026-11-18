@@ -587,6 +587,7 @@ class MockDomainSettings:
         self._domain_type = "NONE"
         self._cartesian_periodic = "NONE"
         self._cylindrical_periodic = "Y"
+        self._divisions = 1
 
     def GetUseBoundaryLimits(self) -> bool:
         """Return whether boundary limits are used."""
@@ -651,6 +652,17 @@ class MockDomainSettings:
     def SetCylindricalPeriodicDirections(self, value: str) -> None:
         """Set the cylindrical periodic axis."""
         self._cylindrical_periodic = value
+
+    def GetNumberOfDivisions(self) -> int:
+        """Return the number of cylindrical divisions."""
+        return self._divisions
+
+    def SetNumberOfDivisions(self, value: int | str) -> None:
+        """Set the number of cylindrical divisions."""
+        count = int(value)
+        if count < 1:
+            raise ValueError("Number of divisions must be at least 1.")
+        self._divisions = count
 
 
 class MockSimulatorRun:

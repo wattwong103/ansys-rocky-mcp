@@ -178,7 +178,7 @@ startup_timeout_sec = 90
 | `rocky_set_material_interaction` | Set friction and restitution between two materials. |
 | `rocky_create_inlet` | Create a particle inlet, set its mass flow rate, and optionally its duration. |
 | `rocky_create_outlet` | Create an outlet on a surface. |
-| `rocky_set_domain` | Set the domain limits, boundary-limit behaviour, and periodic type. |
+| `rocky_set_domain` | Set limits, periodicity, periodic axes, and cylindrical divisions. |
 | `rocky_set_simulation_settings` | Duration, output interval, processors, execution mode, curve frequency. |
 | `rocky_set_gravity` | Set the gravity vector on the study physics. |
 | `rocky_set_contact_models` | Set normal, tangential, rolling-resistance, and adhesion models. |

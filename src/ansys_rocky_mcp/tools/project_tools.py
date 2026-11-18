@@ -97,6 +97,7 @@ def describe_study(session: Any) -> dict[str, Any]:
                 "domain_type": _safe(domain.GetDomainType),
                 "cartesian_periodic_directions": _safe(domain.GetCartesianPeriodicDirections),
                 "cylindrical_periodic_directions": _safe(domain.GetCylindricalPeriodicDirections),
+                "number_of_divisions": _safe(domain.GetNumberOfDivisions),
             }
             if domain is not None
             else {},

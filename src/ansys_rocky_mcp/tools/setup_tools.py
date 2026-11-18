@@ -369,6 +369,7 @@ async def rocky_set_domain(
     use_boundary_limits: bool | None = None,
     domain_type: str | None = None,
     periodic_directions: str | None = None,
+    number_of_divisions: int | None = None,
     unit: str = "m",
 ) -> dict[str, Any]:
     """Configure the Rocky domain limits.
@@ -386,12 +387,16 @@ async def rocky_set_domain(
     periodic_directions : str | None, default: None
         For Cartesian: ``NONE``, ``X``, ``Y``, ``XY``, ``Z``, ``XZ``, ``YZ``, or ``XYZ``.
         For cylindrical: ``X``, ``Y``, or ``Z``.
+    number_of_divisions : int | None, default: None
+        Number of divisions for a cylindrical periodic domain. Must be at least 1.
     unit : str, default: "m"
         Unit of the domain coordinates.
 
     """
     session = get_session(ctx)
     study = require_study(session)
+    if number_of_divisions is not None and number_of_divisions < 1:
+        raise ToolError("number_of_divisions must be at least 1.")
     if domain_type is not None and domain_type not in DOMAIN_TYPES:
         raise ToolError(f"Unknown domain type {domain_type!r}. Expected one of {DOMAIN_TYPES}.")
     domain = study.GetDomainSettings()
@@ -422,6 +427,8 @@ async def rocky_set_domain(
                         f"Expected one of {CARTESIAN_PERIODIC}."
                     )
                 domain.SetCartesianPeriodicDirections(periodic_directions)
+        if number_of_divisions is not None:
+            domain.SetNumberOfDivisions(int(number_of_divisions))
     except ToolError:
         raise
     except Exception as exc:
@@ -436,6 +443,7 @@ async def rocky_set_domain(
         domain_type=domain.GetDomainType(),
         cartesian_periodic_directions=domain.GetCartesianPeriodicDirections(),
         cylindrical_periodic_directions=domain.GetCylindricalPeriodicDirections(),
+        number_of_divisions=domain.GetNumberOfDivisions(),
     )
 
 
