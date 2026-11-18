@@ -744,6 +744,17 @@ async def test_motion_is_applied_to_the_targets(study: Client) -> None:
         },
     )
     assert sliding.data["linear_acceleration_m_s2"] == pytest.approx([0.0, 0.0, -9.81])
+    assert sliding.data["define_as"] == "fixed_acceleration"
+    coasting = await study.call_tool(
+        "rocky_set_motion",
+        {
+            "kind": "translation",
+            "targets": [surfaces[0]],
+            "linear_velocity": [1.0, 0.0, 0.0],
+            "final_velocity": [0.0, 0.0, 0.0],
+        },
+    )
+    assert coasting.data["define_as"] == "initial_and_final_velocities"
     assert motion.data["kind"] == "rotation"
     assert motion.data["targets"] == [surfaces[0]]
 

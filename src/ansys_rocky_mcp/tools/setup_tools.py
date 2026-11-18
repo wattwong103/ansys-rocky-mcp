@@ -93,6 +93,35 @@ def _angular_acceleration_rad_s2(values: list[float], unit: str) -> tuple[float,
     return tuple(float(value) * scale for value in values)  # type: ignore[return-value]
 
 
+_TRANSLATION_DEFINITIONS = (
+    "fixed_velocity",
+    "fixed_acceleration",
+    "initial_and_final_velocities",
+)
+
+
+def _translation_definition(define_as: str | None, has_acceleration: bool, has_final: bool) -> str:
+    """Pick the Rocky translation definition so acceleration is not ignored."""
+    if define_as is not None:
+        token = define_as.strip().lower()
+        if token not in _TRANSLATION_DEFINITIONS:
+            raise ToolError(
+                f"Unknown translation definition {define_as!r}. "
+                "Expected 'fixed_velocity', 'fixed_acceleration', "
+                "or 'initial_and_final_velocities'."
+            )
+        return token
+    if has_acceleration and has_final:
+        raise ToolError(
+            "Set 'define_as' when both 'linear_acceleration' and 'final_velocity' are given."
+        )
+    if has_final:
+        return "initial_and_final_velocities"
+    if has_acceleration:
+        return "fixed_acceleration"
+    return "fixed_velocity"
+
+
 def _modulus_unit(unit: str) -> str:
     """Return Rocky's Young's modulus token. ``Pa`` is the same unit as ``N/m2``."""
     if unit in ("N/m2", "Pa", "N/m^2"):
@@ -1764,6 +1793,8 @@ async def rocky_set_motion(
     acceleration_unit: str = "rad/s2",
     linear_velocity: list[float] | None = None,
     linear_acceleration: list[float] | None = None,
+    final_velocity: list[float] | None = None,
+    define_as: str | None = None,
     unit: str = "rad/s",
     start_time: float = 0.0,
     stop_time: float = 1000.0,
@@ -1789,6 +1820,14 @@ async def rocky_set_motion(
         Linear velocity vector as ``[vx, vy, vz]``. Required for a translation.
     linear_acceleration : list[float] | None, default: None
         Linear acceleration ``[ax, ay, az]`` in meters per second squared.
+        When this is set and ``define_as`` is omitted, the motion is
+        ``fixed_acceleration`` so Rocky uses the acceleration.
+    final_velocity : list[float] | None, default: None
+        Final velocity ``[vx, vy, vz]`` in meters per second. When this is set
+        and ``define_as`` is omitted, the motion is ``initial_and_final_velocities``.
+    define_as : str | None, default: None
+        How Rocky defines the translation: ``fixed_velocity``,
+        ``fixed_acceleration``, or ``initial_and_final_velocities``.
     unit : str, default: "rad/s"
         Unit of the angular velocity. Rocky stores ``rad/s``. ``deg/s`` and
         ``dega/s`` are converted before the call. Translations always use ``m/s``.
@@ -1835,17 +1874,31 @@ async def rocky_set_motion(
         else:
             if linear_velocity is None:
                 raise ToolError("A translation requires 'linear_velocity'.")
+            if len(linear_velocity) != 3:
+                raise ToolError("linear_velocity must be three numbers.")
             if linear_acceleration is not None:
                 if len(linear_acceleration) != 3:
                     raise ToolError("linear_acceleration must be three numbers.")
                 acceleration = tuple(float(value) for value in linear_acceleration)
+            final: tuple[float, float, float] | None = None
+            if final_velocity is not None:
+                if len(final_velocity) != 3:
+                    raise ToolError("final_velocity must be three numbers.")
+                final = tuple(float(value) for value in final_velocity)
+            chosen = _translation_definition(define_as, acceleration is not None, final is not None)
             frame.AddTranslationMotion(
                 start_time=(start_time, "s"),
                 stop_time=(stop_time, "s"),
-                velocity=(tuple(linear_velocity), "m/s"),
+                velocity=(tuple(float(value) for value in linear_velocity), "m/s"),
                 acceleration=(
                     acceleration if acceleration is not None else (0.0, 0.0, 0.0),
                     "m/s2",
+                ),
+                define_as=chosen,
+                initial_velocity=(tuple(float(value) for value in linear_velocity), "m/s"),
+                final_velocity=(
+                    final if final is not None else (0.0, 0.0, 0.0),
+                    "m/s",
                 ),
             )
         if period is not None:
@@ -1883,6 +1936,7 @@ async def rocky_set_motion(
         linear_acceleration_m_s2=(
             list(acceleration) if kind == "translation" and acceleration is not None else None
         ),
+        define_as=chosen if kind == "translation" else None,
         period_s=frame.GetPeriodicMotionPeriod("s"),
     )
 

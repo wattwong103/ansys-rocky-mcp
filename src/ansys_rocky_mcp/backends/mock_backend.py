@@ -1950,6 +1950,16 @@ class MockMotionFrame:
         **kwargs: Any,
     ) -> dict[str, Any]:
         """Add a translation motion to the frame."""
+        if define_as not in (
+            "fixed_velocity",
+            "fixed_acceleration",
+            "initial_and_final_velocities",
+        ):
+            raise ValueError(
+                f"Unsupported translation definition {define_as!r}. "
+                "Expected 'fixed_velocity', 'fixed_acceleration', "
+                "or 'initial_and_final_velocities'."
+            )
         if (
             isinstance(acceleration, tuple)
             and len(acceleration) == 2
