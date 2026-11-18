@@ -562,23 +562,27 @@ async def rocky_set_size_distribution(
 
 async def rocky_create_inlet(
     ctx: Context,
-    surface_id: str,
     particle_id: str,
     mass_flow_rate: float,
+    surface_id: str | None = None,
+    conveyor_id: str | None = None,
     unit: str = "t/h",
     injection_duration: float | None = None,
     duration_unit: str = "s",
 ) -> dict[str, Any]:
-    """Create a particle inlet on a surface and set its mass flow rate.
+    """Create a particle inlet on a surface or a feed conveyor.
 
     Parameters
     ----------
-    surface_id : str
-        Identifier of the surface acting as the entry point.
     particle_id : str
         Identifier of the particle definition fed by the inlet.
     mass_flow_rate : float
         Mass flow rate of the inlet.
+    surface_id : str | None, default: None
+        Identifier of the surface acting as the entry point.
+    conveyor_id : str | None, default: None
+        Identifier of the feed conveyor acting as the entry point.
+        Pass this instead of ``surface_id``.
     unit : str, default: "t/h"
         Unit of the mass flow rate.
     injection_duration : float | None, default: None
@@ -589,13 +593,20 @@ async def rocky_create_inlet(
     """
     session = get_session(ctx)
     study = require_study(session)
-    surface = _resolve(session, surface_id, "surface")
+    if (surface_id is None) == (conveyor_id is None):
+        raise ToolError("Pass either surface_id or conveyor_id, not both and not neither.")
+    if conveyor_id is not None:
+        entry_point = _resolve(session, conveyor_id, "conveyor")
+        label = f"Inlet on {conveyor_id}"
+    else:
+        entry_point = _resolve(session, str(surface_id), "surface")
+        label = f"Inlet on {surface_id}"
     particle = _resolve(session, particle_id, "particle")
 
     try:
-        inlet = study.CreateParticleInlet(entry_point=surface, particle=particle)
+        inlet = study.CreateParticleInlet(entry_point=entry_point, particle=particle)
     except TypeError:
-        inlet = study.CreateParticleInlet(surface, particle)
+        inlet = study.CreateParticleInlet(entry_point, particle)
     except Exception as exc:
         raise ToolError(f"Could not create the particle inlet: {exc}") from exc
 
@@ -614,14 +625,15 @@ async def rocky_create_inlet(
     ident = session.registry.add(
         "inlet",
         inlet,
-        label=f"Inlet on {surface_id}",
-        meta={"surface_id": surface_id, "particle_id": particle_id},
+        label=label,
+        meta={"surface_id": surface_id, "conveyor_id": conveyor_id, "particle_id": particle_id},
     )
     return envelope(
         session,
         message=f"Created a particle inlet with a mass flow of {mass_flow_rate} {unit}.",
         inlet_id=ident,
         surface_id=surface_id,
+        conveyor_id=conveyor_id,
         particle_id=particle_id,
         mass_flow_rate=mass_flow_rate,
         unit=unit,

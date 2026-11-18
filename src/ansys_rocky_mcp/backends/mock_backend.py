@@ -1583,15 +1583,17 @@ class MockStudy:
     def CreateParticleInlet(
         self, entry_point: Any = None, particle: Any = None, **kwargs: Any
     ) -> MockParticleInlet:
-        """Create a particle inlet on a surface."""
+        """Create a particle inlet on a surface or a feed conveyor."""
         if entry_point is None:
             entry_point = kwargs.get("entry_point")
         if particle is None:
             particle = kwargs.get("particle")
         if entry_point is None or particle is None:
             raise ValueError("CreateParticleInlet requires an entry_point and a particle.")
-        if not isinstance(entry_point, MockSurface):
-            raise TypeError("The entry point of a particle inlet must be a surface.")
+        if not isinstance(entry_point, (MockSurface, MockFeedConveyor)):
+            raise TypeError(
+                "The entry point of a particle inlet must be a surface or a feed conveyor."
+            )
         if not isinstance(particle, MockParticle):
             raise TypeError("The particle of a particle inlet must be a particle definition.")
         inlet = MockParticleInlet(entry_point, particle)

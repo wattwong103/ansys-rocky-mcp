@@ -417,6 +417,24 @@ async def test_inlet_injection_duration_is_stored(study: Client) -> None:
     )
     assert created.data["injection_duration_s"] == pytest.approx(1.5)
 
+    with pytest.raises(ToolError, match="surface_id or conveyor_id"):
+        await study.call_tool(
+            "rocky_create_inlet",
+            {"particle_id": particles[0], "mass_flow_rate": 10.0},
+        )
+    conveyor = await study.call_tool("rocky_create_feed_conveyor", {"name": "feed"})
+    fed = await study.call_tool(
+        "rocky_create_inlet",
+        {
+            "conveyor_id": conveyor.data["conveyor_id"],
+            "particle_id": particles[0],
+            "mass_flow_rate": 5.0,
+        },
+    )
+    assert fed.data["conveyor_id"] == conveyor.data["conveyor_id"]
+    assert fed.data["surface_id"] is None
+    assert fed.data["inlet_id"]
+
 
 async def test_volumetric_inlet_fills_a_box(study: Client) -> None:
     """A volumetric inlet can fill a box with a given particle mass."""
