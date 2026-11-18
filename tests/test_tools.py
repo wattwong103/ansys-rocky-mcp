@@ -334,8 +334,25 @@ async def test_domain_and_solver_settings_are_applied(study: Client) -> None:
     assert divided.data["number_of_divisions"] == 4
     assert description.data["study"]["solver"]["duration_s"] == pytest.approx(4.0)
     assert description.data["study"]["solver"]["time_interval_s"] == pytest.approx(0.2)
-    updated = await study.call_tool("rocky_set_simulation_settings", {"curves_frequency": 5})
+    updated = await study.call_tool(
+        "rocky_set_simulation_settings",
+        {
+            "curves_frequency": 5,
+            "loading_n_steps": 40,
+            "breakage_start": 1.5,
+            "neighbor_search": "RegularGrid",
+            "mass_matrix": "consistent",
+            "breakage_overlap_factor": 0.2,
+            "wear_start": 2.0,
+        },
+    )
     assert updated.data["curves_frequency"] == 5
+    assert updated.data["loading_n_steps"] == 40
+    assert updated.data["breakage_start_s"] == pytest.approx(1.5)
+    assert updated.data["neighbor_search"] == "RegularGrid"
+    assert updated.data["mass_matrix"] == "consistent"
+    assert updated.data["use_breakage_overlap_factor"] is True
+    assert updated.data["wear_start_s"] == pytest.approx(2.0)
     described = await study.call_tool("rocky_describe_study")
     assert described.data["study"]["solver"]["curves_frequency"] == 5
 

@@ -63,6 +63,8 @@ TANGENTIAL_FORCE_MODELS = (
 ROLLING_RESISTANCE_MODELS = ("type_1", "type_3", "none", "custom")
 ADHESION_MODELS = ("none", "constant", "linear", "JKR", "custom")
 RESTITUTION_MODELS = ("constant", "velocity_dependent")
+NEIGHBOR_SEARCH_MODELS = ("BVH", "RegularGrid", "SparseGrid")
+MASS_MATRIX_TYPES = ("lumped", "consistent")
 THERMAL_CORRECTION_MODELS = ("none", "morris_et_al_area", "morris_et_al_area_time")
 IMPACT_ENERGY_MODELS = ("default", "custom")
 SPH_THERMAL_MODELS = ("cleary", "custom")
@@ -1752,6 +1754,14 @@ async def rocky_set_simulation_settings(
     gpu_slicing_direction: str | None = None,
     release_without_overlap_check: bool | None = None,
     breakage_delay: float | None = None,
+    loading_n_steps: int | None = None,
+    breakage_start: float | None = None,
+    wear_start: float | None = None,
+    wear_update_interval: float | None = None,
+    neighbor_search: str | None = None,
+    resume_frequency: int | None = None,
+    mass_matrix: str | None = None,
+    breakage_overlap_factor: float | None = None,
     unit: str = "s",
 ) -> dict[str, Any]:
     """Configure the Rocky solver settings.
@@ -1780,6 +1790,22 @@ async def rocky_set_simulation_settings(
         How a multi-GPU run splits the domain. Rocky lists the accepted names.
     release_without_overlap_check : bool | None, default: None
         Release inlet particles even when they overlap. Needed with force packing.
+    loading_n_steps : int | None, default: None
+        Number of steps used while particles are loaded.
+    breakage_start : float | None, default: None
+        Time in seconds when breakage starts. Rocky's token is ``s``.
+    wear_start : float | None, default: None
+        Time in seconds when wear starts.
+    wear_update_interval : float | None, default: None
+        How often worn geometry is updated, in seconds.
+    neighbor_search : str | None, default: None
+        One of ``BVH``, ``RegularGrid``, or ``SparseGrid``.
+    resume_frequency : int | None, default: None
+        How often resume data is written.
+    mass_matrix : str | None, default: None
+        ``lumped`` or ``consistent``.
+    breakage_overlap_factor : float | None, default: None
+        Overlap allowed during breakage. Setting it turns the factor on.
     breakage_delay : float | None, default: None
         Seconds after release before breakage can start. Rocky's token is ``s``.
     unit : str, default: "s"
@@ -1795,6 +1821,17 @@ async def rocky_set_simulation_settings(
         raise ToolError("curves_frequency must be at least 1.")
     if timestep_model is not None and timestep_model not in ("constant", "variable"):
         raise ToolError("timestep_model must be 'constant' or 'variable'.")
+    if neighbor_search is not None and neighbor_search not in NEIGHBOR_SEARCH_MODELS:
+        raise ToolError(
+            f"Unknown neighbor search {neighbor_search!r}. "
+            f"Expected one of {NEIGHBOR_SEARCH_MODELS}."
+        )
+    if mass_matrix is not None and mass_matrix not in MASS_MATRIX_TYPES:
+        raise ToolError(
+            f"Unknown mass matrix {mass_matrix!r}. Expected one of {MASS_MATRIX_TYPES}."
+        )
+    if loading_n_steps is not None and loading_n_steps < 1:
+        raise ToolError("loading_n_steps must be at least 1.")
     if fixed_timestep is not None and timestep_model is None:
         timestep_model = "constant"
     solver = study.GetSolver()
@@ -1849,6 +1886,23 @@ async def rocky_set_simulation_settings(
             solver.SetReleaseParticlesWithoutOverlapCheck(release_without_overlap_check)
         if breakage_delay is not None:
             solver.SetBreakageDelayAfterRelease(breakage_delay, unit="s")
+        if loading_n_steps is not None:
+            solver.SetLoadingNSteps(int(loading_n_steps))
+        if breakage_start is not None:
+            solver.SetBreakageStart(breakage_start, unit="s")
+        if wear_start is not None:
+            solver.SetWearStart(wear_start, unit="s")
+        if wear_update_interval is not None:
+            solver.SetWearGeometryUpdateInterval(wear_update_interval, unit="s")
+        if neighbor_search is not None:
+            solver.SetNeighborSearchModel(neighbor_search)
+        if resume_frequency is not None:
+            solver.SetResumeDataFrequency(int(resume_frequency))
+        if mass_matrix is not None:
+            solver.SetDeformableMassMatrixType(mass_matrix)
+        if breakage_overlap_factor is not None:
+            solver.SetUseBreakageOverlapFactor(True)
+            solver.SetBreakageOverlapFactor(breakage_overlap_factor)
     except ToolError:
         raise
     except Exception as exc:
@@ -1867,6 +1921,15 @@ async def rocky_set_simulation_settings(
         timestep_model=solver.GetTimestepModel(),
         fixed_timestep_s=solver.GetFixedTimestep("s"),
         use_fixed_timestep=bool(solver.GetUseFixedTimestep()),
+        loading_n_steps=solver.GetLoadingNSteps(),
+        breakage_start_s=solver.GetBreakageStart("s"),
+        wear_start_s=solver.GetWearStart("s"),
+        wear_update_interval_s=solver.GetWearGeometryUpdateInterval("s"),
+        neighbor_search=solver.GetNeighborSearchModel(),
+        resume_frequency=solver.GetResumeDataFrequency(),
+        mass_matrix=solver.GetDeformableMassMatrixType(),
+        breakage_overlap_factor=solver.GetBreakageOverlapFactor(),
+        use_breakage_overlap_factor=bool(solver.GetUseBreakageOverlapFactor()),
         processing_unit=solver.GetProcessingUnit(),
         local_processing_unit=_local_value(solver, "GetProcessingUnit"),
         target_gpus=list(solver.GetTargetGpus()),

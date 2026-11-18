@@ -2157,6 +2157,15 @@ class MockSimulatorRun:
         self._use_fixed_timestep = False
         self._release_without_overlap = False
         self._breakage_delay = 0.0
+        self._loading_steps = 1
+        self._breakage_start = 0.0
+        self._wear_start = 0.0
+        self._wear_interval = 0.0
+        self._neighbor_search = "BVH"
+        self._resume_frequency = 1
+        self._mass_matrix = "lumped"
+        self._breakage_overlap = 0.0
+        self._use_breakage_overlap = False
         self._standard_outputs: dict[tuple[str, ...], bool] = {}
         self._module_outputs: dict[tuple[str, ...], bool] = {}
         self._processing_unit = "CPU"
@@ -2283,6 +2292,93 @@ class MockSimulatorRun:
         if unit not in (None, "s"):
             raise ValueError(f"Unsupported time unit {unit!r}. Expected 's'.")
         self._breakage_delay = float(value)
+
+    def _seconds(self, value: float, unit: str | None) -> float:
+        """Store a time. Rocky's token is ``s``."""
+        if unit not in (None, "s"):
+            raise ValueError(f"Unsupported time unit {unit!r}. Expected 's'.")
+        return float(value)
+
+    def GetLoadingNSteps(self) -> int:
+        """Return the number of loading steps."""
+        return self._loading_steps
+
+    def SetLoadingNSteps(self, value: int) -> None:
+        """Set the number of loading steps."""
+        self._loading_steps = int(value)
+
+    def GetBreakageStart(self, unit: str | None = None) -> float:
+        """Return when breakage starts, in seconds."""
+        return self._seconds(self._breakage_start, unit)
+
+    def SetBreakageStart(self, value: float, unit: str | None = None) -> None:
+        """Set when breakage starts. Rocky's token is ``s``."""
+        self._breakage_start = self._seconds(value, unit)
+
+    def GetWearStart(self, unit: str | None = None) -> float:
+        """Return when wear starts, in seconds."""
+        return self._seconds(self._wear_start, unit)
+
+    def SetWearStart(self, value: float, unit: str | None = None) -> None:
+        """Set when wear starts. Rocky's token is ``s``."""
+        self._wear_start = self._seconds(value, unit)
+
+    def GetWearGeometryUpdateInterval(self, unit: str | None = None) -> float:
+        """Return how often worn geometry is updated, in seconds."""
+        return self._seconds(self._wear_interval, unit)
+
+    def SetWearGeometryUpdateInterval(self, value: float, unit: str | None = None) -> None:
+        """Set how often worn geometry is updated. Rocky's token is ``s``."""
+        self._wear_interval = self._seconds(value, unit)
+
+    def GetNeighborSearchModel(self) -> str:
+        """Return the neighbor search model."""
+        return self._neighbor_search
+
+    def SetNeighborSearchModel(self, value: str) -> None:
+        """Set the neighbor search model."""
+        if value not in ("BVH", "RegularGrid", "SparseGrid"):
+            raise ValueError(
+                f"Unsupported neighbor search {value!r}. "
+                "Expected 'BVH', 'RegularGrid', or 'SparseGrid'."
+            )
+        self._neighbor_search = value
+
+    def GetResumeDataFrequency(self) -> int:
+        """Return how often resume data is written."""
+        return self._resume_frequency
+
+    def SetResumeDataFrequency(self, value: int) -> None:
+        """Set how often resume data is written."""
+        self._resume_frequency = int(value)
+
+    def GetDeformableMassMatrixType(self) -> str:
+        """Return the deformable mass matrix type."""
+        return self._mass_matrix
+
+    def SetDeformableMassMatrixType(self, value: str) -> None:
+        """Set the deformable mass matrix type."""
+        if value not in ("lumped", "consistent"):
+            raise ValueError(
+                f"Unsupported mass matrix {value!r}. Expected 'lumped' or 'consistent'."
+            )
+        self._mass_matrix = value
+
+    def GetBreakageOverlapFactor(self) -> float:
+        """Return the breakage overlap factor."""
+        return self._breakage_overlap
+
+    def SetBreakageOverlapFactor(self, value: float) -> None:
+        """Set the breakage overlap factor."""
+        self._breakage_overlap = float(value)
+
+    def GetUseBreakageOverlapFactor(self) -> bool:
+        """Return whether the breakage overlap factor is used."""
+        return self._use_breakage_overlap
+
+    def SetUseBreakageOverlapFactor(self, value: bool) -> None:
+        """Set whether the breakage overlap factor is used."""
+        self._use_breakage_overlap = bool(value)
 
     @staticmethod
     def GetAvailableStandardOutputProperties() -> dict[str, list[str]]:
