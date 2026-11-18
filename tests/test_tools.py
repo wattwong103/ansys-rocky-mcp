@@ -467,6 +467,7 @@ async def test_particle_shape_dimensions_are_stored(study: Client) -> None:
             "tavares_e_inf": 100.0,
             "shear_stress_limit": 1.0e6,
             "stress_unit": "Pa",
+            "plastic_limit": 2.0e6,
             "name": "flake",
         },
     )
@@ -486,6 +487,7 @@ async def test_particle_shape_dimensions_are_stored(study: Client) -> None:
     assert created.data["tavares_d0_m"] == pytest.approx(0.02)
     assert created.data["tavares_e_inf_j_kg"] == pytest.approx(100.0)
     assert created.data["shear_stress_limit_n_m2"] == pytest.approx(1.0e6)
+    assert created.data["plastic_limit_pa"] == pytest.approx(2.0e6)
 
 
 async def test_particle_size_distribution_is_set(study: Client) -> None:

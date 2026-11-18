@@ -568,6 +568,7 @@ async def rocky_create_particle(
     tensile_stress_limit: float | None = None,
     von_mises_stress_limit: float | None = None,
     stress_unit: str = "N/m2",
+    plastic_limit: float | None = None,
     name: str | None = None,
 ) -> dict[str, Any]:
     """Create a Rocky particle definition.
@@ -615,6 +616,8 @@ async def rocky_create_particle(
         Von Mises breakage limit, in the same unit as ``shear_stress_limit``.
     stress_unit : str, default: "N/m2"
         Unit of the stress limits. ``Pa`` is sent to Rocky as ``N/m2``.
+    plastic_limit : float | None, default: None
+        Plastic limit in pascals. Rocky's token for this one is ``Pa``.
     name : str | None, default: None
         Name for the created particle.
 
@@ -672,6 +675,8 @@ async def rocky_create_particle(
                 particle.SetTensileStressLimit(tensile_stress_limit, unit=stress)
             if von_mises_stress_limit is not None:
                 particle.SetVonMisesStressLimit(von_mises_stress_limit, unit=stress)
+        if plastic_limit is not None:
+            particle.SetPlasticLimit(plastic_limit, unit="Pa")
         if name:
             particle.SetName(name)
     except Exception as exc:
@@ -706,6 +711,7 @@ async def rocky_create_particle(
         shear_stress_limit_n_m2=particle.GetShearStressLimit("N/m2"),
         tensile_stress_limit_n_m2=particle.GetTensileStressLimit("N/m2"),
         von_mises_stress_limit_n_m2=particle.GetVonMisesStressLimit("N/m2"),
+        plastic_limit_pa=particle.GetPlasticLimit("Pa"),
     )
 
 

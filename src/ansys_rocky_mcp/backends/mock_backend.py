@@ -452,6 +452,7 @@ class MockParticle:
         self._shear_limit = 0.0
         self._tensile_limit = 0.0
         self._von_mises_limit = 0.0
+        self._plastic_limit = 0.0
         self._surface_energy = 0.0
         self._material: MockSolidMaterial | None = None
         self._horizontal_aspect = 1.0
@@ -695,6 +696,18 @@ class MockParticle:
         """Set the von Mises stress limit in N/m2."""
         self._stress(unit)
         self._von_mises_limit = float(value)
+
+    def GetPlasticLimit(self, unit: str | None = None) -> float:
+        """Return the plastic limit in pascals. Rocky's token is ``Pa``."""
+        if unit not in (None, "Pa"):
+            raise ValueError(f"Unsupported plastic-limit unit {unit!r}. Expected 'Pa'.")
+        return self._plastic_limit
+
+    def SetPlasticLimit(self, value: float, unit: str | None = None) -> None:
+        """Set the plastic limit. Rocky's token is ``Pa``, not ``N/m2``."""
+        if unit not in (None, "Pa"):
+            raise ValueError(f"Unsupported plastic-limit unit {unit!r}. Expected 'Pa'.")
+        self._plastic_limit = float(value)
 
     def GetSurfaceEnergy(self, unit: str | None = None) -> float:
         """Return the surface energy."""
