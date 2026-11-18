@@ -269,6 +269,7 @@ async def test_domain_and_solver_settings_are_applied(study: Client) -> None:
         {"processing_unit": "GPU", "target_gpus": [0], "gpu_slicing_direction": "Y"},
     )
     assert gpu.data["processing_unit"] == "GPU"
+    assert gpu.data["local_processing_unit"] == "GPU"
     assert gpu.data["target_gpus"] == [0]
     assert gpu.data["gpu_slicing_direction"] == "Y"
     with pytest.raises(ToolError, match="processing unit"):

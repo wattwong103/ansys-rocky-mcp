@@ -1104,6 +1104,9 @@ class MockExecutionSettings:
     def __init__(self, processors: int = 1) -> None:
         """Initialize the processor count."""
         self._processors = processors
+        self._processing_unit = "CPU"
+        self._target_gpus: list[int] = []
+        self._gpu_slicing = "X"
 
     def GetNumberOfProcessors(self) -> int:
         """Return the processor count for this execution path."""
@@ -1112,6 +1115,42 @@ class MockExecutionSettings:
     def SetNumberOfProcessors(self, value: int | str) -> None:
         """Set the processor count for this execution path."""
         self._processors = int(value)
+
+    def GetValidProcessingUnitValues(self) -> list[str]:
+        """Return the processing units this settings object accepts."""
+        return ["CPU", "GPU"]
+
+    def GetProcessingUnit(self) -> str:
+        """Return the processing unit."""
+        return self._processing_unit
+
+    def SetProcessingUnit(self, value: str) -> None:
+        """Set the processing unit."""
+        if value not in self.GetValidProcessingUnitValues():
+            raise ValueError(f"Unknown processing unit {value!r}.")
+        self._processing_unit = value
+
+    def GetTargetGpus(self) -> list[int]:
+        """Return the selected GPU ids."""
+        return list(self._target_gpus)
+
+    def SetTargetGpus(self, gpus: list[int]) -> None:
+        """Set the GPU ids."""
+        self._target_gpus = [int(gpu) for gpu in gpus]
+
+    def GetValidMultiGpuSlicingDirectionValues(self) -> list[str]:
+        """Return the slicing directions this settings object accepts."""
+        return ["X", "Y", "Z"]
+
+    def GetMultiGpuSlicingDirection(self) -> str:
+        """Return the slicing direction."""
+        return self._gpu_slicing
+
+    def SetMultiGpuSlicingDirection(self, value: str) -> None:
+        """Set the slicing direction."""
+        if value not in self.GetValidMultiGpuSlicingDirectionValues():
+            raise ValueError(f"Unknown slicing direction {value!r}.")
+        self._gpu_slicing = value
 
 
 class MockSimulatorRun:

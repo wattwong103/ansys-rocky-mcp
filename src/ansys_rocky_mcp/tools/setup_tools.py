@@ -1105,6 +1105,27 @@ async def rocky_set_domain(
     )
 
 
+def _call_local(solver: Any, method_name: str, *args: Any) -> None:
+    """Write a GPU setting onto local execution settings when Rocky exposes it."""
+    getter = getattr(solver, "GetLocalExecutionSettings", None)
+    if getter is None:
+        return
+    method = getattr(getter(), method_name, None)
+    if method is not None:
+        method(*args)
+
+
+def _local_value(solver: Any, method_name: str) -> Any:
+    """Read a value from local execution settings when Rocky exposes it."""
+    getter = getattr(solver, "GetLocalExecutionSettings", None)
+    if getter is None:
+        return None
+    method = getattr(getter(), method_name, None)
+    if method is None:
+        return None
+    return method()
+
+
 def _settings_processors(solver: Any, getter_name: str) -> int | None:
     """Read a processor count from local or MPI settings when Rocky exposes it."""
     getter = getattr(solver, getter_name, None)
@@ -1204,8 +1225,10 @@ async def rocky_set_simulation_settings(
                     f"Unknown processing unit {processing_unit!r}. Expected one of {valid_units}."
                 )
             solver.SetProcessingUnit(processing_unit)
+            _call_local(solver, "SetProcessingUnit", processing_unit)
         if target_gpus is not None:
             solver.SetTargetGpus(target_gpus)
+            _call_local(solver, "SetTargetGpus", target_gpus)
         if gpu_slicing_direction is not None:
             valid_directions = list(solver.GetValidMultiGpuSlicingDirectionValues())
             if gpu_slicing_direction not in valid_directions:
@@ -1214,6 +1237,7 @@ async def rocky_set_simulation_settings(
                     f"Expected one of {valid_directions}."
                 )
             solver.SetMultiGpuSlicingDirection(gpu_slicing_direction)
+            _call_local(solver, "SetMultiGpuSlicingDirection", gpu_slicing_direction)
     except ToolError:
         raise
     except Exception as exc:
@@ -1233,6 +1257,7 @@ async def rocky_set_simulation_settings(
         fixed_timestep_s=solver.GetFixedTimestep("s"),
         use_fixed_timestep=bool(solver.GetUseFixedTimestep()),
         processing_unit=solver.GetProcessingUnit(),
+        local_processing_unit=_local_value(solver, "GetProcessingUnit"),
         target_gpus=list(solver.GetTargetGpus()),
         gpu_slicing_direction=solver.GetMultiGpuSlicingDirection(),
     )
