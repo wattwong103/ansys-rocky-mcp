@@ -500,6 +500,8 @@ async def rocky_create_particle(
     thickness: float | None = None,
     number_of_corners: int | None = None,
     edge_angle_deg: float | None = None,
+    size_type: str | None = None,
+    rolling_resistance: float | None = None,
     name: str | None = None,
 ) -> dict[str, Any]:
     """Create a Rocky particle definition.
@@ -523,12 +525,19 @@ async def rocky_create_particle(
         Number of corners for a faceted particle.
     edge_angle_deg : float | None, default: None
         Edge angle in degrees. Rocky's token is ``dega``.
+    size_type : str | None, default: None
+        ``sieve``, ``equivalent_diameter``, or ``original_size_scale``.
+    rolling_resistance : float | None, default: None
+        Particle rolling resistance coefficient.
     name : str | None, default: None
         Name for the created particle.
 
     """
     if shape not in PARTICLE_SHAPES:
         raise ToolError(f"Unknown particle shape {shape!r}. Expected one of {PARTICLE_SHAPES}.")
+    valid_sizes = ("sieve", "equivalent_diameter", "original_size_scale")
+    if size_type is not None and size_type not in valid_sizes:
+        raise ToolError(f"Unknown size type {size_type!r}. Expected one of {valid_sizes}.")
     session = get_session(ctx)
     study = require_study(session)
     particle = study.CreateParticle()
@@ -546,6 +555,10 @@ async def rocky_create_particle(
             particle.SetNumberOfCorners(number_of_corners)
         if edge_angle_deg is not None:
             particle.SetEdgeAngle(edge_angle_deg, unit="dega")
+        if size_type is not None:
+            particle.SetSizeType(size_type)
+        if rolling_resistance is not None:
+            particle.SetRollingResistance(rolling_resistance)
         if name:
             particle.SetName(name)
     except Exception as exc:
@@ -568,6 +581,8 @@ async def rocky_create_particle(
         thickness_m=particle.GetThickness("m"),
         number_of_corners=particle.GetNumberOfCorners(),
         edge_angle_deg=particle.GetEdgeAngle("dega"),
+        size_type=particle.GetSizeType(),
+        rolling_resistance=particle.GetRollingResistance(),
     )
 
 

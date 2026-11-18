@@ -428,6 +428,8 @@ async def test_particle_shape_dimensions_are_stored(study: Client) -> None:
             "thickness": 0.01,
             "number_of_corners": 6,
             "edge_angle_deg": 30.0,
+            "size_type": "equivalent_diameter",
+            "rolling_resistance": 0.3,
             "name": "flake",
         },
     )
@@ -437,6 +439,8 @@ async def test_particle_shape_dimensions_are_stored(study: Client) -> None:
     assert created.data["thickness_m"] == pytest.approx(0.01)
     assert created.data["number_of_corners"] == 6
     assert created.data["edge_angle_deg"] == pytest.approx(30.0)
+    assert created.data["size_type"] == "equivalent_diameter"
+    assert created.data["rolling_resistance"] == pytest.approx(0.3)
 
 
 async def test_particle_size_distribution_is_set(study: Client) -> None:

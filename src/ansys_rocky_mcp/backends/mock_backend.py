@@ -448,6 +448,7 @@ class MockParticle:
         self._thickness = 0.0
         self._corners = 4
         self._edge_deg = 0.0
+        self._rolling_resistance = 0.0
 
     def GetName(self) -> str:
         """Return the particle name."""
@@ -531,7 +532,18 @@ class MockParticle:
 
     def SetSizeType(self, value: str) -> None:
         """Set the particle size type."""
+        valid = ("sieve", "equivalent_diameter", "original_size_scale")
+        if value not in valid:
+            raise ValueError(f"Unknown size type {value!r}. Expected one of {valid}.")
         self._size_type = value
+
+    def GetRollingResistance(self) -> float:
+        """Return the particle rolling resistance."""
+        return self._rolling_resistance
+
+    def SetRollingResistance(self, value: float) -> None:
+        """Set the particle rolling resistance."""
+        self._rolling_resistance = float(value)
 
     def GetMinimumSize(self, unit: str | None = None) -> float:
         """Return the sieve size in the requested unit."""
