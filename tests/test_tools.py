@@ -57,6 +57,17 @@ async def test_a_running_simulation_can_be_stopped(study: Client) -> None:
     assert stopped.data["simulating"] is False
 
 
+async def test_a_finished_run_can_be_extended(study: Client) -> None:
+    """Extending a finished run increases the duration and the time set."""
+    await study.call_tool("rocky_run_simulation", {"non_blocking": False})
+    before = await study.call_tool("rocky_describe_study")
+    duration = before.data["study"]["solver"]["duration_s"]
+    extended = await study.call_tool("rocky_extend_simulation", {"seconds": 1.0})
+    assert extended.data["duration_s"] == pytest.approx(duration + 1.0)
+    curve = await study.call_tool("rocky_get_curve", {"name": "Particles Count"})
+    assert curve.data["times"][-1] == pytest.approx(duration + 1.0)
+
+
 async def test_results_can_be_deleted(study: Client) -> None:
     """Deleting results clears the finished run."""
     await study.call_tool("rocky_run_simulation", {"non_blocking": False})

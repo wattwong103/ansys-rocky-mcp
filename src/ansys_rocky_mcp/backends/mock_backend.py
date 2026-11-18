@@ -1310,6 +1310,17 @@ class MockStudy:
         if self._elapsed > 0:
             self._has_results = True
 
+    def ExtendSimulation(self, extension_amount: float = 0, **kwargs: Any) -> None:
+        """Extend the solver duration, and the finished time set when results exist."""
+        extra = float(extension_amount)
+        if extra < 0:
+            raise ValueError("extension_amount must be zero or positive.")
+        duration = self._solver.GetSimulationDuration() + extra
+        self._solver.SetSimulationDuration(duration)
+        if self._has_results and not self._simulating:
+            self._elapsed = duration
+            self._progress = 100.0
+
     def DeleteResults(self) -> None:
         """Delete the computed results."""
         self._elapsed = 0.0

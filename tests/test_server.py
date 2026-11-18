@@ -42,6 +42,7 @@ EXPECTED_TOOLS = {
     "rocky_wait_for_completion",
     "rocky_stop_simulation",
     "rocky_delete_results",
+    "rocky_extend_simulation",
     "rocky_get_curve",
     "rocky_list_grid_functions",
     "rocky_get_grid_function_stats",
