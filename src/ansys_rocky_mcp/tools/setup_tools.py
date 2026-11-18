@@ -575,6 +575,10 @@ async def rocky_create_particle(
     flexible: bool | None = None,
     elasticity: str | None = None,
     target_element_count: int | None = None,
+    elastic_ratio_bending: float | None = None,
+    elastic_ratio_normal: float | None = None,
+    elastic_ratio_tangential: float | None = None,
+    elastic_ratio_torsion: float | None = None,
     name: str | None = None,
 ) -> dict[str, Any]:
     """Create a Rocky particle definition.
@@ -636,6 +640,14 @@ async def rocky_create_particle(
         ``isotropic`` or ``anisotropic``.
     target_element_count : int | None, default: None
         Number of elements in a flexible fiber. Must be at least 1.
+    elastic_ratio_bending : float | None, default: None
+        Bending stiffness relative to the base stiffness.
+    elastic_ratio_normal : float | None, default: None
+        Normal stiffness relative to the base stiffness.
+    elastic_ratio_tangential : float | None, default: None
+        Tangential stiffness relative to the base stiffness.
+    elastic_ratio_torsion : float | None, default: None
+        Torsion stiffness relative to the base stiffness.
     name : str | None, default: None
         Name for the created particle.
 
@@ -710,6 +722,10 @@ async def rocky_create_particle(
             or torsion_angle_deg is not None
             or elasticity is not None
             or target_element_count is not None
+            or elastic_ratio_bending is not None
+            or elastic_ratio_normal is not None
+            or elastic_ratio_tangential is not None
+            or elastic_ratio_torsion is not None
         ):
             flexible = True
         if flexible is not None:
@@ -718,6 +734,14 @@ async def rocky_create_particle(
             particle.SetElasticity(elasticity)
         if target_element_count is not None:
             particle.SetTargetNumberOfElements(target_element_count)
+        if elastic_ratio_bending is not None:
+            particle.SetElasticRatioBending(elastic_ratio_bending)
+        if elastic_ratio_normal is not None:
+            particle.SetElasticRatioNormal(elastic_ratio_normal)
+        if elastic_ratio_tangential is not None:
+            particle.SetElasticRatioTangential(elastic_ratio_tangential)
+        if elastic_ratio_torsion is not None:
+            particle.SetElasticRatioTorsion(elastic_ratio_torsion)
         if name:
             particle.SetName(name)
     except Exception as exc:
@@ -759,6 +783,10 @@ async def rocky_create_particle(
         flexible=bool(particle.GetFlexible()),
         elasticity=particle.GetElasticity(),
         target_element_count=particle.GetTargetNumberOfElements(),
+        elastic_ratio_bending=particle.GetElasticRatioBending(),
+        elastic_ratio_normal=particle.GetElasticRatioNormal(),
+        elastic_ratio_tangential=particle.GetElasticRatioTangential(),
+        elastic_ratio_torsion=particle.GetElasticRatioTorsion(),
     )
 
 

@@ -459,6 +459,10 @@ class MockParticle:
         self._flexible = False
         self._elasticity = "isotropic"
         self._target_elements = 1
+        self._ratio_bending = 1.0
+        self._ratio_normal = 1.0
+        self._ratio_tangential = 1.0
+        self._ratio_torsion = 1.0
         self._surface_energy = 0.0
         self._material: MockSolidMaterial | None = None
         self._horizontal_aspect = 1.0
@@ -779,6 +783,38 @@ class MockParticle:
         if count < 1:
             raise ValueError("Target number of elements must be at least 1.")
         self._target_elements = count
+
+    def GetElasticRatioBending(self) -> float:
+        """Return the bending stiffness ratio."""
+        return self._ratio_bending
+
+    def SetElasticRatioBending(self, value: float) -> None:
+        """Set the bending stiffness ratio."""
+        self._ratio_bending = float(value)
+
+    def GetElasticRatioNormal(self) -> float:
+        """Return the normal stiffness ratio."""
+        return self._ratio_normal
+
+    def SetElasticRatioNormal(self, value: float) -> None:
+        """Set the normal stiffness ratio."""
+        self._ratio_normal = float(value)
+
+    def GetElasticRatioTangential(self) -> float:
+        """Return the tangential stiffness ratio."""
+        return self._ratio_tangential
+
+    def SetElasticRatioTangential(self, value: float) -> None:
+        """Set the tangential stiffness ratio."""
+        self._ratio_tangential = float(value)
+
+    def GetElasticRatioTorsion(self) -> float:
+        """Return the torsion stiffness ratio."""
+        return self._ratio_torsion
+
+    def SetElasticRatioTorsion(self, value: float) -> None:
+        """Set the torsion stiffness ratio."""
+        self._ratio_torsion = float(value)
 
     def GetSurfaceEnergy(self, unit: str | None = None) -> float:
         """Return the surface energy."""
