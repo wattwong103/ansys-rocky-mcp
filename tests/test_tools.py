@@ -779,6 +779,7 @@ async def test_import_wall_creates_identified_walls(study: Client, tmp_path) -> 
             "geometry_split_method": "PARTS",
             "normal_angle_tolerance": 12.0,
             "max_edge_size": 0.05,
+            "triangle_size": 0.01,
         },
     )
     assert result.data["wall_ids"]
@@ -786,6 +787,7 @@ async def test_import_wall_creates_identified_walls(study: Client, tmp_path) -> 
     assert result.data["geometry_split_method"] == "PARTS"
     assert result.data["normal_angle_tolerance"] == pytest.approx(12.0)
     assert result.data["max_edge_size_m"] == pytest.approx(0.05)
+    assert result.data["triangle_size_m"] == pytest.approx(0.01)
     boundary = await study.call_tool(
         "rocky_set_sph_boundary",
         {

@@ -104,6 +104,7 @@ async def rocky_import_wall(
     geometry_split_method: str = "BODY",
     normal_angle_tolerance: float | None = None,
     max_edge_size: float | None = None,
+    triangle_size: float | None = None,
 ) -> dict[str, Any]:
     """Import a geometry file as a Rocky wall.
 
@@ -123,6 +124,8 @@ async def rocky_import_wall(
         Maximum mesh angle in degrees for a CAD file.
     max_edge_size : float | None, default: None
         Maximum mesh edge length in meters for a CAD file.
+    triangle_size : float | None, default: None
+        Wall triangle size in meters, used for contact resolution.
 
     """
     session = get_session(ctx)
@@ -154,6 +157,9 @@ async def rocky_import_wall(
         raise ToolError(f"Could not import the wall {target}: {exc}") from exc
 
     walls = list(walls or [])
+    if triangle_size is not None:
+        for wall in walls:
+            wall.SetTriangleSize(triangle_size, unit="m")
     ids = [session.registry.add("wall", wall, label=f"Wall from {target.name}") for wall in walls]
     return envelope(
         session,
@@ -167,6 +173,7 @@ async def rocky_import_wall(
             walls[0].GetNormalAngleTolerance() if walls else normal_angle_tolerance
         ),
         max_edge_size_m=walls[0].GetMaxEdgeSize() if walls else max_edge_size,
+        triangle_size_m=walls[0].GetTriangleSize("m") if walls else triangle_size,
         walls=[
             {"id": ident, "name": getattr(wall, "GetName", lambda: "")()}
             for ident, wall in zip(ids, walls, strict=True)
