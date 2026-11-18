@@ -180,6 +180,7 @@ startup_timeout_sec = 90
 | `rocky_set_material_interaction` | Set friction, restitution, adhesion distance, and stiffness between two materials. |
 | `rocky_create_inlet` | Create a particle inlet with schedule, injection velocity, and repeat period. |
 | `rocky_add_inlet_particle` | Add another particle and its mass flow to an existing inlet. |
+| `rocky_remove_inlet_particle` | Remove a particle from an existing inlet. |
 | `rocky_create_volumetric_inlet` | Fill a box or selected walls with a particle mass at the start. |
 | `rocky_create_outlet` | Create an outlet on a surface. |
 | `rocky_set_domain` | Set limits, periodicity, periodic bounds, and cylindrical divisions. |

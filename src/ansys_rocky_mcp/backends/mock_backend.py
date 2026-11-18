@@ -666,6 +666,21 @@ class MockParticleInlet:
         self._properties.append(MockParticleInletProperties(particle))
         return self._properties
 
+    def RemoveParticle(self, particle: MockParticle | str) -> None:
+        """Remove a particle from this inlet."""
+        name = particle if isinstance(particle, str) else particle.GetName()
+        kept: list[MockParticleInletProperties] = []
+        removed = False
+        for properties in self._properties:
+            current = properties.GetParticle()
+            if current is particle or current.GetName() == name:
+                removed = True
+                continue
+            kept.append(properties)
+        if not removed:
+            raise ValueError(f"Particle {name!r} is not on this inlet.")
+        self._properties = kept
+
     def GetInputPropertiesList(self) -> list[MockParticleInletProperties]:
         """Return the inlet property list."""
         return self._properties

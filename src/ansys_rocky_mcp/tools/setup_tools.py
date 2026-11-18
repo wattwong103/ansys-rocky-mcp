@@ -888,6 +888,39 @@ async def rocky_add_inlet_particle(
     )
 
 
+async def rocky_remove_inlet_particle(
+    ctx: Context,
+    inlet_id: str,
+    particle_id: str,
+) -> dict[str, Any]:
+    """Remove a particle from an existing particle inlet.
+
+    Parameters
+    ----------
+    inlet_id : str
+        Identifier of the particle inlet.
+    particle_id : str
+        Identifier of the particle definition to remove.
+
+    """
+    session = get_session(ctx)
+    require_study(session)
+    inlet = _resolve(session, inlet_id, "inlet")
+    particle = _resolve(session, particle_id, "particle")
+    try:
+        inlet.RemoveParticle(particle)
+        count = len(inlet.GetInputPropertiesList())
+    except Exception as exc:
+        raise ToolError(f"Could not remove the particle from the inlet: {exc}") from exc
+    return envelope(
+        session,
+        message=f"Removed {particle_id} from {inlet_id}.",
+        inlet_id=inlet_id,
+        particle_id=particle_id,
+        particle_count=count,
+    )
+
+
 async def rocky_create_volumetric_inlet(
     ctx: Context,
     particle_id: str,
@@ -1797,6 +1830,7 @@ def register(mcp: Any) -> None:
     mcp.tool()(rocky_set_material_interaction)
     mcp.tool()(rocky_create_inlet)
     mcp.tool()(rocky_add_inlet_particle)
+    mcp.tool()(rocky_remove_inlet_particle)
     mcp.tool()(rocky_create_volumetric_inlet)
     mcp.tool()(rocky_create_outlet)
     mcp.tool()(rocky_set_domain)

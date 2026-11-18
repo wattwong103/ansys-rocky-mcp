@@ -547,6 +547,11 @@ async def test_inlet_injection_duration_is_stored(study: Client) -> None:
         },
     )
     assert added.data["particle_count"] == 2
+    removed = await study.call_tool(
+        "rocky_remove_inlet_particle",
+        {"inlet_id": created.data["inlet_id"], "particle_id": extra.data["particle_id"]},
+    )
+    assert removed.data["particle_count"] == 1
     assert added.data["unit"] == "t/h"
     heated = await study.call_tool(
         "rocky_set_temperature",
