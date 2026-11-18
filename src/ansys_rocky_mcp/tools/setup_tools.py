@@ -32,6 +32,8 @@ BREAKAGE_MODELS = (
     "discrete_custom",
 )
 T10_FORMULAS = ("it10E_50b", "it10E_fract")
+DEFORMATION_MODELS = ("none", "elastic", "plastic")
+PLASTICITY_MODELS = ("LinearElastic", "BilinearElastoplastic", "Custom")
 PARTICLE_SHAPES = (
     "sphere",
     "polyhedron",
@@ -684,6 +686,13 @@ async def rocky_create_particle(
     elastic_ratio_torsion: float | None = None,
     element_damping_ratio: float | None = None,
     joint_damping_ratio: float | None = None,
+    joint_elastic_ratio: float | None = None,
+    joint_thermal_ratio: float | None = None,
+    plastic_ratio: float | None = None,
+    internal_friction: float | None = None,
+    deformation_model: str | None = None,
+    plasticity_model: str | None = None,
+    allow_self_contacts: bool | None = None,
     with_failure: bool | None = None,
     failure_ratio: float | None = None,
     random_angle_deg: list[float] | None = None,
@@ -768,6 +777,20 @@ async def rocky_create_particle(
         Make the particle flexible. A bending or torsion limit turns this on.
     elasticity : str | None, default: None
         ``isotropic`` or ``anisotropic``.
+    deformation_model : str | None, default: None
+        One of ``none``, ``elastic``, or ``plastic``.
+    plasticity_model : str | None, default: None
+        One of ``LinearElastic``, ``BilinearElastoplastic``, or ``Custom``.
+    internal_friction : float | None, default: None
+        Internal friction of a deformable particle.
+    joint_elastic_ratio : float | None, default: None
+        Joint stiffness relative to the element stiffness.
+    joint_thermal_ratio : float | None, default: None
+        Joint thermal conductivity relative to the element.
+    plastic_ratio : float | None, default: None
+        Plastic stiffness relative to the elastic stiffness.
+    allow_self_contacts : bool | None, default: None
+        Allow a flexible particle to contact itself.
     target_element_count : int | None, default: None
         Number of elements in a flexible fiber. Must be at least 1.
     elastic_ratio_bending : float | None, default: None
@@ -800,6 +823,15 @@ async def rocky_create_particle(
         raise ToolError(f"Unknown size type {size_type!r}. Expected one of {valid_sizes}.")
     if elasticity is not None and elasticity not in ("isotropic", "anisotropic"):
         raise ToolError("elasticity must be 'isotropic' or 'anisotropic'.")
+    if deformation_model is not None and deformation_model not in DEFORMATION_MODELS:
+        raise ToolError(
+            f"Unknown deformation model {deformation_model!r}. "
+            f"Expected one of {DEFORMATION_MODELS}."
+        )
+    if plasticity_model is not None and plasticity_model not in PLASTICITY_MODELS:
+        raise ToolError(
+            f"Unknown plasticity model {plasticity_model!r}. Expected one of {PLASTICITY_MODELS}."
+        )
     if target_element_count is not None and target_element_count < 1:
         raise ToolError("target_element_count must be at least 1.")
     if breakage_model is not None and breakage_model not in BREAKAGE_MODELS:
@@ -915,6 +947,20 @@ async def rocky_create_particle(
             particle.SetElementDampingRatio(element_damping_ratio)
         if joint_damping_ratio is not None:
             particle.SetJointDampingRatio(joint_damping_ratio)
+        if joint_elastic_ratio is not None:
+            particle.SetJointElasticRatio(joint_elastic_ratio)
+        if joint_thermal_ratio is not None:
+            particle.SetJointThermalRatio(joint_thermal_ratio)
+        if plastic_ratio is not None:
+            particle.SetPlasticRatio(plastic_ratio)
+        if internal_friction is not None:
+            particle.SetInternalFriction(internal_friction)
+        if deformation_model is not None:
+            particle.SetDeformationModel(deformation_model)
+        if plasticity_model is not None:
+            particle.SetPlasticityModel(plasticity_model)
+        if allow_self_contacts is not None:
+            particle.SetAllowSelfContacts(allow_self_contacts)
         if failure_ratio is not None and with_failure is None:
             with_failure = True
         if with_failure is not None:
@@ -985,6 +1031,13 @@ async def rocky_create_particle(
         elastic_ratio_torsion=particle.GetElasticRatioTorsion(),
         element_damping_ratio=particle.GetElementDampingRatio(),
         joint_damping_ratio=particle.GetJointDampingRatio(),
+        joint_elastic_ratio=particle.GetJointElasticRatio(),
+        joint_thermal_ratio=particle.GetJointThermalRatio(),
+        plastic_ratio=particle.GetPlasticRatio(),
+        internal_friction=particle.GetInternalFriction(),
+        deformation_model=particle.GetDeformationModel(),
+        plasticity_model=particle.GetPlasticityModel(),
+        allow_self_contacts=bool(particle.GetAllowSelfContacts()),
         with_failure=bool(particle.GetWithFailure()),
         failure_ratio=particle.GetFailureRatio(),
         random_angle=bool(particle.GetEnableRandomAngle()),

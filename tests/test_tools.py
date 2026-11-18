@@ -499,6 +499,10 @@ async def test_particle_shape_dimensions_are_stored(study: Client) -> None:
             "bending_angle_deg": 15.0,
             "torsion_angle_deg": 10.0,
             "elasticity": "anisotropic",
+            "deformation_model": "plastic",
+            "plasticity_model": "BilinearElastoplastic",
+            "internal_friction": 0.25,
+            "allow_self_contacts": True,
             "target_element_count": 8,
             "elastic_ratio_bending": 0.4,
             "elastic_ratio_torsion": 0.2,
@@ -529,6 +533,10 @@ async def test_particle_shape_dimensions_are_stored(study: Client) -> None:
     assert created.data["abt10_maximum_t10_percent"] == pytest.approx(50.0)
     assert created.data["abt10_select_coefficient_kg_j"] == pytest.approx(0.01)
     assert created.data["cgm_scale_factor"] == pytest.approx(3.0)
+    assert created.data["deformation_model"] == "plastic"
+    assert created.data["plasticity_model"] == "BilinearElastoplastic"
+    assert created.data["internal_friction"] == pytest.approx(0.25)
+    assert created.data["allow_self_contacts"] is True
     assert created.data["shear_stress_limit_n_m2"] == pytest.approx(1.0e6)
     assert created.data["plastic_limit_pa"] == pytest.approx(2.0e6)
     assert created.data["porosity"] == pytest.approx(0.2)

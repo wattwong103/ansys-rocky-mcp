@@ -537,6 +537,13 @@ class MockParticle:
         self._ratio_torsion = 1.0
         self._element_damping = 0.0
         self._joint_damping = 0.0
+        self._joint_elastic = 1.0
+        self._joint_thermal = 1.0
+        self._plastic_ratio = 0.0
+        self._internal_friction = 0.0
+        self._deformation = "none"
+        self._plasticity = "LinearElastic"
+        self._self_contacts = False
         self._with_failure = False
         self._failure_ratio = 1.0
         self._random_angle = False
@@ -1033,6 +1040,72 @@ class MockParticle:
     def SetJointDampingRatio(self, value: float) -> None:
         """Set the joint damping ratio."""
         self._joint_damping = float(value)
+
+    def GetJointElasticRatio(self) -> float:
+        """Return the joint elastic ratio."""
+        return self._joint_elastic
+
+    def SetJointElasticRatio(self, value: float) -> None:
+        """Set the joint elastic ratio."""
+        self._joint_elastic = float(value)
+
+    def GetJointThermalRatio(self) -> float:
+        """Return the joint thermal ratio."""
+        return self._joint_thermal
+
+    def SetJointThermalRatio(self, value: float) -> None:
+        """Set the joint thermal ratio."""
+        self._joint_thermal = float(value)
+
+    def GetPlasticRatio(self) -> float:
+        """Return the plastic ratio."""
+        return self._plastic_ratio
+
+    def SetPlasticRatio(self, value: float) -> None:
+        """Set the plastic ratio."""
+        self._plastic_ratio = float(value)
+
+    def GetInternalFriction(self) -> float:
+        """Return the internal friction."""
+        return self._internal_friction
+
+    def SetInternalFriction(self, value: float) -> None:
+        """Set the internal friction."""
+        self._internal_friction = float(value)
+
+    def GetDeformationModel(self) -> str:
+        """Return the deformation model."""
+        return self._deformation
+
+    def SetDeformationModel(self, value: str) -> None:
+        """Set the deformation model."""
+        if value not in ("none", "elastic", "plastic"):
+            raise ValueError(
+                f"Unsupported deformation model {value!r}. "
+                "Expected 'none', 'elastic', or 'plastic'."
+            )
+        self._deformation = value
+
+    def GetPlasticityModel(self) -> str:
+        """Return the plasticity model."""
+        return self._plasticity
+
+    def SetPlasticityModel(self, value: str) -> None:
+        """Set the plasticity model."""
+        if value not in ("LinearElastic", "BilinearElastoplastic", "Custom"):
+            raise ValueError(
+                f"Unsupported plasticity model {value!r}. "
+                "Expected 'LinearElastic', 'BilinearElastoplastic', or 'Custom'."
+            )
+        self._plasticity = value
+
+    def GetAllowSelfContacts(self) -> bool:
+        """Return whether the particle can contact itself."""
+        return self._self_contacts
+
+    def SetAllowSelfContacts(self, value: bool) -> None:
+        """Set whether the particle can contact itself."""
+        self._self_contacts = bool(value)
 
     def GetWithFailure(self) -> bool:
         """Return whether the fiber can fail."""
