@@ -605,7 +605,7 @@ class MockParticleInlet:
         self._entry_point = entry_point
         self._particle = particle
         self._name = "Particle Inlet"
-        self._properties = MockParticleInletProperties(particle)
+        self._properties = [MockParticleInletProperties(particle)]
         self._injection_duration = 0.0
 
     def GetName(self) -> str:
@@ -628,9 +628,16 @@ class MockParticleInlet:
         """Return the particle fed by the inlet."""
         return self._particle
 
+    def AddParticle(self, particle: MockParticle) -> list[MockParticleInletProperties]:
+        """Add another particle to this inlet."""
+        if not isinstance(particle, MockParticle):
+            raise TypeError("AddParticle requires a particle definition.")
+        self._properties.append(MockParticleInletProperties(particle))
+        return self._properties
+
     def GetInputPropertiesList(self) -> list[MockParticleInletProperties]:
         """Return the inlet property list."""
-        return [self._properties]
+        return self._properties
 
     def GetInjectionDuration(self, unit: str | None = None) -> float:
         """Return the injection duration."""
@@ -2041,8 +2048,11 @@ class MockStudy:
         mass_flow_kg_s = 0.0
         inlet_radius = DEFAULT_INLET_RADIUS
         for inlet in self._inlets:
-            properties = inlet.GetInputPropertiesList()[0]
-            mass_flow_kg_s += properties.GetMassFlowRate("kg/s")
+            getter = getattr(inlet, "GetInputPropertiesList", None)
+            if getter is None:
+                continue
+            for properties in getter():
+                mass_flow_kg_s += properties.GetMassFlowRate("kg/s")
             surface = inlet.GetEntryPoint()
             if isinstance(surface, MockSurface):
                 inlet_radius = max(surface.GetMaxRadius("m"), 1e-6)

@@ -461,6 +461,20 @@ async def test_inlet_injection_duration_is_stored(study: Client) -> None:
         },
     )
     assert created.data["injection_duration_s"] == pytest.approx(1.5)
+    extra = await study.call_tool(
+        "rocky_create_particle",
+        {"shape": "sphere", "name": "fines"},
+    )
+    added = await study.call_tool(
+        "rocky_add_inlet_particle",
+        {
+            "inlet_id": created.data["inlet_id"],
+            "particle_id": extra.data["particle_id"],
+            "mass_flow_rate": 2.5,
+        },
+    )
+    assert added.data["particle_count"] == 2
+    assert added.data["unit"] == "t/h"
     heated = await study.call_tool(
         "rocky_set_temperature",
         {"object_id": created.data["inlet_id"], "temperature": 350.0},

@@ -703,6 +703,56 @@ def _three_vector(values: list[float] | None, label: str) -> list[float] | None:
     return [float(value) for value in values]
 
 
+async def rocky_add_inlet_particle(
+    ctx: Context,
+    inlet_id: str,
+    particle_id: str,
+    mass_flow_rate: float,
+    unit: str = "t/h",
+) -> dict[str, Any]:
+    """Add another particle to an existing particle inlet.
+
+    Parameters
+    ----------
+    inlet_id : str
+        Identifier of the particle inlet.
+    particle_id : str
+        Identifier of the particle definition to add.
+    mass_flow_rate : float
+        Mass flow rate of this particle.
+    unit : str, default: "t/h"
+        Unit of the mass flow rate. Rocky's default token is ``t/h``.
+
+    """
+    session = get_session(ctx)
+    require_study(session)
+    inlet = _resolve(session, inlet_id, "inlet")
+    particle = _resolve(session, particle_id, "particle")
+    try:
+        inlet.AddParticle(particle)
+        chosen = None
+        for properties in inlet.GetInputPropertiesList():
+            if properties.GetParticle() is particle:
+                chosen = properties
+        if chosen is None:
+            raise ToolError("The inlet did not record the added particle.")
+        chosen.SetMassFlowRate(mass_flow_rate, unit=unit)
+        count = len(inlet.GetInputPropertiesList())
+    except ToolError:
+        raise
+    except Exception as exc:
+        raise ToolError(f"Could not add the particle to the inlet: {exc}") from exc
+    return envelope(
+        session,
+        message=f"Added {particle_id} to {inlet_id}.",
+        inlet_id=inlet_id,
+        particle_id=particle_id,
+        mass_flow_rate=mass_flow_rate,
+        unit=unit,
+        particle_count=count,
+    )
+
+
 async def rocky_create_volumetric_inlet(
     ctx: Context,
     particle_id: str,
@@ -1457,6 +1507,7 @@ def register(mcp: Any) -> None:
     mcp.tool()(rocky_create_material)
     mcp.tool()(rocky_set_material_interaction)
     mcp.tool()(rocky_create_inlet)
+    mcp.tool()(rocky_add_inlet_particle)
     mcp.tool()(rocky_create_volumetric_inlet)
     mcp.tool()(rocky_create_outlet)
     mcp.tool()(rocky_set_domain)

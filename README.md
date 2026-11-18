@@ -179,6 +179,7 @@ startup_timeout_sec = 90
 | `rocky_create_material` | Create a solid material, including thermal properties, and assign it. |
 | `rocky_set_material_interaction` | Set friction, restitution, adhesion distance, and stiffness between two materials. |
 | `rocky_create_inlet` | Create a particle inlet on a surface or a feed conveyor, and set its mass flow. |
+| `rocky_add_inlet_particle` | Add another particle and its mass flow to an existing inlet. |
 | `rocky_create_volumetric_inlet` | Fill a box or selected walls with a particle mass at the start. |
 | `rocky_create_outlet` | Create an outlet on a surface. |
 | `rocky_set_domain` | Set limits, periodicity, periodic bounds, and cylindrical divisions. |
