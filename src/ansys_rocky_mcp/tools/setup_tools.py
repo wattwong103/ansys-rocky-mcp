@@ -3186,6 +3186,12 @@ async def rocky_set_sph(
     surface_tension: str | None = None,
     surface_tension_n_m: float | None = None,
     surface_tension_angle_deg: float | None = None,
+    stiff_factor: float | None = None,
+    timestep_factor: float | None = None,
+    kernel_distance: float | None = None,
+    xsph_factor: float | None = None,
+    shepard_density: bool | None = None,
+    shepard_pressure: bool | None = None,
 ) -> dict[str, Any]:
     """Configure Rocky's SPH fluid settings.
 
@@ -3217,6 +3223,18 @@ async def rocky_set_sph(
         Surface tension coefficient. Rocky's token is ``N/m``.
     surface_tension_angle_deg : float | None, default: None
         Boundary contact angle in degrees. Rocky's token is ``dega``.
+    stiff_factor : float | None, default: None
+        Equation-of-state stiffness.
+    timestep_factor : float | None, default: None
+        Fraction of the SPH stability limit used as the timestep.
+    kernel_distance : float | None, default: None
+        Kernel distance factor.
+    xsph_factor : float | None, default: None
+        Strength of XSPH position correction.
+    shepard_density : bool | None, default: None
+        Filter the density with a Shepard filter.
+    shepard_pressure : bool | None, default: None
+        Filter the pressure with a Shepard filter.
 
     """
     session = get_session(ctx)
@@ -3244,6 +3262,12 @@ async def rocky_set_sph(
             surface_tension,
             surface_tension_n_m,
             surface_tension_angle_deg,
+            stiff_factor,
+            timestep_factor,
+            kernel_distance,
+            xsph_factor,
+            shepard_density,
+            shepard_pressure,
         )
     ):
         sph_on = True
@@ -3275,6 +3299,18 @@ async def rocky_set_sph(
             sph.SetSurfaceTensionCoefficient(surface_tension_n_m, unit="N/m")
         if surface_tension_angle_deg is not None:
             sph.SetSurfaceTensionBoundaryAngle(surface_tension_angle_deg, unit="dega")
+        if stiff_factor is not None:
+            sph.SetStiffFactor(stiff_factor)
+        if timestep_factor is not None:
+            sph.SetTimestepFactor(timestep_factor)
+        if kernel_distance is not None:
+            sph.SetKernelDistFactor(kernel_distance)
+        if xsph_factor is not None:
+            sph.SetXsphFactor(xsph_factor)
+        if shepard_density is not None:
+            sph.SetShepardFilterOnDensityEnabled(shepard_density)
+        if shepard_pressure is not None:
+            sph.SetShepardFilterOnPressureEnabled(shepard_pressure)
     except ToolError:
         raise
     except Exception as exc:
@@ -3295,6 +3331,12 @@ async def rocky_set_sph(
         surface_tension=sph.GetSurfaceTensionType(),
         surface_tension_n_m=sph.GetSurfaceTensionCoefficient("N/m"),
         surface_tension_angle_deg=sph.GetSurfaceTensionBoundaryAngle("dega"),
+        stiff_factor=sph.GetStiffFactor(),
+        timestep_factor=sph.GetTimestepFactor(),
+        kernel_distance=sph.GetKernelDistFactor(),
+        xsph_factor=sph.GetXsphFactor(),
+        shepard_density=bool(sph.GetShepardFilterOnDensityEnabled()),
+        shepard_pressure=bool(sph.GetShepardFilterOnPressureEnabled()),
     )
 
 

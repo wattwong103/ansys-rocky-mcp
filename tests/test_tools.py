@@ -266,6 +266,9 @@ async def test_domain_and_solver_settings_are_applied(study: Client) -> None:
             "kernel": "wendland",
             "surface_tension": "CSF",
             "surface_tension_angle_deg": 30.0,
+            "stiff_factor": 10.0,
+            "timestep_factor": 0.2,
+            "shepard_density": True,
         },
     )
     assert sph.data["enabled"] is True
@@ -274,6 +277,9 @@ async def test_domain_and_solver_settings_are_applied(study: Client) -> None:
     assert sph.data["kernel"] == "wendland"
     assert sph.data["surface_tension"] == "CSF"
     assert sph.data["surface_tension_angle_deg"] == pytest.approx(30.0)
+    assert sph.data["stiff_factor"] == pytest.approx(10.0)
+    assert sph.data["timestep_factor"] == pytest.approx(0.2)
+    assert sph.data["shepard_density"] is True
     await study.call_tool("rocky_set_simulation_settings", {"duration": 4.0, "time_interval": 0.2})
     timed = await study.call_tool(
         "rocky_set_simulation_settings",

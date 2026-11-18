@@ -3883,6 +3883,12 @@ class MockSphSettings:
         self._tension = "none"
         self._tension_coefficient = 0.0
         self._tension_angle = 0.0
+        self._stiff = 1.0
+        self._timestep_factor = 1.0
+        self._kernel_distance = 1.0
+        self._xsph = 0.0
+        self._shepard_density = False
+        self._shepard_pressure = False
 
     def GetEnabled(self) -> bool:
         """Return whether SPH is enabled."""
@@ -4034,6 +4040,54 @@ class MockSphSettings:
         if unit not in (None, "dega"):
             raise ValueError(f"Unsupported angle unit {unit!r}. Expected 'dega'.")
         self._tension_angle = float(value)
+
+    def GetStiffFactor(self) -> float:
+        """Return the equation-of-state stiffness."""
+        return self._stiff
+
+    def SetStiffFactor(self, value: float) -> None:
+        """Set the equation-of-state stiffness."""
+        self._stiff = float(value)
+
+    def GetTimestepFactor(self) -> float:
+        """Return the SPH timestep factor."""
+        return self._timestep_factor
+
+    def SetTimestepFactor(self, value: float) -> None:
+        """Set the SPH timestep factor."""
+        self._timestep_factor = float(value)
+
+    def GetKernelDistFactor(self) -> float:
+        """Return the kernel distance factor."""
+        return self._kernel_distance
+
+    def SetKernelDistFactor(self, value: float) -> None:
+        """Set the kernel distance factor."""
+        self._kernel_distance = float(value)
+
+    def GetXsphFactor(self) -> float:
+        """Return the XSPH factor."""
+        return self._xsph
+
+    def SetXsphFactor(self, value: float) -> None:
+        """Set the XSPH factor."""
+        self._xsph = float(value)
+
+    def GetShepardFilterOnDensityEnabled(self) -> bool:
+        """Return whether density is Shepard-filtered."""
+        return self._shepard_density
+
+    def SetShepardFilterOnDensityEnabled(self, value: bool) -> None:
+        """Set whether density is Shepard-filtered."""
+        self._shepard_density = bool(value)
+
+    def GetShepardFilterOnPressureEnabled(self) -> bool:
+        """Return whether pressure is Shepard-filtered."""
+        return self._shepard_pressure
+
+    def SetShepardFilterOnPressureEnabled(self, value: bool) -> None:
+        """Set whether pressure is Shepard-filtered."""
+        self._shepard_pressure = bool(value)
 
 
 class MockStudy:
