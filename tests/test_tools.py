@@ -482,6 +482,9 @@ async def test_particle_shape_dimensions_are_stored(study: Client) -> None:
             "smoothness": 0.6,
             "superquadric_degree": 4.0,
             "enable_rotations": False,
+            "center_of_mass_percent": [0.0, 0.0, 10.0],
+            "principal_moment_m5": [1.0, 2.0, 3.0],
+            "x_direction": [0.0, 1.0, 0.0],
             "second_bending_angle_deg": 20.0,
             "size_type": "equivalent_diameter",
             "rolling_resistance": 0.3,
@@ -527,6 +530,10 @@ async def test_particle_shape_dimensions_are_stored(study: Client) -> None:
     assert created.data["smoothness"] == pytest.approx(0.6)
     assert created.data["superquadric_degree"] == pytest.approx(4.0)
     assert created.data["enable_rotations"] is False
+    assert created.data["change_mass_properties"] is True
+    assert created.data["center_of_mass_percent"] == pytest.approx([0.0, 0.0, 10.0])
+    assert created.data["principal_moment_m5"] == pytest.approx([1.0, 2.0, 3.0])
+    assert created.data["x_direction"] == pytest.approx([0.0, 1.0, 0.0])
     assert created.data["second_bending_angle_deg"] == pytest.approx(20.0)
     assert created.data["size_type"] == "equivalent_diameter"
     assert created.data["rolling_resistance"] == pytest.approx(0.3)

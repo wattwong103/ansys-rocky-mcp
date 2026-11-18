@@ -654,6 +654,12 @@ async def rocky_create_particle(
     smoothness: float | None = None,
     superquadric_degree: float | None = None,
     enable_rotations: bool | None = None,
+    center_of_mass_percent: list[float] | None = None,
+    principal_moment_m5: list[float] | None = None,
+    change_mass_properties: bool | None = None,
+    x_direction: list[float] | None = None,
+    y_direction: list[float] | None = None,
+    z_direction: list[float] | None = None,
     include_rotational_deformations: bool | None = None,
     remesh_to_target: bool | None = None,
     second_bending_angle_deg: float | None = None,
@@ -732,6 +738,18 @@ async def rocky_create_particle(
         Superquadric degree.
     enable_rotations : bool | None, default: None
         Allow the particle to rotate.
+    center_of_mass_percent : list[float] | None, default: None
+        Center-of-mass offset ``[x, y, z]``. Rocky's token is ``%``, not meters.
+    principal_moment_m5 : list[float] | None, default: None
+        Principal moments ``[ix, iy, iz]``. Rocky's token for a particle is ``m5``.
+    change_mass_properties : bool | None, default: None
+        Use the custom mass properties. A center or inertia turns this on when omitted.
+    x_direction : list[float] | None, default: None
+        Particle X axis. Rocky's token is ``-``.
+    y_direction : list[float] | None, default: None
+        Particle Y axis. Rocky's token is ``-``.
+    z_direction : list[float] | None, default: None
+        Particle Z axis. Rocky's token is ``-``.
     include_rotational_deformations : bool | None, default: None
         Include rotational deformation of a flexible particle.
     remesh_to_target : bool | None, default: None
@@ -861,6 +879,14 @@ async def rocky_create_particle(
         )
     if t10_formula is not None and t10_formula not in T10_FORMULAS:
         raise ToolError(f"Unknown t10 formula {t10_formula!r}. Expected one of {T10_FORMULAS}.")
+    com = _three_vector(center_of_mass_percent, "center_of_mass_percent")
+    inertia = _three_vector(principal_moment_m5, "principal_moment_m5")
+    x_axis = _three_vector(x_direction, "x_direction")
+    y_axis = _three_vector(y_direction, "y_direction")
+    z_axis = _three_vector(z_direction, "z_direction")
+    mass_flag = change_mass_properties
+    if mass_flag is None and (com is not None or inertia is not None):
+        mass_flag = True
     session = get_session(ctx)
     study = require_study(session)
     particle = study.CreateParticle()
@@ -886,6 +912,18 @@ async def rocky_create_particle(
             particle.SetSuperquadricDegree(superquadric_degree)
         if enable_rotations is not None:
             particle.SetEnableRotations(enable_rotations)
+        if mass_flag is not None:
+            particle.SetChangeMassProperties(bool(mass_flag))
+        if com is not None:
+            particle.SetCenterOfMassOffset(com, unit="%")
+        if inertia is not None:
+            particle.SetPrincipalMomentOfInertia(inertia, unit="m5")
+        if x_axis is not None:
+            particle.SetXDirection(x_axis, unit="-")
+        if y_axis is not None:
+            particle.SetYDirection(y_axis, unit="-")
+        if z_axis is not None:
+            particle.SetZDirection(z_axis, unit="-")
         if include_rotational_deformations is not None:
             particle.SetIncludeRotationalDeformations(include_rotational_deformations)
         if remesh_to_target is not None:
@@ -1034,6 +1072,16 @@ async def rocky_create_particle(
         smoothness=particle.GetSmoothness(),
         superquadric_degree=particle.GetSuperquadricDegree(),
         enable_rotations=bool(particle.GetEnableRotations()),
+        change_mass_properties=(
+            bool(particle.GetChangeMassProperties()) if mass_flag is not None else None
+        ),
+        center_of_mass_percent=particle.GetCenterOfMassOffset("%") if com is not None else None,
+        principal_moment_m5=(
+            particle.GetPrincipalMomentOfInertia("m5") if inertia is not None else None
+        ),
+        x_direction=particle.GetXDirection("-") if x_axis is not None else None,
+        y_direction=particle.GetYDirection("-") if y_axis is not None else None,
+        z_direction=particle.GetZDirection("-") if z_axis is not None else None,
         include_rotational_deformations=bool(particle.GetIncludeRotationalDeformations()),
         remesh_to_target=bool(particle.GetRemeshToTarget()),
         second_bending_angle_deg=particle.GetSecondBendingAngleLimit("dega"),

@@ -559,6 +559,12 @@ class MockParticle:
         self._smoothness = 0.0
         self._superquadric = 2.0
         self._rotations = True
+        self._change_mass = False
+        self._com = (0.0, 0.0, 0.0)
+        self._inertia_m5 = (0.0, 0.0, 0.0)
+        self._x_axis = (1.0, 0.0, 0.0)
+        self._y_axis = (0.0, 1.0, 0.0)
+        self._z_axis = (0.0, 0.0, 1.0)
         self._rotational_deformations = False
         self._remesh = False
         self._second_bending_deg = 0.0
@@ -676,6 +682,66 @@ class MockParticle:
     def SetEnableRotations(self, value: bool) -> None:
         """Set whether the particle can rotate."""
         self._rotations = bool(value)
+
+    def _triple(self, values: list[float], unit: str | None, allowed: str) -> tuple[float, ...]:
+        """Store a three-component particle vector in Rocky's unit."""
+        if unit not in (None, allowed):
+            raise ValueError(f"Unsupported particle vector unit {unit!r}. Expected {allowed!r}.")
+        if len(values) != 3:
+            raise ValueError("A particle vector must have three numbers.")
+        return tuple(float(value) for value in values)
+
+    def GetChangeMassProperties(self) -> bool:
+        """Return whether custom mass properties are used."""
+        return self._change_mass
+
+    def SetChangeMassProperties(self, value: bool) -> None:
+        """Set whether custom mass properties are used."""
+        self._change_mass = bool(value)
+
+    def GetCenterOfMassOffset(self, unit: str | None = None) -> list[float]:
+        """Return the center-of-mass offset in percent."""
+        if unit not in (None, "%"):
+            raise ValueError(f"Unsupported offset unit {unit!r}. Expected '%'.")
+        return list(self._com)
+
+    def SetCenterOfMassOffset(self, values: list[float], unit: str | None = None) -> None:
+        """Set the center-of-mass offset. Rocky's token is ``%``."""
+        self._com = self._triple(values, unit, "%")
+
+    def GetPrincipalMomentOfInertia(self, unit: str | None = None) -> list[float]:
+        """Return the principal moments. A particle uses ``m5``."""
+        if unit not in (None, "m5"):
+            raise ValueError(f"Unsupported inertia unit {unit!r}. Expected 'm5'.")
+        return list(self._inertia_m5)
+
+    def SetPrincipalMomentOfInertia(self, values: list[float], unit: str | None = None) -> None:
+        """Set the principal moments. Rocky's particle token is ``m5``."""
+        self._inertia_m5 = self._triple(values, unit, "m5")
+
+    def GetXDirection(self, unit: str | None = None) -> list[float]:
+        """Return the particle X axis."""
+        return list(self._triple(list(self._x_axis), unit, "-"))
+
+    def SetXDirection(self, values: list[float], unit: str | None = None) -> None:
+        """Set the particle X axis. Rocky's token is ``-``."""
+        self._x_axis = self._triple(values, unit, "-")
+
+    def GetYDirection(self, unit: str | None = None) -> list[float]:
+        """Return the particle Y axis."""
+        return list(self._triple(list(self._y_axis), unit, "-"))
+
+    def SetYDirection(self, values: list[float], unit: str | None = None) -> None:
+        """Set the particle Y axis. Rocky's token is ``-``."""
+        self._y_axis = self._triple(values, unit, "-")
+
+    def GetZDirection(self, unit: str | None = None) -> list[float]:
+        """Return the particle Z axis."""
+        return list(self._triple(list(self._z_axis), unit, "-"))
+
+    def SetZDirection(self, values: list[float], unit: str | None = None) -> None:
+        """Set the particle Z axis. Rocky's token is ``-``."""
+        self._z_axis = self._triple(values, unit, "-")
 
     def GetIncludeRotationalDeformations(self) -> bool:
         """Return whether rotational deformation is included."""
