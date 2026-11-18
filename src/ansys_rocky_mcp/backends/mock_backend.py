@@ -477,6 +477,8 @@ class MockFluidMaterial:
         self._name = name
         self._density = 1000.0
         self._viscosity = 0.001
+        self._specific_heat = 4180.0
+        self._conductivity = 0.6
         self._rheology = "newtonian"
         self._newtonian = MockNewtonianRheology()
 
@@ -512,6 +514,30 @@ class MockFluidMaterial:
             raise ValueError(f"Unsupported viscosity unit {unit!r}. Expected 'Pa.s'.")
         self._viscosity = float(value)
         self._newtonian.SetViscosity(value, unit=unit or "Pa.s")
+
+    def GetSpecificHeat(self, unit: str | None = None) -> float:
+        """Return the specific heat in J/kg.K."""
+        if unit not in (None, "J/kg.K"):
+            raise ValueError(f"Unsupported specific heat unit {unit!r}. Expected 'J/kg.K'.")
+        return self._specific_heat
+
+    def SetSpecificHeat(self, value: float, unit: str | None = None) -> None:
+        """Set the specific heat. Rocky's token is ``J/kg.K``."""
+        if unit not in (None, "J/kg.K"):
+            raise ValueError(f"Unsupported specific heat unit {unit!r}. Expected 'J/kg.K'.")
+        self._specific_heat = float(value)
+
+    def GetThermalConductivity(self, unit: str | None = None) -> float:
+        """Return the thermal conductivity in W/m.K."""
+        if unit not in (None, "W/m.K"):
+            raise ValueError(f"Unsupported conductivity unit {unit!r}. Expected 'W/m.K'.")
+        return self._conductivity
+
+    def SetThermalConductivity(self, value: float, unit: str | None = None) -> None:
+        """Set the thermal conductivity. Rocky's token is ``W/m.K``."""
+        if unit not in (None, "W/m.K"):
+            raise ValueError(f"Unsupported conductivity unit {unit!r}. Expected 'W/m.K'.")
+        self._conductivity = float(value)
 
     def GetRheologicalModelType(self) -> str:
         """Return the rheology model."""

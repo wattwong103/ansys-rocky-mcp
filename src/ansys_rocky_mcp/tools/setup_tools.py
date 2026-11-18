@@ -2715,6 +2715,8 @@ async def rocky_create_fluid_material(
     name: str | None = None,
     density: float | None = None,
     viscosity: float | None = None,
+    specific_heat: float | None = None,
+    thermal_conductivity: float | None = None,
     rheology: str | None = None,
     assign_to_sph: bool = False,
 ) -> dict[str, Any]:
@@ -2728,6 +2730,10 @@ async def rocky_create_fluid_material(
         Density in ``kg/m3``.
     viscosity : float | None, default: None
         Dynamic viscosity. Rocky's token is ``Pa.s``.
+    specific_heat : float | None, default: None
+        Specific heat. Rocky's token is ``J/kg.K``.
+    thermal_conductivity : float | None, default: None
+        Thermal conductivity. Rocky's token is ``W/m.K``.
     rheology : str | None, default: None
         ``newtonian`` or ``herschel_bulkley_papanastasiou``.
     assign_to_sph : bool, default: False
@@ -2748,6 +2754,10 @@ async def rocky_create_fluid_material(
             fluid.SetViscosity(viscosity, unit="Pa.s")
             if fluid.GetRheologicalModelType() == "newtonian":
                 fluid.GetNewtonianRheologicalModel().SetViscosity(viscosity, unit="Pa.s")
+        if specific_heat is not None:
+            fluid.SetSpecificHeat(specific_heat, unit="J/kg.K")
+        if thermal_conductivity is not None:
+            fluid.SetThermalConductivity(thermal_conductivity, unit="W/m.K")
         if assign_to_sph:
             sph = study.GetSphSettings()
             sph.SetFluidMaterial(fluid)
@@ -2769,6 +2779,8 @@ async def rocky_create_fluid_material(
         name=fluid.GetName(),
         density_kg_m3=fluid.GetDensity("kg/m3"),
         viscosity_pa_s=fluid.GetViscosity("Pa.s"),
+        specific_heat_j_kg_k=fluid.GetSpecificHeat("J/kg.K"),
+        thermal_conductivity_w_m_k=fluid.GetThermalConductivity("W/m.K"),
         rheology=fluid.GetRheologicalModelType(),
         assigned_to_sph=assign_to_sph,
     )

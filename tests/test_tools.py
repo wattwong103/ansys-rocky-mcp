@@ -286,6 +286,8 @@ async def test_domain_and_solver_settings_are_applied(study: Client) -> None:
             "name": "water",
             "density": 998.0,
             "viscosity": 0.001,
+            "specific_heat": 4180.0,
+            "thermal_conductivity": 0.6,
             "rheology": "newtonian",
             "assign_to_sph": True,
         },
@@ -293,6 +295,8 @@ async def test_domain_and_solver_settings_are_applied(study: Client) -> None:
     assert water.data["name"] == "water"
     assert water.data["density_kg_m3"] == pytest.approx(998.0)
     assert water.data["viscosity_pa_s"] == pytest.approx(0.001)
+    assert water.data["specific_heat_j_kg_k"] == pytest.approx(4180.0)
+    assert water.data["thermal_conductivity_w_m_k"] == pytest.approx(0.6)
     assert water.data["assigned_to_sph"] is True
     await study.call_tool("rocky_set_simulation_settings", {"duration": 4.0, "time_interval": 0.2})
     timed = await study.call_tool(
