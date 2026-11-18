@@ -1532,6 +1532,7 @@ async def rocky_set_wall_mass(
     wall_id: str,
     mass: float,
     inertia: list[float] | None = None,
+    disable_time: float | None = None,
 ) -> dict[str, Any]:
     """Set the mass of a moving wall.
 
@@ -1543,6 +1544,8 @@ async def rocky_set_wall_mass(
         Boundary mass in kilograms.
     inertia : list[float] | None, default: None
         Principal moments of inertia ``[ix, iy, iz]``. Rocky's token is ``kg.m2``.
+    disable_time : float | None, default: None
+        Time in seconds when the wall stops interacting. Rocky's token is ``s``.
 
     """
     session = get_session(ctx)
@@ -1553,6 +1556,8 @@ async def rocky_set_wall_mass(
         wall.SetBoundaryMass(mass, unit="kg")
         if moments is not None:
             wall.SetPrincipalMomentOfInertia(moments, unit="kg.m2")
+        if disable_time is not None:
+            wall.SetDisableTime(disable_time, unit="s")
     except Exception as exc:
         raise ToolError(f"Could not set the wall mass: {exc}") from exc
     return envelope(
@@ -1561,6 +1566,7 @@ async def rocky_set_wall_mass(
         wall_id=wall_id,
         mass_kg=wall.GetBoundaryMass("kg"),
         inertia_kg_m2=wall.GetPrincipalMomentOfInertia("kg.m2"),
+        disable_time_s=wall.GetDisableTime("s"),
     )
 
 

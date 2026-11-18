@@ -1285,6 +1285,7 @@ class MockWall:
         self._thermal_boundary = "adiabatic"
         self._mass = 0.0
         self._inertia = (0.0, 0.0, 0.0)
+        self._disable_time = 0.0
 
     def GetName(self) -> str:
         """Return the wall name."""
@@ -1399,6 +1400,18 @@ class MockWall:
         if len(values) != 3:
             raise ValueError("Principal inertia must have three numbers.")
         self._inertia = tuple(float(value) for value in values)
+
+    def GetDisableTime(self, unit: str | None = None) -> float:
+        """Return the time when the wall stops interacting, in seconds."""
+        if unit not in (None, "s"):
+            raise ValueError(f"Unsupported time unit {unit!r}. Expected 's'.")
+        return self._disable_time
+
+    def SetDisableTime(self, value: float, unit: str | None = None) -> None:
+        """Set the time when the wall stops interacting, in seconds."""
+        if unit not in (None, "s"):
+            raise ValueError(f"Unsupported time unit {unit!r}. Expected 's'.")
+        self._disable_time = float(value)
 
     def SetMaterial(self, value: Any) -> None:
         """Assign a solid material."""
