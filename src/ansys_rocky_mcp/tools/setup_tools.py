@@ -829,6 +829,10 @@ async def rocky_set_material_interaction(
     static_friction: float | None = None,
     dynamic_friction: float | None = None,
     restitution: float | None = None,
+    adhesive_distance: float | None = None,
+    tangential_stiffness_ratio: float | None = None,
+    velocity_exponent: float | None = None,
+    velocity_limit: float | None = None,
 ) -> dict[str, Any]:
     """Set contact coefficients between two solid materials.
 
@@ -844,6 +848,14 @@ async def rocky_set_material_interaction(
         Dynamic friction coefficient.
     restitution : float | None, default: None
         Restitution coefficient.
+    adhesive_distance : float | None, default: None
+        Adhesive distance in meters.
+    tangential_stiffness_ratio : float | None, default: None
+        Tangential stiffness divided by normal stiffness.
+    velocity_exponent : float | None, default: None
+        Exponent for a velocity-dependent restitution model.
+    velocity_limit : float | None, default: None
+        Velocity limit for a velocity-dependent restitution model, in m/s.
 
     """
     session = get_session(ctx)
@@ -860,6 +872,14 @@ async def rocky_set_material_interaction(
             interaction.SetDynamicFriction(dynamic_friction)
         if restitution is not None:
             interaction.SetRestitutionCoefficient(restitution)
+        if adhesive_distance is not None:
+            interaction.SetAdhesiveDistance(adhesive_distance, unit="m")
+        if tangential_stiffness_ratio is not None:
+            interaction.SetTangentialStiffnessRatio(tangential_stiffness_ratio)
+        if velocity_exponent is not None:
+            interaction.SetVelocityExponent(velocity_exponent)
+        if velocity_limit is not None:
+            interaction.SetVelocityLimit(velocity_limit, unit="m/s")
     except Exception as exc:
         raise ToolError(f"Could not set the material interaction: {exc}") from exc
     return envelope(
@@ -870,6 +890,10 @@ async def rocky_set_material_interaction(
         static_friction=interaction.GetStaticFriction(),
         dynamic_friction=interaction.GetDynamicFriction(),
         restitution=interaction.GetRestitutionCoefficient(),
+        adhesive_distance_m=interaction.GetAdhesiveDistance("m"),
+        tangential_stiffness_ratio=interaction.GetTangentialStiffnessRatio(),
+        velocity_exponent=interaction.GetVelocityExponent(),
+        velocity_limit_m_s=interaction.GetVelocityLimit("m/s"),
     )
 
 

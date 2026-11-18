@@ -268,6 +268,10 @@ class MockMaterialsInteraction:
         self._static = 0.0
         self._dynamic = 0.0
         self._restitution = 0.0
+        self._adhesive_distance = 0.0
+        self._stiffness_ratio = 0.0
+        self._velocity_exponent = 0.0
+        self._velocity_limit = 0.0
 
     def SetStaticFriction(self, value: float, unit: str | None = None) -> None:
         """Set the static friction coefficient."""
@@ -292,6 +296,38 @@ class MockMaterialsInteraction:
     def GetRestitutionCoefficient(self, unit: str | None = None) -> float:
         """Return the restitution coefficient."""
         return self._restitution
+
+    def SetAdhesiveDistance(self, value: float, unit: str | None = None) -> None:
+        """Set the adhesive distance."""
+        self._adhesive_distance = float(value)
+
+    def GetAdhesiveDistance(self, unit: str | None = None) -> float:
+        """Return the adhesive distance."""
+        return self._adhesive_distance
+
+    def SetTangentialStiffnessRatio(self, value: float, unit: str | None = None) -> None:
+        """Set the tangential stiffness ratio."""
+        self._stiffness_ratio = float(value)
+
+    def GetTangentialStiffnessRatio(self, unit: str | None = None) -> float:
+        """Return the tangential stiffness ratio."""
+        return self._stiffness_ratio
+
+    def SetVelocityExponent(self, value: float, unit: str | None = None) -> None:
+        """Set the velocity exponent."""
+        self._velocity_exponent = float(value)
+
+    def GetVelocityExponent(self, unit: str | None = None) -> float:
+        """Return the velocity exponent."""
+        return self._velocity_exponent
+
+    def SetVelocityLimit(self, value: float, unit: str | None = None) -> None:
+        """Set the velocity limit."""
+        self._velocity_limit = float(value)
+
+    def GetVelocityLimit(self, unit: str | None = None) -> float:
+        """Return the velocity limit."""
+        return self._velocity_limit
 
 
 class MockMaterialsInteractionCollection:

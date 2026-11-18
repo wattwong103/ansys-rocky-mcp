@@ -175,7 +175,7 @@ startup_timeout_sec = 90
 | `rocky_create_particle` | Create a particle definition (shape, sieve size). |
 | `rocky_set_size_distribution` | Set a particle's size distribution, minimum size, and surface energy. |
 | `rocky_create_material` | Create a solid material and assign it to a particle or a wall. |
-| `rocky_set_material_interaction` | Set friction and restitution between two materials. |
+| `rocky_set_material_interaction` | Set friction, restitution, adhesion distance, and stiffness between two materials. |
 | `rocky_create_inlet` | Create a particle inlet, set its mass flow rate, and optionally its duration. |
 | `rocky_create_outlet` | Create an outlet on a surface. |
 | `rocky_set_domain` | Set limits, periodicity, periodic axes, and cylindrical divisions. |

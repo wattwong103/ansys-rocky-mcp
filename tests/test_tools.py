@@ -186,9 +186,17 @@ async def test_material_can_be_assigned_to_a_particle(study: Client) -> None:
             "static_friction": 0.6,
             "dynamic_friction": 0.4,
             "restitution": 0.2,
+            "adhesive_distance": 1.0e-5,
+            "tangential_stiffness_ratio": 0.8,
+            "velocity_exponent": 0.5,
+            "velocity_limit": 1.0,
         },
     )
     assert pair.data["static_friction"] == pytest.approx(0.6)
+    assert pair.data["adhesive_distance_m"] == pytest.approx(1.0e-5)
+    assert pair.data["tangential_stiffness_ratio"] == pytest.approx(0.8)
+    assert pair.data["velocity_exponent"] == pytest.approx(0.5)
+    assert pair.data["velocity_limit_m_s"] == pytest.approx(1.0)
     assert pair.data["dynamic_friction"] == pytest.approx(0.4)
     assert pair.data["restitution"] == pytest.approx(0.2)
 
