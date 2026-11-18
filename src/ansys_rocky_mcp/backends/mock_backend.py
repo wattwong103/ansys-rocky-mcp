@@ -1218,6 +1218,8 @@ class MockFeedConveyor:
         """Initialize a stopped conveyor."""
         self._name = name
         self._speed = 0.0
+        self._start_time = 0.0
+        self._acceleration = 0.0
         self._width = 1.0
         self._loading_length = 0.0
         self._drop = [0.0, 0.0, 0.0]
@@ -1239,6 +1241,22 @@ class MockFeedConveyor:
     def GetBeltSpeed(self, unit: str | None = None) -> float:
         """Return the belt speed in meters per second."""
         return self._speed
+
+    def SetBeginningStartTime(self, value: float, unit: str | None = None) -> None:
+        """Set when the belt starts, in seconds."""
+        self._start_time = float(value)
+
+    def GetBeginningStartTime(self, unit: str | None = None) -> float:
+        """Return when the belt starts, in seconds."""
+        return self._start_time
+
+    def SetAccelerationPeriod(self, value: float, unit: str | None = None) -> None:
+        """Set how long the belt takes to reach speed, in seconds."""
+        self._acceleration = float(value)
+
+    def GetAccelerationPeriod(self, unit: str | None = None) -> float:
+        """Return how long the belt takes to reach speed, in seconds."""
+        return self._acceleration
 
     def SetBeltWidth(self, value: float, unit: str | None = None) -> None:
         """Set the belt width in meters."""
