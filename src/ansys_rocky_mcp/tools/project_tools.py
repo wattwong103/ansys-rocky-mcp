@@ -128,6 +128,13 @@ def describe_study(session: Any) -> dict[str, Any]:
                 "processors": _safe(solver.GetNumberOfProcessors),
                 "execution_mode": _safe(solver.GetExecutionMode),
                 "curves_frequency": _safe(solver.GetSolverCurvesFrequency),
+                "timestep_model": _safe(solver.GetTimestepModel),
+                "fixed_timestep_s": _safe(lambda: solver.GetFixedTimestep("s")),
+                "use_fixed_timestep": _safe(solver.GetUseFixedTimestep),
+                "processing_unit": _safe(solver.GetProcessingUnit),
+                "release_without_overlap_check": _safe(
+                    solver.GetReleaseParticlesWithoutOverlapCheck
+                ),
             }
             if solver is not None
             else {},

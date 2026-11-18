@@ -293,6 +293,9 @@ async def test_domain_and_solver_settings_are_applied(study: Client) -> None:
 
     description = await study.call_tool("rocky_describe_study")
     assert description.data["study"]["domain"]["max_m"] == pytest.approx([5.0, 1.5, 1.5])
+    assert description.data["study"]["solver"]["fixed_timestep_s"] == pytest.approx(1.0e-5)
+    assert description.data["study"]["solver"]["processors"] == 4
+    assert description.data["study"]["solver"]["release_without_overlap_check"] is True
     periodic = await study.call_tool(
         "rocky_set_domain",
         {"domain_type": "CARTESIAN", "periodic_directions": "XY"},
