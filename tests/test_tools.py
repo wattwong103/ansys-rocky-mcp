@@ -320,6 +320,7 @@ async def test_a_feed_conveyor_records_belt_speed(study: Client) -> None:
             "acceleration_period": 1.5,
             "stop_time": 20.0,
             "deceleration_period": 2.0,
+            "belt_profile": "Five Rolls",
             "name": "discharge",
         },
     )
@@ -328,6 +329,7 @@ async def test_a_feed_conveyor_records_belt_speed(study: Client) -> None:
     assert receiving.data["acceleration_period_s"] == pytest.approx(1.5)
     assert receiving.data["stop_time_s"] == pytest.approx(20.0)
     assert receiving.data["deceleration_period_s"] == pytest.approx(2.0)
+    assert receiving.data["belt_profile"] == "Five Rolls"
     assert receiving.data["name"] == "discharge"
     assert receiving.data["belt_speed_m_s"] == pytest.approx(1.2)
     belt = await study.call_tool(

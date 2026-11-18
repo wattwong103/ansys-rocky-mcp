@@ -1222,6 +1222,7 @@ class MockFeedConveyor:
         self._stop_time = 0.0
         self._acceleration = 0.0
         self._deceleration = 0.0
+        self._profile = "Three Rolls"
         self._width = 1.0
         self._loading_length = 0.0
         self._drop = [0.0, 0.0, 0.0]
@@ -1275,6 +1276,24 @@ class MockFeedConveyor:
     def GetDecelerationPeriod(self, unit: str | None = None) -> float:
         """Return how long the belt takes to stop, in seconds."""
         return self._deceleration
+
+    def GetValidBeltProfileNames(self) -> list[str]:
+        """Return the belt profiles this stand-in accepts."""
+        return ["One Roll", "Two Rolls", "Three Rolls", "Five Rolls"]
+
+    def SetBeltProfile(self, belt_profile_name: str) -> str:
+        """Set the belt profile by name."""
+        if belt_profile_name not in self.GetValidBeltProfileNames():
+            raise ValueError(
+                f"Unknown belt profile {belt_profile_name!r}. "
+                f"Expected one of {self.GetValidBeltProfileNames()}."
+            )
+        self._profile = belt_profile_name
+        return belt_profile_name
+
+    def GetBeltProfileName(self) -> str:
+        """Return the belt profile name."""
+        return self._profile
 
     def SetBeltWidth(self, value: float, unit: str | None = None) -> None:
         """Set the belt width in meters."""
