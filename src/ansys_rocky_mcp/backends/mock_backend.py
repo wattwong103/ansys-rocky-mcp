@@ -1287,6 +1287,7 @@ class MockWall:
         self._inertia = (0.0, 0.0, 0.0)
         self._disable_time = 0.0
         self._triangle_size = 0.0
+        self._translation = (0.0, 0.0, 0.0)
 
     def GetName(self) -> str:
         """Return the wall name."""
@@ -1425,6 +1426,20 @@ class MockWall:
         if unit not in (None, "m"):
             raise ValueError(f"Unsupported length unit {unit!r}. Expected 'm'.")
         self._triangle_size = float(value)
+
+    def GetTranslation(self, unit: str | None = None) -> list[float]:
+        """Return the wall translation in meters."""
+        if unit not in (None, "m"):
+            raise ValueError(f"Unsupported length unit {unit!r}. Expected 'm'.")
+        return list(self._translation)
+
+    def SetTranslation(self, values: list[float], unit: str | None = None) -> None:
+        """Set the wall translation in meters."""
+        if unit not in (None, "m"):
+            raise ValueError(f"Unsupported length unit {unit!r}. Expected 'm'.")
+        if len(values) != 3:
+            raise ValueError("Translation must have three numbers.")
+        self._translation = tuple(float(value) for value in values)
 
     def SetMaterial(self, value: Any) -> None:
         """Assign a solid material."""
