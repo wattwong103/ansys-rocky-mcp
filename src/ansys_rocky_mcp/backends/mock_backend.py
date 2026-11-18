@@ -1280,6 +1280,8 @@ class MockWall:
         self._max_edge: float | None = None
         self._sph_boundary = "free_slip"
         self._contact_angle_deg = 0.0
+        self._wear_model = "none"
+        self._wear_ratio = 0.0
 
     def GetName(self) -> str:
         """Return the wall name."""
@@ -1335,6 +1337,28 @@ class MockWall:
         if unit not in (None, "dega"):
             raise ValueError(f"Unsupported angle unit {unit!r}. Expected 'dega'.")
         self._contact_angle_deg = float(value)
+
+    def GetWearModel(self) -> str:
+        """Return the wear model."""
+        return self._wear_model
+
+    def SetWearModel(self, value: str) -> None:
+        """Set the wear model."""
+        if value not in ("none", "archard", "custom"):
+            raise ValueError(f"Unknown wear model {value!r}.")
+        self._wear_model = value
+
+    def GetVolumeShearWorkRatio(self, unit: str | None = None) -> float:
+        """Return the Archard volume per energy. Rocky's token is ``m3/J``."""
+        if unit not in (None, "m3/J"):
+            raise ValueError(f"Unsupported wear unit {unit!r}. Expected 'm3/J'.")
+        return self._wear_ratio
+
+    def SetVolumeShearWorkRatio(self, value: float, unit: str | None = None) -> None:
+        """Set the Archard volume per energy. Rocky's token is ``m3/J``."""
+        if unit not in (None, "m3/J"):
+            raise ValueError(f"Unsupported wear unit {unit!r}. Expected 'm3/J'.")
+        self._wear_ratio = float(value)
 
     def SetMaterial(self, value: Any) -> None:
         """Assign a solid material."""

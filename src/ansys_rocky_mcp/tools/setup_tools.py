@@ -1527,6 +1527,47 @@ async def rocky_set_simulation_settings(
 _SPH_BOUNDARIES = ("free_slip", "no_slip_laminar", "no_slip_turbulent")
 
 
+async def rocky_set_wall_wear(
+    ctx: Context,
+    wall_id: str,
+    wear_model: str | None = None,
+    volume_shear_work_ratio: float | None = None,
+) -> dict[str, Any]:
+    """Set wall wear. The Archard ratio uses Rocky's ``m3/J`` token.
+
+    Parameters
+    ----------
+    wall_id : str
+        Identifier of the wall.
+    wear_model : str | None, default: None
+        ``none``, ``archard``, or ``custom``. A ratio selects ``archard``.
+    volume_shear_work_ratio : float | None, default: None
+        Removed volume per unit shear work, in cubic meters per joule.
+
+    """
+    if volume_shear_work_ratio is not None and wear_model is None:
+        wear_model = "archard"
+    if wear_model is not None and wear_model not in ("none", "archard", "custom"):
+        raise ToolError("wear_model must be 'none', 'archard', or 'custom'.")
+    session = get_session(ctx)
+    require_study(session)
+    wall = _resolve(session, wall_id, "wall")
+    try:
+        if wear_model is not None:
+            wall.SetWearModel(wear_model)
+        if volume_shear_work_ratio is not None:
+            wall.SetVolumeShearWorkRatio(volume_shear_work_ratio, unit="m3/J")
+    except Exception as exc:
+        raise ToolError(f"Could not set the wall wear: {exc}") from exc
+    return envelope(
+        session,
+        message=f"Set wear on {wall_id}.",
+        wall_id=wall_id,
+        wear_model=wall.GetWearModel(),
+        volume_shear_work_ratio_m3_j=wall.GetVolumeShearWorkRatio("m3/J"),
+    )
+
+
 async def rocky_set_sph_boundary(
     ctx: Context,
     wall_id: str,
@@ -2096,6 +2137,7 @@ def register(mcp: Any) -> None:
     mcp.tool()(rocky_set_simulation_settings)
     mcp.tool()(rocky_set_output_property)
     mcp.tool()(rocky_set_sph_boundary)
+    mcp.tool()(rocky_set_wall_wear)
     mcp.tool()(rocky_set_gravity)
     mcp.tool()(rocky_set_contact_models)
     mcp.tool()(rocky_set_motion)
