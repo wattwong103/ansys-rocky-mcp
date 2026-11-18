@@ -418,6 +418,67 @@ async def test_inlet_injection_duration_is_stored(study: Client) -> None:
     assert created.data["injection_duration_s"] == pytest.approx(1.5)
 
 
+async def test_volumetric_inlet_fills_a_box(study: Client) -> None:
+    """A volumetric inlet can fill a box with a given particle mass."""
+    objects = await study.call_tool("rocky_list_processes")
+    particles = [
+        entry["id"]
+        for entry in objects.data["registered_objects"]
+        if entry["category"] == "particle"
+    ]
+    with pytest.raises(ToolError, match="three numbers"):
+        await study.call_tool(
+            "rocky_create_volumetric_inlet",
+            {
+                "particle_id": particles[0],
+                "box_center": [0.0, 0.0],
+                "box_dimensions": [1.0, 1.0, 1.0],
+            },
+        )
+    created = await study.call_tool(
+        "rocky_create_volumetric_inlet",
+        {
+            "particle_id": particles[0],
+            "name": "hopper fill",
+            "mass": 25.0,
+            "box_center": [0.0, 0.0, 0.5],
+            "box_dimensions": [1.0, 0.4, 0.8],
+        },
+    )
+    assert created.data["name"] == "hopper fill"
+    assert created.data["mass_kg"] == pytest.approx(25.0)
+    assert created.data["fill"] == "box"
+
+
+async def test_volumetric_inlet_fills_selected_walls(study: Client, tmp_path) -> None:
+    """A volumetric inlet can fill the interior of selected walls."""
+    geometry = tmp_path / "bin.stl"
+    geometry.write_text("solid bin\nendsolid bin\n", encoding="utf-8")
+    imported = await study.call_tool("rocky_import_wall", {"path": str(geometry)})
+    objects = await study.call_tool("rocky_list_processes")
+    particles = [
+        entry["id"]
+        for entry in objects.data["registered_objects"]
+        if entry["category"] == "particle"
+    ]
+    with pytest.raises(ToolError, match="geometry id"):
+        await study.call_tool(
+            "rocky_create_volumetric_inlet",
+            {"particle_id": particles[0], "use_geometries_to_compute": True},
+        )
+    created = await study.call_tool(
+        "rocky_create_volumetric_inlet",
+        {
+            "particle_id": particles[0],
+            "mass": 40.0,
+            "use_geometries_to_compute": True,
+            "geometry_ids": imported.data["wall_ids"],
+        },
+    )
+    assert created.data["fill"] == "geometries"
+    assert created.data["mass_kg"] == pytest.approx(40.0)
+
+
 async def test_motion_is_applied_to_the_targets(study: Client) -> None:
     """A rotation motion is attached to the requested surface."""
     objects = await study.call_tool("rocky_list_processes")

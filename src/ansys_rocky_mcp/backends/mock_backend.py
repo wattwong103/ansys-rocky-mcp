@@ -541,6 +541,57 @@ class MockParticleInlet:
         self._injection_duration = float(value)
 
 
+class MockVolumetricInlet:
+    """Stand-in for a Rocky volumetric inlet."""
+
+    def __init__(
+        self,
+        particle: MockParticle | None,
+        name: str | None,
+        mass: float,
+        seed_coordinates: list[float] | None,
+        geometries: list[Any] | None,
+        use_geometries_to_compute: bool,
+        box_center: list[float] | None,
+        box_dimensions: list[float] | None,
+        use_box_center_as_seed_point: bool,
+    ) -> None:
+        """Store the fill definition."""
+        self._particle = particle
+        self._name = name or "Volumetric Inlet"
+        self._mass = float(mass)
+        self._seed = seed_coordinates
+        self._geometries = list(geometries or [])
+        self._use_geometries = use_geometries_to_compute
+        self._box_center = box_center
+        self._box_dimensions = box_dimensions
+        self._use_box_center = use_box_center_as_seed_point
+
+    def GetName(self) -> str:
+        """Return the inlet name."""
+        return self._name
+
+    def SetName(self, value: str) -> None:
+        """Set the inlet name."""
+        self._name = value
+
+    def GetMass(self) -> float:
+        """Return the fill mass in kilograms."""
+        return self._mass
+
+    def UsesGeometries(self) -> bool:
+        """Return whether the fill is bounded by geometries."""
+        return self._use_geometries
+
+    def GetBoxCenter(self) -> list[float] | None:
+        """Return the limit-box center in meters."""
+        return self._box_center
+
+    def GetBoxDimensions(self) -> list[float] | None:
+        """Return the limit-box dimensions in meters."""
+        return self._box_dimensions
+
+
 class MockOutlet:
     """Stand-in for a Rocky outlet."""
 
@@ -1464,7 +1515,7 @@ class MockStudy:
         self._name = name
         self._particles: list[MockParticle] = []
         self._surfaces: list[MockSurface] = []
-        self._inlets: list[MockParticleInlet] = []
+        self._inlets: list[MockParticleInlet | MockVolumetricInlet] = []
         self._outlets: list[MockOutlet] = []
         self._walls: list[MockWall] = []
         self._conveyors: list[MockFeedConveyor] = []
@@ -1544,6 +1595,35 @@ class MockStudy:
         if not isinstance(particle, MockParticle):
             raise TypeError("The particle of a particle inlet must be a particle definition.")
         inlet = MockParticleInlet(entry_point, particle)
+        self._inlets.append(inlet)
+        return inlet
+
+    def CreateVolumetricInlet(
+        self,
+        particle: MockParticle | None = None,
+        name: str | None = None,
+        mass: float = 100.0,
+        seed_coordinates: list[float] | None = None,
+        geometries: list[Any] | None = None,
+        use_geometries_to_compute: bool = False,
+        box_center: list[float] | None = None,
+        box_dimensions: list[float] | None = None,
+        use_box_center_as_seed_point: bool = False,
+    ) -> MockVolumetricInlet:
+        """Create a volumetric fill inlet."""
+        if particle is not None and not isinstance(particle, MockParticle):
+            raise TypeError("The particle of a volumetric inlet must be a particle definition.")
+        inlet = MockVolumetricInlet(
+            particle,
+            name,
+            mass,
+            seed_coordinates,
+            geometries,
+            use_geometries_to_compute,
+            box_center,
+            box_dimensions,
+            use_box_center_as_seed_point,
+        )
         self._inlets.append(inlet)
         return inlet
 

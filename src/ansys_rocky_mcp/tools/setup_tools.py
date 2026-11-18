@@ -629,6 +629,100 @@ async def rocky_create_inlet(
     )
 
 
+def _three_vector(values: list[float] | None, label: str) -> list[float] | None:
+    """Require a 3-number sequence, or accept an omitted value."""
+    if values is None:
+        return None
+    if len(values) != 3:
+        raise ToolError(f"{label} must be three numbers.")
+    return [float(value) for value in values]
+
+
+async def rocky_create_volumetric_inlet(
+    ctx: Context,
+    particle_id: str,
+    name: str | None = None,
+    mass: float = 100.0,
+    seed: list[float] | None = None,
+    geometry_ids: list[str] | None = None,
+    use_geometries_to_compute: bool = False,
+    box_center: list[float] | None = None,
+    box_dimensions: list[float] | None = None,
+    use_box_center_as_seed_point: bool = False,
+) -> dict[str, Any]:
+    """Fill a region with particles at the start of the simulation.
+
+    Parameters
+    ----------
+    particle_id : str
+        Identifier of the particle definition to place.
+    name : str | None, default: None
+        Name of the volumetric inlet.
+    mass : float, default: 100.0
+        Mass of particles to place, in kilograms.
+    seed : list[float] | None, default: None
+        Seed point in meters. Three numbers.
+    geometry_ids : list[str] | None, default: None
+        Wall identifiers that bound the fill when
+        ``use_geometries_to_compute`` is true.
+    use_geometries_to_compute : bool, default: False
+        When true, the selected walls bound the fill. When false, a box does.
+    box_center : list[float] | None, default: None
+        Center of the limit box in meters. Required for a box fill.
+    box_dimensions : list[float] | None, default: None
+        Length, width, and height of the limit box in meters.
+    use_box_center_as_seed_point : bool, default: False
+        Use the box center as the seed point.
+
+    """
+    session = get_session(ctx)
+    study = require_study(session)
+    particle = _resolve(session, particle_id, "particle")
+    seed_coordinates = _three_vector(seed, "seed")
+    center = _three_vector(box_center, "box_center")
+    dimensions = _three_vector(box_dimensions, "box_dimensions")
+    walls: list[Any] = []
+    if use_geometries_to_compute:
+        if not geometry_ids:
+            raise ToolError("A geometry fill requires at least one geometry id.")
+        walls = [_resolve(session, geometry_id, "wall") for geometry_id in geometry_ids]
+    elif center is None or dimensions is None:
+        raise ToolError("A box fill requires box_center and box_dimensions.")
+    try:
+        inlet = study.CreateVolumetricInlet(
+            particle=particle,
+            name=name,
+            mass=mass,
+            seed_coordinates=seed_coordinates,
+            geometries=walls or None,
+            use_geometries_to_compute=use_geometries_to_compute,
+            box_center=center,
+            box_dimensions=dimensions,
+            use_box_center_as_seed_point=use_box_center_as_seed_point,
+        )
+        if name:
+            inlet.SetName(name)
+    except ToolError:
+        raise
+    except Exception as exc:
+        raise ToolError(f"Could not create the volumetric inlet: {exc}") from exc
+    ident = session.registry.add(
+        "inlet",
+        inlet,
+        label=inlet.GetName(),
+        meta={"particle_id": particle_id, "mass_kg": mass},
+    )
+    return envelope(
+        session,
+        message=f"Created volumetric inlet {inlet.GetName()}.",
+        inlet_id=ident,
+        name=inlet.GetName(),
+        mass_kg=mass,
+        fill="geometries" if use_geometries_to_compute else "box",
+        particle_id=particle_id,
+    )
+
+
 async def rocky_create_outlet(ctx: Context, surface_id: str) -> dict[str, Any]:
     """Create a Rocky outlet on a surface.
 
@@ -1211,6 +1305,7 @@ def register(mcp: Any) -> None:
     mcp.tool()(rocky_create_material)
     mcp.tool()(rocky_set_material_interaction)
     mcp.tool()(rocky_create_inlet)
+    mcp.tool()(rocky_create_volumetric_inlet)
     mcp.tool()(rocky_create_outlet)
     mcp.tool()(rocky_set_domain)
     mcp.tool()(rocky_set_simulation_settings)
