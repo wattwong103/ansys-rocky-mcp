@@ -564,6 +564,10 @@ async def rocky_create_particle(
     tavares_a: float | None = None,
     tavares_d0: float | None = None,
     tavares_e_inf: float | None = None,
+    shear_stress_limit: float | None = None,
+    tensile_stress_limit: float | None = None,
+    von_mises_stress_limit: float | None = None,
+    stress_unit: str = "N/m2",
     name: str | None = None,
 ) -> dict[str, Any]:
     """Create a Rocky particle definition.
@@ -603,6 +607,14 @@ async def rocky_create_particle(
         Tavares reference size in meters.
     tavares_e_inf : float | None, default: None
         Tavares upper specific energy in ``J/kg``.
+    shear_stress_limit : float | None, default: None
+        Shear breakage limit. Rocky's token is ``N/m2``. ``Pa`` is accepted.
+    tensile_stress_limit : float | None, default: None
+        Tensile breakage limit, in the same unit as ``shear_stress_limit``.
+    von_mises_stress_limit : float | None, default: None
+        Von Mises breakage limit, in the same unit as ``shear_stress_limit``.
+    stress_unit : str, default: "N/m2"
+        Unit of the stress limits. ``Pa`` is sent to Rocky as ``N/m2``.
     name : str | None, default: None
         Name for the created particle.
 
@@ -649,6 +661,17 @@ async def rocky_create_particle(
             particle.SetTavaresD0(tavares_d0, unit="m")
         if tavares_e_inf is not None:
             particle.SetTavaresEInf(tavares_e_inf, unit="J/kg")
+        if any(
+            value is not None
+            for value in (shear_stress_limit, tensile_stress_limit, von_mises_stress_limit)
+        ):
+            stress = _modulus_unit(stress_unit)
+            if shear_stress_limit is not None:
+                particle.SetShearStressLimit(shear_stress_limit, unit=stress)
+            if tensile_stress_limit is not None:
+                particle.SetTensileStressLimit(tensile_stress_limit, unit=stress)
+            if von_mises_stress_limit is not None:
+                particle.SetVonMisesStressLimit(von_mises_stress_limit, unit=stress)
         if name:
             particle.SetName(name)
     except Exception as exc:
@@ -680,6 +703,9 @@ async def rocky_create_particle(
         tavares_a_percent=particle.GetTavaresA("%"),
         tavares_d0_m=particle.GetTavaresD0("m"),
         tavares_e_inf_j_kg=particle.GetTavaresEInf("J/kg"),
+        shear_stress_limit_n_m2=particle.GetShearStressLimit("N/m2"),
+        tensile_stress_limit_n_m2=particle.GetTensileStressLimit("N/m2"),
+        von_mises_stress_limit_n_m2=particle.GetVonMisesStressLimit("N/m2"),
     )
 
 

@@ -449,6 +449,9 @@ class MockParticle:
         self._tavares_a = 0.0
         self._tavares_d0 = 0.0
         self._tavares_e_inf = 0.0
+        self._shear_limit = 0.0
+        self._tensile_limit = 0.0
+        self._von_mises_limit = 0.0
         self._surface_energy = 0.0
         self._material: MockSolidMaterial | None = None
         self._horizontal_aspect = 1.0
@@ -657,6 +660,41 @@ class MockParticle:
         if unit not in (None, "J/kg"):
             raise ValueError(f"Unsupported energy unit {unit!r}. Expected 'J/kg'.")
         self._tavares_e_inf = float(value)
+
+    def _stress(self, unit: str | None) -> None:
+        """Reject a stress unit other than newtons per square meter."""
+        if unit not in (None, "N/m2"):
+            raise ValueError(f"Unsupported stress unit {unit!r}. Expected 'N/m2'.")
+
+    def GetShearStressLimit(self, unit: str | None = None) -> float:
+        """Return the shear stress limit in N/m2."""
+        self._stress(unit)
+        return self._shear_limit
+
+    def SetShearStressLimit(self, value: float, unit: str | None = None) -> None:
+        """Set the shear stress limit in N/m2."""
+        self._stress(unit)
+        self._shear_limit = float(value)
+
+    def GetTensileStressLimit(self, unit: str | None = None) -> float:
+        """Return the tensile stress limit in N/m2."""
+        self._stress(unit)
+        return self._tensile_limit
+
+    def SetTensileStressLimit(self, value: float, unit: str | None = None) -> None:
+        """Set the tensile stress limit in N/m2."""
+        self._stress(unit)
+        self._tensile_limit = float(value)
+
+    def GetVonMisesStressLimit(self, unit: str | None = None) -> float:
+        """Return the von Mises stress limit in N/m2."""
+        self._stress(unit)
+        return self._von_mises_limit
+
+    def SetVonMisesStressLimit(self, value: float, unit: str | None = None) -> None:
+        """Set the von Mises stress limit in N/m2."""
+        self._stress(unit)
+        self._von_mises_limit = float(value)
 
     def GetSurfaceEnergy(self, unit: str | None = None) -> float:
         """Return the surface energy."""
