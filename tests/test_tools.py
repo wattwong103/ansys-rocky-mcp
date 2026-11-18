@@ -439,6 +439,12 @@ async def test_inlet_injection_duration_is_stored(study: Client) -> None:
         },
     )
     assert created.data["injection_duration_s"] == pytest.approx(1.5)
+    heated = await study.call_tool(
+        "rocky_set_temperature",
+        {"object_id": created.data["inlet_id"], "temperature": 350.0},
+    )
+    assert heated.data["temperature_k"] == pytest.approx(350.0)
+    assert heated.data["category"] == "inlet"
 
     with pytest.raises(ToolError, match="surface_id or conveyor_id"):
         await study.call_tool(

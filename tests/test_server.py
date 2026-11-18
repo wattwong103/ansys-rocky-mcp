@@ -40,6 +40,7 @@ EXPECTED_TOOLS = {
     "rocky_set_gravity",
     "rocky_set_contact_models",
     "rocky_set_motion",
+    "rocky_set_temperature",
     "rocky_run_simulation",
     "rocky_simulation_status",
     "rocky_wait_for_completion",

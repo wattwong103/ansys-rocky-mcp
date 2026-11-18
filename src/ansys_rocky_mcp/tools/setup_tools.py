@@ -1367,6 +1367,55 @@ async def rocky_set_material_interaction(
     )
 
 
+async def rocky_set_temperature(
+    ctx: Context,
+    object_id: str,
+    temperature: float,
+) -> dict[str, Any]:
+    """Set a temperature in kelvin on a particle inlet, wall, or conveyor.
+
+    Parameters
+    ----------
+    object_id : str
+        Identifier of a particle inlet, wall, or conveyor.
+    temperature : float
+        Temperature in kelvin. Rocky's token is ``K``.
+
+    """
+    session = get_session(ctx)
+    require_study(session)
+    entry = session.registry.get(object_id)
+    if entry is None:
+        known = ", ".join(item["id"] for item in session.registry.list()) or "(none)"
+        raise ToolError(f"Unknown object id {object_id!r}. Known ids: {known}.")
+    try:
+        if entry.category == "inlet":
+            properties = entry.obj.GetInputPropertiesList()
+            if not properties:
+                raise ToolError("This inlet has no temperature.")
+            properties[0].SetTemperature(temperature, unit="K")
+            stored = properties[0].GetTemperature("K")
+        elif entry.category in ("wall", "conveyor"):
+            entry.obj.SetTemperature(temperature, unit="K")
+            stored = entry.obj.GetTemperature("K")
+        else:
+            raise ToolError(
+                f"Object {object_id} is a {entry.category}. "
+                "Temperature applies to a particle inlet, wall, or conveyor."
+            )
+    except ToolError:
+        raise
+    except Exception as exc:
+        raise ToolError(f"Could not set the temperature: {exc}") from exc
+    return envelope(
+        session,
+        message=f"Set the temperature of {object_id} to {stored} K.",
+        object_id=object_id,
+        category=entry.category,
+        temperature_k=stored,
+    )
+
+
 def register(mcp: Any) -> None:
     """Register the setup tools on the MCP server."""
     mcp.tool()(rocky_import_wall)
@@ -1385,3 +1434,4 @@ def register(mcp: Any) -> None:
     mcp.tool()(rocky_set_gravity)
     mcp.tool()(rocky_set_contact_models)
     mcp.tool()(rocky_set_motion)
+    mcp.tool()(rocky_set_temperature)

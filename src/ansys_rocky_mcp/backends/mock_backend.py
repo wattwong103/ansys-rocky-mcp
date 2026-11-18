@@ -70,6 +70,12 @@ def _mass_flow_to_kg_s(value: float, unit: str | None) -> float:
         ) from exc
 
 
+def _require_kelvin(unit: str | None) -> None:
+    """Reject a temperature unit other than Rocky's ``K``."""
+    if unit not in (None, "K"):
+        raise ValueError(f"Unsupported temperature unit {unit!r}. Expected 'K'.")
+
+
 def _velocity_to_m_s(value: float, unit: str | None) -> float:
     """Convert a velocity to meters per second."""
     if unit is None:
@@ -507,6 +513,7 @@ class MockParticleInletProperties:
         """Initialize the properties for a particle."""
         self._particle = particle
         self._mass_flow_tph = 0.0
+        self._temperature_k = 298.15
 
     def GetParticle(self) -> MockParticle:
         """Return the particle bound to these properties."""
@@ -525,6 +532,16 @@ class MockParticleInletProperties:
     def SetMassFlowRate(self, value: float, unit: str | None = None) -> None:
         """Set the mass flow rate."""
         self._mass_flow_tph = _mass_flow_to_kg_s(value, unit) * 3.6
+
+    def GetTemperature(self, unit: str | None = None) -> float:
+        """Return the inlet temperature in kelvin."""
+        _require_kelvin(unit)
+        return self._temperature_k
+
+    def SetTemperature(self, value: float, unit: str | None = None) -> None:
+        """Set the inlet temperature in kelvin."""
+        _require_kelvin(unit)
+        self._temperature_k = float(value)
 
 
 class MockParticleInlet:
@@ -717,6 +734,7 @@ class MockWall:
         self._filename = filename
         self._name = name
         self._material: Any = None
+        self._temperature_k = 298.15
 
     def GetName(self) -> str:
         """Return the wall name."""
@@ -733,6 +751,16 @@ class MockWall:
     def SetMaterial(self, value: Any) -> None:
         """Assign a solid material."""
         self._material = value
+
+    def GetTemperature(self, unit: str | None = None) -> float:
+        """Return the wall temperature in kelvin."""
+        _require_kelvin(unit)
+        return self._temperature_k
+
+    def SetTemperature(self, value: float, unit: str | None = None) -> None:
+        """Set the wall temperature in kelvin."""
+        _require_kelvin(unit)
+        self._temperature_k = float(value)
 
     def GetMaterial(self) -> Any:
         """Return the assigned material."""
@@ -1359,6 +1387,7 @@ class MockFeedConveyor:
         self._wall_thickness = 0.01
         self._face_width = 0.3
         self._alignment_rad = 0.0
+        self._temperature_k = 298.15
         self._incline_rad = 0.0
         self._horizontal_offset = 0.0
         self._vertical_offset = 0.0
@@ -1379,6 +1408,16 @@ class MockFeedConveyor:
     def GetBeltSpeed(self, unit: str | None = None) -> float:
         """Return the belt speed in meters per second."""
         return self._speed
+
+    def GetTemperature(self, unit: str | None = None) -> float:
+        """Return the belt temperature in kelvin."""
+        _require_kelvin(unit)
+        return self._temperature_k
+
+    def SetTemperature(self, value: float, unit: str | None = None) -> None:
+        """Set the belt temperature in kelvin."""
+        _require_kelvin(unit)
+        self._temperature_k = float(value)
 
     def SetBeginningStartTime(self, value: float, unit: str | None = None) -> None:
         """Set when the belt starts, in seconds."""

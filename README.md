@@ -186,6 +186,7 @@ startup_timeout_sec = 90
 | `rocky_set_gravity` | Set the gravity vector on the study physics. |
 | `rocky_set_contact_models` | Set contact models and whether the thermal model is on. |
 | `rocky_set_motion` | Apply a rotation or translation motion to objects. |
+| `rocky_set_temperature` | Set a particle inlet, wall, or conveyor temperature in kelvin. |
 
 ### Run control
 
