@@ -1227,6 +1227,7 @@ class MockFeedConveyor:
         self._loading_length = 0.0
         self._drop = [0.0, 0.0, 0.0]
         self._skirtboard = 0.0
+        self._transition = 0.0
         self._incline_rad = 0.0
         self._material: Any = None
 
@@ -1343,6 +1344,14 @@ class MockFeedConveyor:
     def GetSkirtboardHeight(self, unit: str | None = None) -> float:
         """Return the skirtboard height in meters."""
         return self._skirtboard
+
+    def SetTransitionLength(self, value: float, unit: str | None = None) -> None:
+        """Set the transition length in meters."""
+        self._transition = float(value)
+
+    def GetTransitionLength(self, unit: str | None = None) -> float:
+        """Return the transition length in meters."""
+        return self._transition
 
     def SetBeltInclineAngle(self, value: float, unit: str | None = None) -> None:
         """Set the belt incline. Degrees are accepted as ``deg``."""
