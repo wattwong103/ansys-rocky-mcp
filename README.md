@@ -181,7 +181,7 @@ startup_timeout_sec = 90
 | `rocky_set_domain` | Set the domain limits, boundary-limit behaviour, and periodic type. |
 | `rocky_set_simulation_settings` | Duration, output interval, processors, execution mode, curve frequency. |
 | `rocky_set_gravity` | Set the gravity vector on the study physics. |
-| `rocky_set_contact_models` | Set the normal, tangential, and rolling-resistance models. |
+| `rocky_set_contact_models` | Set normal, tangential, rolling-resistance, and adhesion models. |
 | `rocky_set_motion` | Apply a rotation or translation motion to objects. |
 
 ### Run control

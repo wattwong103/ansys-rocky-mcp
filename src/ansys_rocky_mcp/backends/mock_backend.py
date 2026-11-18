@@ -1011,6 +1011,7 @@ class MockPhysics:
         self._normal_force = "damped_hertzian"
         self._tangential_force = "mindlin_deresiewicz"
         self._rolling_resistance = "none"
+        self._adhesion = "none"
 
     def GetGravityXDirection(self, unit: str | None = None) -> float:
         """Return the X component of gravity."""
@@ -1059,6 +1060,14 @@ class MockPhysics:
     def SetRollingResistanceModel(self, value: str) -> None:
         """Set the rolling resistance model."""
         self._rolling_resistance = value
+
+    def GetAdhesionModel(self) -> str:
+        """Return the adhesion model."""
+        return self._adhesion
+
+    def SetAdhesionModel(self, value: str) -> None:
+        """Set the adhesion model."""
+        self._adhesion = value
 
 
 class MockExportToolkit:

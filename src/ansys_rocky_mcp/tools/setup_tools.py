@@ -31,6 +31,7 @@ TANGENTIAL_FORCE_MODELS = (
     "custom",
 )
 ROLLING_RESISTANCE_MODELS = ("type_1", "type_3", "none", "custom")
+ADHESION_MODELS = ("none", "constant", "linear", "JKR", "custom")
 
 
 def _resolve(session: Any, object_id: str, category: str) -> Any:
@@ -712,6 +713,7 @@ async def rocky_set_contact_models(
     normal_force: str | None = None,
     tangential_force: str | None = None,
     rolling_resistance: str | None = None,
+    adhesion: str | None = None,
 ) -> dict[str, Any]:
     """Set the Rocky contact models on the study physics.
 
@@ -725,6 +727,8 @@ async def rocky_set_contact_models(
         ``mindlin_deresiewicz``, or ``custom``.
     rolling_resistance : str | None, default: None
         One of ``type_1``, ``type_3``, ``none``, or ``custom``.
+    adhesion : str | None, default: None
+        One of ``none``, ``constant``, ``linear``, ``JKR``, or ``custom``.
 
     """
     session = get_session(ctx)
@@ -738,6 +742,8 @@ async def rocky_set_contact_models(
             f"Unknown tangential force model {tangential_force!r}. "
             f"Expected one of {TANGENTIAL_FORCE_MODELS}."
         )
+    if adhesion is not None and adhesion not in ADHESION_MODELS:
+        raise ToolError(f"Unknown adhesion model {adhesion!r}. Expected one of {ADHESION_MODELS}.")
     if rolling_resistance is not None and rolling_resistance not in ROLLING_RESISTANCE_MODELS:
         raise ToolError(
             f"Unknown rolling resistance model {rolling_resistance!r}. "
@@ -751,6 +757,8 @@ async def rocky_set_contact_models(
             physics.SetTangentialForceModel(tangential_force)
         if rolling_resistance is not None:
             physics.SetRollingResistanceModel(rolling_resistance)
+        if adhesion is not None:
+            physics.SetAdhesionModel(adhesion)
     except Exception as exc:
         raise ToolError(f"Could not set the contact models: {exc}") from exc
     return envelope(
@@ -759,6 +767,7 @@ async def rocky_set_contact_models(
         normal_force=physics.GetNormalForceModel(),
         tangential_force=physics.GetTangentialForceModel(),
         rolling_resistance=physics.GetRollingResistanceModel(),
+        adhesion=physics.GetAdhesionModel(),
     )
 
 

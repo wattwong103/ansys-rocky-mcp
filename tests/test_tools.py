@@ -252,9 +252,11 @@ async def test_domain_and_solver_settings_are_applied(study: Client) -> None:
             "normal_force": "damped_hertzian",
             "tangential_force": "mindlin_deresiewicz",
             "rolling_resistance": "type_3",
+            "adhesion": "JKR",
         },
     )
     assert models.data["rolling_resistance"] == "type_3"
+    assert models.data["adhesion"] == "JKR"
     again = await study.call_tool("rocky_describe_study")
     assert again.data["study"]["contact_models"]["normal_force"] == "damped_hertzian"
 
