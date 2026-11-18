@@ -463,6 +463,8 @@ class MockParticle:
         self._ratio_normal = 1.0
         self._ratio_tangential = 1.0
         self._ratio_torsion = 1.0
+        self._element_damping = 0.0
+        self._joint_damping = 0.0
         self._surface_energy = 0.0
         self._material: MockSolidMaterial | None = None
         self._horizontal_aspect = 1.0
@@ -815,6 +817,22 @@ class MockParticle:
     def SetElasticRatioTorsion(self, value: float) -> None:
         """Set the torsion stiffness ratio."""
         self._ratio_torsion = float(value)
+
+    def GetElementDampingRatio(self) -> float:
+        """Return the element damping ratio."""
+        return self._element_damping
+
+    def SetElementDampingRatio(self, value: float) -> None:
+        """Set the element damping ratio."""
+        self._element_damping = float(value)
+
+    def GetJointDampingRatio(self) -> float:
+        """Return the joint damping ratio."""
+        return self._joint_damping
+
+    def SetJointDampingRatio(self, value: float) -> None:
+        """Set the joint damping ratio."""
+        self._joint_damping = float(value)
 
     def GetSurfaceEnergy(self, unit: str | None = None) -> float:
         """Return the surface energy."""

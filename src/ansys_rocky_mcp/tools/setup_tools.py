@@ -579,6 +579,8 @@ async def rocky_create_particle(
     elastic_ratio_normal: float | None = None,
     elastic_ratio_tangential: float | None = None,
     elastic_ratio_torsion: float | None = None,
+    element_damping_ratio: float | None = None,
+    joint_damping_ratio: float | None = None,
     name: str | None = None,
 ) -> dict[str, Any]:
     """Create a Rocky particle definition.
@@ -648,6 +650,10 @@ async def rocky_create_particle(
         Tangential stiffness relative to the base stiffness.
     elastic_ratio_torsion : float | None, default: None
         Torsion stiffness relative to the base stiffness.
+    element_damping_ratio : float | None, default: None
+        Damping inside each fiber element.
+    joint_damping_ratio : float | None, default: None
+        Damping at the joints between fiber elements.
     name : str | None, default: None
         Name for the created particle.
 
@@ -726,6 +732,8 @@ async def rocky_create_particle(
             or elastic_ratio_normal is not None
             or elastic_ratio_tangential is not None
             or elastic_ratio_torsion is not None
+            or element_damping_ratio is not None
+            or joint_damping_ratio is not None
         ):
             flexible = True
         if flexible is not None:
@@ -742,6 +750,10 @@ async def rocky_create_particle(
             particle.SetElasticRatioTangential(elastic_ratio_tangential)
         if elastic_ratio_torsion is not None:
             particle.SetElasticRatioTorsion(elastic_ratio_torsion)
+        if element_damping_ratio is not None:
+            particle.SetElementDampingRatio(element_damping_ratio)
+        if joint_damping_ratio is not None:
+            particle.SetJointDampingRatio(joint_damping_ratio)
         if name:
             particle.SetName(name)
     except Exception as exc:
@@ -787,6 +799,8 @@ async def rocky_create_particle(
         elastic_ratio_normal=particle.GetElasticRatioNormal(),
         elastic_ratio_tangential=particle.GetElasticRatioTangential(),
         elastic_ratio_torsion=particle.GetElasticRatioTorsion(),
+        element_damping_ratio=particle.GetElementDampingRatio(),
+        joint_damping_ratio=particle.GetJointDampingRatio(),
     )
 
 
