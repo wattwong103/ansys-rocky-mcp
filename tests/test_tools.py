@@ -308,6 +308,11 @@ async def test_a_feed_conveyor_records_belt_speed(study: Client) -> None:
     assert receiving.data["kind"] == "receiving"
     assert receiving.data["name"] == "discharge"
     assert receiving.data["belt_speed_m_s"] == pytest.approx(1.2)
+    belt = await study.call_tool(
+        "rocky_create_material",
+        {"name": "belt", "density": 1200.0, "conveyor_id": created.data["conveyor_id"]},
+    )
+    assert belt.data["conveyor_id"] == created.data["conveyor_id"]
 
 
 async def test_unknown_particle_shape_is_rejected(study: Client) -> None:

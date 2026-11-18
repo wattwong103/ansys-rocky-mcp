@@ -1220,6 +1220,7 @@ class MockFeedConveyor:
         self._speed = 0.0
         self._width = 1.0
         self._incline_rad = 0.0
+        self._material: Any = None
 
     def GetName(self) -> str:
         """Return the conveyor name."""
@@ -1259,6 +1260,14 @@ class MockFeedConveyor:
         if unit in ("deg", "dega"):
             return math.degrees(self._incline_rad)
         return self._incline_rad
+
+    def SetMaterial(self, value: Any) -> None:
+        """Assign a solid material to the belt."""
+        self._material = value
+
+    def GetMaterial(self) -> Any:
+        """Return the belt material."""
+        return self._material
 
 
 class MockStudy:

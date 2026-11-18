@@ -746,10 +746,11 @@ async def rocky_create_material(
     poisson_ratio: float | None = None,
     particle_id: str | None = None,
     wall_id: str | None = None,
+    conveyor_id: str | None = None,
     density_unit: str = "kg/m3",
     modulus_unit: str = "Pa",
 ) -> dict[str, Any]:
-    """Create a solid material and optionally assign it to a particle or wall.
+    """Create a solid material and optionally assign it to a particle, wall, or conveyor.
 
     Parameters
     ----------
@@ -765,6 +766,8 @@ async def rocky_create_material(
         Particle to assign the material to, for example ``particle_1``.
     wall_id : str | None, default: None
         Wall to assign the material to, for example ``wall_1``.
+    conveyor_id : str | None, default: None
+        Conveyor to assign the material to, for example ``conveyor_1``.
     density_unit : str, default: "kg/m3"
         Unit of ``density``.
     modulus_unit : str, default: "Pa"
@@ -802,6 +805,15 @@ async def rocky_create_material(
             raise ToolError(f"Could not assign the material to {wall_id}: {exc}") from exc
         assigned_wall = wall_id
 
+    assigned_conveyor = None
+    if conveyor_id is not None:
+        conveyor = _resolve(session, conveyor_id, "conveyor")
+        try:
+            conveyor.SetMaterial(material)
+        except Exception as exc:
+            raise ToolError(f"Could not assign the material to {conveyor_id}: {exc}") from exc
+        assigned_conveyor = conveyor_id
+
     ident = session.registry.add(
         "material",
         material,
@@ -818,6 +830,7 @@ async def rocky_create_material(
         poisson_ratio=material.GetPoissonRatio(),
         particle_id=assigned,
         wall_id=assigned_wall,
+        conveyor_id=assigned_conveyor,
     )
 
 
