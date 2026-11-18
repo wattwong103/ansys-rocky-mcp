@@ -561,6 +561,21 @@ async def test_particle_size_distribution_is_set(study: Client) -> None:
     assert updated.data["minimum_size_m"] == pytest.approx(0.02)
     assert updated.data["minimum_size_ratio"] == pytest.approx(0.25)
     assert updated.data["surface_energy"] == pytest.approx(0.05)
+    table = await study.call_tool(
+        "rocky_set_size_distribution",
+        {
+            "particle_id": particles[0],
+            "model": "custom",
+            "sizes": [10.0, 20.0],
+            "cumulative_percent": [40.0, 100.0],
+            "size_type": "sieve",
+            "unit": "mm",
+        },
+    )
+    assert table.data["model"] == "custom"
+    assert table.data["sizes_m"] == pytest.approx([0.01, 0.02])
+    assert table.data["cumulative_percent"] == pytest.approx([40.0, 100.0])
+    assert table.data["size_type"] == "sieve"
 
 
 async def test_inlet_injection_duration_is_stored(study: Client) -> None:

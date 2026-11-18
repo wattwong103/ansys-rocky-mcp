@@ -431,6 +431,67 @@ class MockMaterialCollection:
         raise KeyError(material_name)
 
 
+class MockSizeDistributionEntry:
+    """One row of a particle size table."""
+
+    def __init__(self) -> None:
+        """Initialize an empty row."""
+        self._size_m = 0.0
+        self._cumulative = 0.0
+
+    def SetSize(self, value: float, unit: str | None = None) -> None:
+        """Set the sieve size. Rocky's default token is ``m``."""
+        self._size_m = _length_to_m(float(value), unit or "m")
+
+    def GetSize(self, unit: str | None = None) -> float:
+        """Return the sieve size in the requested unit."""
+        factor = _LENGTH_TO_M.get(unit or "m")
+        if factor is None:
+            raise ValueError(
+                f"Unsupported length unit {unit!r}. Expected one of {sorted(_LENGTH_TO_M)}."
+            )
+        return self._size_m / factor
+
+    def SetCumulativePercentage(self, value: float) -> None:
+        """Set the cumulative percentage. Rocky stores a plain number."""
+        self._cumulative = float(value)
+
+    def GetCumulativePercentage(self) -> float:
+        """Return the cumulative percentage."""
+        return self._cumulative
+
+
+class MockSizeDistributionList:
+    """The size table on a particle's Size tab."""
+
+    def __init__(self, particle: MockParticle) -> None:
+        """Initialize an empty table for one particle."""
+        self._particle = particle
+        self._entries: list[MockSizeDistributionEntry] = []
+
+    def New(self) -> MockSizeDistributionEntry:
+        """Add a size row."""
+        entry = MockSizeDistributionEntry()
+        self._entries.append(entry)
+        return entry
+
+    def Clear(self) -> None:
+        """Remove every size row."""
+        self._entries.clear()
+
+    def __iter__(self) -> Any:
+        """Iterate the size rows."""
+        return iter(self._entries)
+
+    def SetSizeType(self, value: str) -> None:
+        """Set how Rocky measures size."""
+        self._particle.SetSizeType(value)
+
+    def GetSizeType(self) -> str:
+        """Return how Rocky measures size."""
+        return self._particle.GetSizeType()
+
+
 class MockParticle:
     """Stand-in for a Rocky particle definition."""
 
@@ -477,6 +538,11 @@ class MockParticle:
         self._corners = 4
         self._edge_deg = 0.0
         self._rolling_resistance = 0.0
+        self._size_rows = MockSizeDistributionList(self)
+
+    def GetSizeDistributionList(self) -> MockSizeDistributionList:
+        """Return the particle size table."""
+        return self._size_rows
 
     def GetName(self) -> str:
         """Return the particle name."""

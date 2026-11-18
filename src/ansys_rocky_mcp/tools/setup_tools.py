@@ -932,6 +932,9 @@ async def rocky_set_size_distribution(
     surface_energy: float | None = None,
     unit: str = "m",
     energy_unit: str = "J/m2",
+    sizes: list[float] | None = None,
+    cumulative_percent: list[float] | None = None,
+    size_type: str | None = None,
 ) -> dict[str, Any]:
     """Set the size distribution model on a particle.
 
@@ -951,6 +954,12 @@ async def rocky_set_size_distribution(
         Surface energy used by an adhesion model such as JKR.
     energy_unit : str, default: "J/m2"
         Unit of ``surface_energy``.
+    sizes : list[float] | None, default: None
+        Sieve sizes for a custom table. Rocky's default token is ``m``.
+    cumulative_percent : list[float] | None, default: None
+        Cumulative percent for each size. Rocky stores a plain number.
+    size_type : str | None, default: None
+        One of ``sieve``, ``equivalent_diameter``, or ``original_size_scale``.
 
     """
     session = get_session(ctx)
@@ -959,6 +968,13 @@ async def rocky_set_size_distribution(
         raise ToolError(
             f"Unknown size distribution {model!r}. Expected one of {SIZE_DISTRIBUTIONS}."
         )
+    if (sizes is None) != (cumulative_percent is None):
+        raise ToolError("'sizes' and 'cumulative_percent' must be given together.")
+    if sizes is not None and len(sizes) != len(cumulative_percent or []):
+        raise ToolError("'sizes' and 'cumulative_percent' must have the same length.")
+    size_types = ("sieve", "equivalent_diameter", "original_size_scale")
+    if size_type is not None and size_type not in size_types:
+        raise ToolError(f"Unknown size type {size_type!r}. Expected one of {size_types}.")
     particle = _resolve(session, particle_id, "particle")
     try:
         particle.SetDistributionModel(model)
@@ -968,6 +984,16 @@ async def rocky_set_size_distribution(
             particle.SetMinimumSizeRatio(minimum_size_ratio)
         if surface_energy is not None:
             particle.SetSurfaceEnergy(surface_energy, unit=energy_unit)
+        if sizes is not None or size_type is not None:
+            listing = particle.GetSizeDistributionList()
+            if size_type is not None:
+                listing.SetSizeType(size_type)
+            if sizes is not None:
+                listing.Clear()
+                for size, percent in zip(sizes, cumulative_percent or [], strict=True):
+                    entry = listing.New()
+                    entry.SetSize(size, unit)
+                    entry.SetCumulativePercentage(percent)
     except Exception as exc:
         raise ToolError(f"Could not set the size distribution: {exc}") from exc
     return envelope(
@@ -978,6 +1004,17 @@ async def rocky_set_size_distribution(
         minimum_size_m=particle.GetMinimumSize("m"),
         minimum_size_ratio=particle.GetMinimumSizeRatio(),
         surface_energy=particle.GetSurfaceEnergy("J/m2"),
+        sizes_m=(
+            [entry.GetSize("m") for entry in particle.GetSizeDistributionList()]
+            if sizes is not None
+            else None
+        ),
+        cumulative_percent=(
+            [entry.GetCumulativePercentage() for entry in particle.GetSizeDistributionList()]
+            if sizes is not None
+            else None
+        ),
+        size_type=particle.GetSizeType() if size_type is not None else None,
     )
 
 
