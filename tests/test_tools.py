@@ -494,6 +494,7 @@ async def test_particle_shape_dimensions_are_stored(study: Client) -> None:
     assert created.data["porosity"] == pytest.approx(0.2)
     assert created.data["bending_angle_deg"] == pytest.approx(15.0)
     assert created.data["torsion_angle_deg"] == pytest.approx(10.0)
+    assert created.data["flexible"] is True
 
 
 async def test_particle_size_distribution_is_set(study: Client) -> None:

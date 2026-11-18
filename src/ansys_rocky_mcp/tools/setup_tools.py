@@ -572,6 +572,7 @@ async def rocky_create_particle(
     porosity: float | None = None,
     bending_angle_deg: float | None = None,
     torsion_angle_deg: float | None = None,
+    flexible: bool | None = None,
     name: str | None = None,
 ) -> dict[str, Any]:
     """Create a Rocky particle definition.
@@ -627,6 +628,8 @@ async def rocky_create_particle(
         Bending angle limit in degrees. Rocky's token is ``dega``.
     torsion_angle_deg : float | None, default: None
         Torsion angle limit in degrees. Rocky's token is ``dega``.
+    flexible : bool | None, default: None
+        Make the particle flexible. A bending or torsion limit turns this on.
     name : str | None, default: None
         Name for the created particle.
 
@@ -692,6 +695,10 @@ async def rocky_create_particle(
             particle.SetBendingAngleLimit(bending_angle_deg, unit="dega")
         if torsion_angle_deg is not None:
             particle.SetTorsionAngleLimit(torsion_angle_deg, unit="dega")
+        if flexible is None and (bending_angle_deg is not None or torsion_angle_deg is not None):
+            flexible = True
+        if flexible is not None:
+            particle.SetFlexible(flexible)
         if name:
             particle.SetName(name)
     except Exception as exc:
@@ -730,6 +737,7 @@ async def rocky_create_particle(
         porosity=particle.GetPorosity("<fraction>"),
         bending_angle_deg=particle.GetBendingAngleLimit("dega"),
         torsion_angle_deg=particle.GetTorsionAngleLimit("dega"),
+        flexible=bool(particle.GetFlexible()),
     )
 
 

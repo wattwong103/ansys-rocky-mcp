@@ -456,6 +456,7 @@ class MockParticle:
         self._porosity = 0.0
         self._bending_deg = 0.0
         self._torsion_deg = 0.0
+        self._flexible = False
         self._surface_energy = 0.0
         self._material: MockSolidMaterial | None = None
         self._horizontal_aspect = 1.0
@@ -747,6 +748,14 @@ class MockParticle:
         if unit not in (None, "dega"):
             raise ValueError(f"Unsupported angle unit {unit!r}. Expected 'dega'.")
         self._torsion_deg = float(value)
+
+    def GetFlexible(self) -> bool:
+        """Return whether the particle is flexible."""
+        return self._flexible
+
+    def SetFlexible(self, value: bool) -> None:
+        """Set whether the particle is flexible."""
+        self._flexible = bool(value)
 
     def GetSurfaceEnergy(self, unit: str | None = None) -> float:
         """Return the surface energy."""
