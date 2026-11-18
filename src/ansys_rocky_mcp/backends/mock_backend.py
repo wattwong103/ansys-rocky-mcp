@@ -2193,6 +2193,13 @@ class MockSimulatorRun:
         self._mpi_heterogeneous = False
         self._mpi_within_scheduler = False
         self._compressed_files = False
+        self._sor_tolerance = 0.0
+        self._solver_joint_elastic = 1.0
+        self._min_length_tolerance = 0.0
+        self._min_volume_tolerance = 0.0
+        self._linear_hyst_damp = 0.0
+        self._reset_physical_contacts = False
+        self._fluent_multiplier = 1
         self._standard_outputs: dict[tuple[str, ...], bool] = {}
         self._module_outputs: dict[tuple[str, ...], bool] = {}
         self._processing_unit = "CPU"
@@ -2200,19 +2207,27 @@ class MockSimulatorRun:
         self._gpu_slicing = "X"
 
     def GetSimulationDuration(self, unit: str | None = None) -> float:
-        """Return the simulation duration."""
+        """Return the simulation duration in seconds."""
+        if unit not in (None, "s"):
+            raise ValueError(f"Unsupported time unit {unit!r}. Expected 's'.")
         return self._duration
 
     def SetSimulationDuration(self, value: float, unit: str | None = None) -> None:
-        """Set the simulation duration."""
+        """Set the simulation duration. Rocky's token is ``s``."""
+        if unit not in (None, "s"):
+            raise ValueError(f"Unsupported time unit {unit!r}. Expected 's'.")
         self._duration = float(value)
 
     def GetTimeInterval(self, unit: str | None = None) -> float:
-        """Return the output time interval."""
+        """Return the output time interval in seconds."""
+        if unit not in (None, "s"):
+            raise ValueError(f"Unsupported time unit {unit!r}. Expected 's'.")
         return self._time_interval
 
     def SetTimeInterval(self, value: float, unit: str | None = None) -> None:
-        """Set the output time interval."""
+        """Set the output time interval. Rocky's token is ``s``."""
+        if unit not in (None, "s"):
+            raise ValueError(f"Unsupported time unit {unit!r}. Expected 's'.")
         self._time_interval = float(value)
 
     def SetTimeConfiguration(self, duration: float, time_interval: float) -> None:
@@ -2634,6 +2649,62 @@ class MockSimulatorRun:
     def SetUseCompressedFiles(self, value: bool) -> None:
         """Set whether result files are compressed."""
         self._compressed_files = bool(value)
+
+    def GetSuccessiveOverRelaxationTolerance(self) -> float:
+        """Return the successive over-relaxation tolerance."""
+        return self._sor_tolerance
+
+    def SetSuccessiveOverRelaxationTolerance(self, value: float) -> None:
+        """Set the successive over-relaxation tolerance."""
+        self._sor_tolerance = float(value)
+
+    def GetJointElasticRatio(self) -> float:
+        """Return the solver joint elastic ratio."""
+        return self._solver_joint_elastic
+
+    def SetJointElasticRatio(self, value: float) -> None:
+        """Set the solver joint elastic ratio."""
+        self._solver_joint_elastic = float(value)
+
+    def GetMinimumLengthDeformationTolerance(self) -> float:
+        """Return the minimum length deformation tolerance."""
+        return self._min_length_tolerance
+
+    def SetMinimumLengthDeformationTolerance(self, value: float) -> None:
+        """Set the minimum length deformation tolerance."""
+        self._min_length_tolerance = float(value)
+
+    def GetMinimumVolumeTolerance(self) -> float:
+        """Return the minimum volume tolerance."""
+        return self._min_volume_tolerance
+
+    def SetMinimumVolumeTolerance(self, value: float) -> None:
+        """Set the minimum volume tolerance."""
+        self._min_volume_tolerance = float(value)
+
+    def GetLinearHystDamp(self) -> float:
+        """Return the linear hysteresis damping."""
+        return self._linear_hyst_damp
+
+    def SetLinearHystDamp(self, value: float) -> None:
+        """Set the linear hysteresis damping."""
+        self._linear_hyst_damp = float(value)
+
+    def GetResetOnlyPhysicalContactsData(self) -> bool:
+        """Return whether only physical contacts are reset."""
+        return self._reset_physical_contacts
+
+    def SetResetOnlyPhysicalContactsData(self, value: bool) -> None:
+        """Set whether only physical contacts are reset."""
+        self._reset_physical_contacts = bool(value)
+
+    def GetFluentOutputsMultiplier(self) -> int:
+        """Return how many Rocky outputs fit in one Fluent output."""
+        return self._fluent_multiplier
+
+    def SetFluentOutputsMultiplier(self, value: int) -> None:
+        """Set how many Rocky outputs fit in one Fluent output."""
+        self._fluent_multiplier = int(value)
 
     @staticmethod
     def GetAvailableStandardOutputProperties() -> dict[str, list[str]]:

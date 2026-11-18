@@ -355,6 +355,9 @@ async def test_domain_and_solver_settings_are_applied(study: Client) -> None:
             "mpi_processes": 4,
             "mpi_hosts": "node01,node02",
             "compressed_files": True,
+            "sor_tolerance": 1.0e-4,
+            "linear_hysteresis_damping": 0.3,
+            "fluent_output_multiplier": 2,
         },
     )
     assert updated.data["curves_frequency"] == 5
@@ -378,6 +381,9 @@ async def test_domain_and_solver_settings_are_applied(study: Client) -> None:
     assert updated.data["mpi_processes"] == 4
     assert updated.data["mpi_hosts"] == "node01,node02"
     assert updated.data["compressed_files"] is True
+    assert updated.data["sor_tolerance"] == pytest.approx(1.0e-4)
+    assert updated.data["linear_hysteresis_damping"] == pytest.approx(0.3)
+    assert updated.data["fluent_output_multiplier"] == 2
     described = await study.call_tool("rocky_describe_study")
     assert described.data["study"]["solver"]["curves_frequency"] == 5
 

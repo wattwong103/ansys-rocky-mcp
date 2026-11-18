@@ -1784,6 +1784,13 @@ async def rocky_set_simulation_settings(
     mpi_within_scheduler: bool | None = None,
     use_mpi: bool | None = None,
     compressed_files: bool | None = None,
+    sor_tolerance: float | None = None,
+    solver_joint_elastic_ratio: float | None = None,
+    min_length_tolerance: float | None = None,
+    min_volume_tolerance: float | None = None,
+    linear_hysteresis_damping: float | None = None,
+    reset_physical_contacts: bool | None = None,
+    fluent_output_multiplier: int | None = None,
     unit: str = "s",
 ) -> dict[str, Any]:
     """Configure the Rocky solver settings.
@@ -1876,7 +1883,21 @@ async def rocky_set_simulation_settings(
     breakage_delay : float | None, default: None
         Seconds after release before breakage can start. Rocky's token is ``s``.
     unit : str, default: "s"
-        Unit of the duration and the time interval.
+        Unit of the duration and the time interval. Rocky's token is ``s``.
+    sor_tolerance : float | None, default: None
+        Successive over-relaxation tolerance.
+    solver_joint_elastic_ratio : float | None, default: None
+        Solver-wide joint elastic ratio.
+    min_length_tolerance : float | None, default: None
+        Minimum length deformation tolerance.
+    min_volume_tolerance : float | None, default: None
+        Minimum volume tolerance.
+    linear_hysteresis_damping : float | None, default: None
+        Damping used by the linear hysteresis model.
+    reset_physical_contacts : bool | None, default: None
+        Reset only the physical contact data between outputs.
+    fluent_output_multiplier : int | None, default: None
+        How many Rocky outputs fit in one Fluent output.
 
     """
     session = get_session(ctx)
@@ -1905,6 +1926,10 @@ async def rocky_set_simulation_settings(
         raise ToolError("mpi_processes must be at least 1.")
     if mpi_threads is not None and mpi_threads < 1:
         raise ToolError("mpi_threads must be at least 1.")
+    if unit != "s":
+        raise ToolError(f"Unknown time unit {unit!r}. Expected 's'.")
+    if fluent_output_multiplier is not None and fluent_output_multiplier < 1:
+        raise ToolError("fluent_output_multiplier must be at least 1.")
     mpi_flag = use_mpi
     if mpi_flag is None and any(
         value is not None for value in (mpi_processes, mpi_threads, mpi_hosts, mpi_hostfile)
@@ -1915,9 +1940,9 @@ async def rocky_set_simulation_settings(
     solver = study.GetSolver()
     try:
         if duration is not None:
-            solver.SetSimulationDuration(duration, unit=unit)
+            solver.SetSimulationDuration(duration, unit="s")
         if time_interval is not None:
-            solver.SetTimeInterval(time_interval, unit=unit)
+            solver.SetTimeInterval(time_interval, unit="s")
         if processors is not None:
             if processors < 1:
                 raise ToolError("processors must be at least 1.")
@@ -2032,6 +2057,20 @@ async def rocky_set_simulation_settings(
             solver.SetMpiWithinScheduler(mpi_within_scheduler)
         if compressed_files is not None:
             solver.SetUseCompressedFiles(compressed_files)
+        if sor_tolerance is not None:
+            solver.SetSuccessiveOverRelaxationTolerance(sor_tolerance)
+        if solver_joint_elastic_ratio is not None:
+            solver.SetJointElasticRatio(solver_joint_elastic_ratio)
+        if min_length_tolerance is not None:
+            solver.SetMinimumLengthDeformationTolerance(min_length_tolerance)
+        if min_volume_tolerance is not None:
+            solver.SetMinimumVolumeTolerance(min_volume_tolerance)
+        if linear_hysteresis_damping is not None:
+            solver.SetLinearHystDamp(linear_hysteresis_damping)
+        if reset_physical_contacts is not None:
+            solver.SetResetOnlyPhysicalContactsData(reset_physical_contacts)
+        if fluent_output_multiplier is not None:
+            solver.SetFluentOutputsMultiplier(int(fluent_output_multiplier))
     except ToolError:
         raise
     except Exception as exc:
@@ -2085,6 +2124,13 @@ async def rocky_set_simulation_settings(
         mpi_heterogeneous=bool(solver.GetMpiHeterogeneous()),
         mpi_within_scheduler=bool(solver.GetMpiWithinScheduler()),
         compressed_files=bool(solver.GetUseCompressedFiles()),
+        sor_tolerance=solver.GetSuccessiveOverRelaxationTolerance(),
+        solver_joint_elastic_ratio=solver.GetJointElasticRatio(),
+        min_length_tolerance=solver.GetMinimumLengthDeformationTolerance(),
+        min_volume_tolerance=solver.GetMinimumVolumeTolerance(),
+        linear_hysteresis_damping=solver.GetLinearHystDamp(),
+        reset_physical_contacts=bool(solver.GetResetOnlyPhysicalContactsData()),
+        fluent_output_multiplier=solver.GetFluentOutputsMultiplier(),
         processing_unit=solver.GetProcessingUnit(),
         local_processing_unit=_local_value(solver, "GetProcessingUnit"),
         target_gpus=list(solver.GetTargetGpus()),
