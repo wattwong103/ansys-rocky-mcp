@@ -253,6 +253,13 @@ async def test_domain_and_solver_settings_are_applied(study: Client) -> None:
         "rocky_set_domain", {"min_values": [-5.0, -1.5, -1.5], "max_values": [5.0, 1.5, 1.5]}
     )
     await study.call_tool("rocky_set_simulation_settings", {"duration": 4.0, "time_interval": 0.2})
+    timed = await study.call_tool(
+        "rocky_set_simulation_settings",
+        {"fixed_timestep": 1.0e-5},
+    )
+    assert timed.data["timestep_model"] == "constant"
+    assert timed.data["fixed_timestep_s"] == pytest.approx(1.0e-5)
+    assert timed.data["use_fixed_timestep"] is True
 
     description = await study.call_tool("rocky_describe_study")
     assert description.data["study"]["domain"]["max_m"] == pytest.approx([5.0, 1.5, 1.5])

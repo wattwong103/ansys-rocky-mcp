@@ -1002,6 +1002,8 @@ async def rocky_set_simulation_settings(
     processors: int | None = None,
     execution_mode: str | None = None,
     curves_frequency: int | None = None,
+    timestep_model: str | None = None,
+    fixed_timestep: float | None = None,
     unit: str = "s",
 ) -> dict[str, Any]:
     """Configure the Rocky solver settings.
@@ -1018,6 +1020,10 @@ async def rocky_set_simulation_settings(
         Execution mode: ``"local"``, ``"single_mpi"``, or ``"multi_mpi"``.
     curves_frequency : int | None, default: None
         How often solver curves are stored. Must be at least 1.
+    timestep_model : str | None, default: None
+        ``constant`` or ``variable``.
+    fixed_timestep : float | None, default: None
+        Fixed DEM timestep in seconds. Setting it selects the constant model.
     unit : str, default: "s"
         Unit of the duration and the time interval.
 
@@ -1029,6 +1035,10 @@ async def rocky_set_simulation_settings(
         raise ToolError(f"Unknown execution mode {execution_mode!r}. Expected one of {legal}.")
     if curves_frequency is not None and curves_frequency < 1:
         raise ToolError("curves_frequency must be at least 1.")
+    if timestep_model is not None and timestep_model not in ("constant", "variable"):
+        raise ToolError("timestep_model must be 'constant' or 'variable'.")
+    if fixed_timestep is not None and timestep_model is None:
+        timestep_model = "constant"
     solver = study.GetSolver()
     try:
         if duration is not None:
@@ -1041,6 +1051,11 @@ async def rocky_set_simulation_settings(
             solver.SetExecutionMode(execution_mode)
         if curves_frequency is not None:
             solver.SetSolverCurvesFrequency(int(curves_frequency))
+        if timestep_model is not None:
+            solver.SetTimestepModel(timestep_model)
+        if fixed_timestep is not None:
+            solver.SetFixedTimestep(fixed_timestep, unit="s")
+            solver.SetUseFixedTimestep(True)
     except Exception as exc:
         raise ToolError(f"Could not configure the solver: {exc}") from exc
 
@@ -1052,6 +1067,9 @@ async def rocky_set_simulation_settings(
         processors=solver.GetNumberOfProcessors(),
         execution_mode=solver.GetExecutionMode(),
         curves_frequency=solver.GetSolverCurvesFrequency(),
+        timestep_model=solver.GetTimestepModel(),
+        fixed_timestep_s=solver.GetFixedTimestep("s"),
+        use_fixed_timestep=bool(solver.GetUseFixedTimestep()),
     )
 
 

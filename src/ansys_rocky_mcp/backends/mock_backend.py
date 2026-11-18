@@ -1010,6 +1010,9 @@ class MockSimulatorRun:
         self._curves_frequency = 1
         self._execution_mode = "local"
         self._gpu = 0
+        self._fixed_timestep = 1e-4
+        self._timestep_model = "variable"
+        self._use_fixed_timestep = False
 
     def GetSimulationDuration(self, unit: str | None = None) -> float:
         """Return the simulation duration."""
@@ -1075,11 +1078,34 @@ class MockSimulatorRun:
         self._gpu = int(value)
 
     def GetFixedTimestep(self, unit: str | None = None) -> float:
-        """Return the fixed timestep."""
-        return 1e-4
+        """Return the fixed timestep in seconds."""
+        if unit not in (None, "s"):
+            raise ValueError(f"Unsupported time unit {unit!r}. Expected 's'.")
+        return self._fixed_timestep
 
     def SetFixedTimestep(self, value: float, unit: str | None = None) -> None:
-        """Set the fixed timestep (recorded but not used by the mock)."""
+        """Set the fixed timestep in seconds."""
+        if unit not in (None, "s"):
+            raise ValueError(f"Unsupported time unit {unit!r}. Expected 's'.")
+        self._fixed_timestep = float(value)
+
+    def GetTimestepModel(self) -> str:
+        """Return the timestep model."""
+        return self._timestep_model
+
+    def SetTimestepModel(self, value: str) -> None:
+        """Set the timestep model."""
+        if value not in ("constant", "variable"):
+            raise ValueError(f"Unknown timestep model {value!r}.")
+        self._timestep_model = value
+
+    def GetUseFixedTimestep(self) -> bool:
+        """Return whether the fixed timestep is used."""
+        return self._use_fixed_timestep
+
+    def SetUseFixedTimestep(self, value: bool) -> None:
+        """Enable or disable the fixed timestep."""
+        self._use_fixed_timestep = bool(value)
 
 
 class MockMotionFrame:

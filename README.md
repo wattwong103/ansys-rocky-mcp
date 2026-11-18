@@ -183,7 +183,7 @@ startup_timeout_sec = 90
 | `rocky_create_volumetric_inlet` | Fill a box or selected walls with a particle mass at the start. |
 | `rocky_create_outlet` | Create an outlet on a surface. |
 | `rocky_set_domain` | Set limits, periodicity, periodic bounds, and cylindrical divisions. |
-| `rocky_set_simulation_settings` | Duration, output interval, processors, execution mode, curve frequency. |
+| `rocky_set_simulation_settings` | Duration, output interval, timestep, processors, and execution mode. |
 | `rocky_set_gravity` | Set the gravity vector on the study physics. |
 | `rocky_set_contact_models` | Set contact models and whether the thermal model is on. |
 | `rocky_set_motion` | Apply a rotation or translation motion to objects. |
