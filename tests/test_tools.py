@@ -348,6 +348,10 @@ async def test_domain_and_solver_settings_are_applied(study: Client) -> None:
             "overlap_delay": 0.25,
             "negate_initial_overlaps": True,
             "drag_limiter": 5.0,
+            "sorting_distance": 1.5,
+            "refine_concave": True,
+            "non_round_torque": True,
+            "max_iterations": 30,
         },
     )
     assert updated.data["curves_frequency"] == 5
@@ -362,6 +366,11 @@ async def test_domain_and_solver_settings_are_applied(study: Client) -> None:
     assert updated.data["overlap_delay_s"] == pytest.approx(0.25)
     assert updated.data["negate_initial_overlaps"] is True
     assert updated.data["use_drag_limiter"] is True
+    assert updated.data["use_sorting_distance"] is True
+    assert updated.data["sorting_distance"] == pytest.approx(1.5)
+    assert updated.data["refine_concave"] is True
+    assert updated.data["non_round_torque"] is True
+    assert updated.data["max_iterations"] == 30
     described = await study.call_tool("rocky_describe_study")
     assert described.data["study"]["solver"]["curves_frequency"] == 5
 

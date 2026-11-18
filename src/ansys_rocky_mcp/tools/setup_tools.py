@@ -1769,6 +1769,13 @@ async def rocky_set_simulation_settings(
     wide_psd: bool | None = None,
     reorder_size_m: float | None = None,
     drag_limiter: float | None = None,
+    sorting_distance: float | None = None,
+    arrays_growth: float | None = None,
+    refine_concave: bool | None = None,
+    non_round_torque: bool | None = None,
+    disable_periodic_triangles: bool | None = None,
+    max_iterations: int | None = None,
+    over_relaxation: float | None = None,
     unit: str = "s",
 ) -> dict[str, Any]:
     """Configure the Rocky solver settings.
@@ -1828,6 +1835,20 @@ async def rocky_set_simulation_settings(
         Particle size limit for reordering, in meters.
     drag_limiter : float | None, default: None
         Drag limiter factor. Setting it turns the limiter on.
+    sorting_distance : float | None, default: None
+        Sorting distance factor. Setting it turns the factor on.
+    arrays_growth : float | None, default: None
+        Array growth rate. Setting it turns growth on.
+    refine_concave : bool | None, default: None
+        Refine the contact search on concave shapes.
+    non_round_torque : bool | None, default: None
+        Apply the torque correction for non-round particles.
+    disable_periodic_triangles : bool | None, default: None
+        Disable triangles that lie on periodic boundaries.
+    max_iterations : int | None, default: None
+        Maximum solver iterations.
+    over_relaxation : float | None, default: None
+        Over-relaxation coefficient.
     breakage_delay : float | None, default: None
         Seconds after release before breakage can start. Rocky's token is ``s``.
     unit : str, default: "s"
@@ -1854,6 +1875,8 @@ async def rocky_set_simulation_settings(
         )
     if loading_n_steps is not None and loading_n_steps < 1:
         raise ToolError("loading_n_steps must be at least 1.")
+    if max_iterations is not None and max_iterations < 1:
+        raise ToolError("max_iterations must be at least 1.")
     if fixed_timestep is not None and timestep_model is None:
         timestep_model = "constant"
     solver = study.GetSolver()
@@ -1944,6 +1967,22 @@ async def rocky_set_simulation_settings(
         if drag_limiter is not None:
             solver.SetUseDragLimiterFactor(True)
             solver.SetDragLimiterFactor(drag_limiter)
+        if sorting_distance is not None:
+            solver.SetUseSortingDistanceFactor(True)
+            solver.SetSortingDistanceFactor(sorting_distance)
+        if arrays_growth is not None:
+            solver.SetUseArraysGrowthRate(True)
+            solver.SetArraysGrowthRate(arrays_growth)
+        if refine_concave is not None:
+            solver.SetRefineConcaveSearch(refine_concave)
+        if non_round_torque is not None:
+            solver.SetUseNonRoundTorqueCorrection(non_round_torque)
+        if disable_periodic_triangles is not None:
+            solver.SetDisableTrianglesOnPeriodicBoundaries(disable_periodic_triangles)
+        if max_iterations is not None:
+            solver.SetMaximumNumberOfIterations(int(max_iterations))
+        if over_relaxation is not None:
+            solver.SetOverRelaxationCoefficient(over_relaxation)
     except ToolError:
         raise
     except Exception as exc:
@@ -1980,6 +2019,15 @@ async def rocky_set_simulation_settings(
         reorder_size_m=solver.GetParticleSizeLimitForReordering("m"),
         drag_limiter=solver.GetDragLimiterFactor(),
         use_drag_limiter=bool(solver.GetUseDragLimiterFactor()),
+        sorting_distance=solver.GetSortingDistanceFactor(),
+        use_sorting_distance=bool(solver.GetUseSortingDistanceFactor()),
+        arrays_growth=solver.GetArraysGrowthRate(),
+        use_arrays_growth=bool(solver.GetUseArraysGrowthRate()),
+        refine_concave=bool(solver.GetRefineConcaveSearch()),
+        non_round_torque=bool(solver.GetUseNonRoundTorqueCorrection()),
+        disable_periodic_triangles=bool(solver.GetDisableTrianglesOnPeriodicBoundaries()),
+        max_iterations=solver.GetMaximumNumberOfIterations(),
+        over_relaxation=solver.GetOverRelaxationCoefficient(),
         processing_unit=solver.GetProcessingUnit(),
         local_processing_unit=_local_value(solver, "GetProcessingUnit"),
         target_gpus=list(solver.GetTargetGpus()),

@@ -2176,6 +2176,15 @@ class MockSimulatorRun:
         self._reorder_size = 0.0
         self._drag_limiter = 0.0
         self._use_drag_limiter = False
+        self._sorting_distance = 1.0
+        self._use_sorting_distance = False
+        self._arrays_growth = 1.0
+        self._use_arrays_growth = False
+        self._refine_concave = False
+        self._non_round_torque = False
+        self._disable_periodic_triangles = False
+        self._max_iterations = 1
+        self._over_relaxation = 1.0
         self._standard_outputs: dict[tuple[str, ...], bool] = {}
         self._module_outputs: dict[tuple[str, ...], bool] = {}
         self._processing_unit = "CPU"
@@ -2481,6 +2490,78 @@ class MockSimulatorRun:
     def SetUseDragLimiterFactor(self, value: bool) -> None:
         """Set whether the drag limiter is used."""
         self._use_drag_limiter = bool(value)
+
+    def GetSortingDistanceFactor(self) -> float:
+        """Return the sorting distance factor."""
+        return self._sorting_distance
+
+    def SetSortingDistanceFactor(self, value: float) -> None:
+        """Set the sorting distance factor."""
+        self._sorting_distance = float(value)
+
+    def GetUseSortingDistanceFactor(self) -> bool:
+        """Return whether the sorting distance factor is used."""
+        return self._use_sorting_distance
+
+    def SetUseSortingDistanceFactor(self, value: bool) -> None:
+        """Set whether the sorting distance factor is used."""
+        self._use_sorting_distance = bool(value)
+
+    def GetArraysGrowthRate(self) -> float:
+        """Return the array growth rate."""
+        return self._arrays_growth
+
+    def SetArraysGrowthRate(self, value: float) -> None:
+        """Set the array growth rate."""
+        self._arrays_growth = float(value)
+
+    def GetUseArraysGrowthRate(self) -> bool:
+        """Return whether array growth is used."""
+        return self._use_arrays_growth
+
+    def SetUseArraysGrowthRate(self, value: bool) -> None:
+        """Set whether array growth is used."""
+        self._use_arrays_growth = bool(value)
+
+    def GetRefineConcaveSearch(self) -> bool:
+        """Return whether concave contact search is refined."""
+        return self._refine_concave
+
+    def SetRefineConcaveSearch(self, value: bool) -> None:
+        """Set whether concave contact search is refined."""
+        self._refine_concave = bool(value)
+
+    def GetUseNonRoundTorqueCorrection(self) -> bool:
+        """Return whether non-round torque correction is used."""
+        return self._non_round_torque
+
+    def SetUseNonRoundTorqueCorrection(self, value: bool) -> None:
+        """Set whether non-round torque correction is used."""
+        self._non_round_torque = bool(value)
+
+    def GetDisableTrianglesOnPeriodicBoundaries(self) -> bool:
+        """Return whether triangles on periodic boundaries are disabled."""
+        return self._disable_periodic_triangles
+
+    def SetDisableTrianglesOnPeriodicBoundaries(self, value: bool) -> None:
+        """Set whether triangles on periodic boundaries are disabled."""
+        self._disable_periodic_triangles = bool(value)
+
+    def GetMaximumNumberOfIterations(self) -> int:
+        """Return the maximum number of iterations."""
+        return self._max_iterations
+
+    def SetMaximumNumberOfIterations(self, value: int) -> None:
+        """Set the maximum number of iterations."""
+        self._max_iterations = int(value)
+
+    def GetOverRelaxationCoefficient(self) -> float:
+        """Return the over-relaxation coefficient."""
+        return self._over_relaxation
+
+    def SetOverRelaxationCoefficient(self, value: float) -> None:
+        """Set the over-relaxation coefficient."""
+        self._over_relaxation = float(value)
 
     @staticmethod
     def GetAvailableStandardOutputProperties() -> dict[str, list[str]]:
