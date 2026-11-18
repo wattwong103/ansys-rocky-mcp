@@ -16,6 +16,31 @@ from ansys_rocky_mcp.tools._common import (
 
 __all__ = ["register"]
 
+_LENGTH_TO_M = {"m": 1.0, "cm": 0.01, "mm": 0.001, "km": 1000.0}
+
+
+def _three_meters(label: str, values: list[float] | None, unit: str) -> list[float] | None:
+    """Return three lengths in meters, or None when the vector is omitted."""
+    if values is None:
+        return None
+    try:
+        items = list(values)
+    except TypeError as exc:
+        raise ToolError(f"{label} requires three numbers.") from exc
+    if len(items) != 3:
+        raise ToolError(f"{label} requires three numbers, got {len(items)}.")
+    try:
+        numbers = [float(item) for item in items]
+    except (TypeError, ValueError) as exc:
+        raise ToolError(f"{label} requires three numbers.") from exc
+    try:
+        factor = _LENGTH_TO_M[unit]
+    except KeyError as exc:
+        raise ToolError(
+            f"Unsupported length unit {unit!r}. Expected one of {sorted(_LENGTH_TO_M)}."
+        ) from exc
+    return [number * factor for number in numbers]
+
 
 def _curve(source: Any, name: str, unit: str | None) -> tuple[list[float], list[float]]:
     """Read a curve from a particles or selection object."""
@@ -187,31 +212,30 @@ async def rocky_create_selection(
     if kind not in ("cylinder", "cube"):
         raise ToolError(f"Unknown selection kind {kind!r}. Expected 'cylinder' or 'cube'.")
 
+    size_m = _three_meters("size", size, unit)
+    center_m = _three_meters("center", center, unit)
+
     processes = study.GetUserProcessCollection()
     particles = study.GetParticles()
     try:
         if kind == "cylinder":
-            selection = processes.CreateCylinderProcess(particles, name=name)
+            arguments: dict[str, Any] = {"name": name}
+            if center_m is not None:
+                arguments["center"] = center_m
+            if size_m is not None:
+                arguments["size"] = size_m
+            if final_angle is not None:
+                arguments["final_angle"] = final_angle
+            selection = processes.CreateCylinderProcess(particles, **arguments)
         else:
-            selection = processes.CreateCubeProcess(particles, name=name)
+            arguments = {"name": name}
+            if center_m is not None:
+                arguments["center"] = center_m
+            if size_m is not None:
+                arguments["magnitude"] = size_m
+            selection = processes.CreateCubeProcess(particles, **arguments)
     except Exception as exc:
         raise ToolError(f"Could not create the selection: {exc}") from exc
-
-    try:
-        if size is not None:
-            values = list(size)
-            while len(values) < 3:
-                values.append(values[-1])
-            selection.SetSize(values[0], values[1], values[2], unit=unit)
-        if center is not None:
-            values = list(center)
-            while len(values) < 3:
-                values.append(values[-1])
-            selection.SetCenter(values[0], values[1], values[2], unit=unit)
-        if final_angle is not None:
-            selection.SetFinalAngle(final_angle)
-    except Exception as exc:
-        raise ToolError(f"Could not size the selection: {exc}") from exc
 
     ident = session.registry.add(
         "selection",

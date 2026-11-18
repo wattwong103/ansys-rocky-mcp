@@ -184,6 +184,33 @@ async def test_import_wall_creates_identified_walls(study: Client, tmp_path) -> 
     assert result.data["walls"][0]["id"] == result.data["wall_ids"][0]
 
 
+async def test_parallel_execution_mode_is_rejected(study: Client) -> None:
+    """``parallel`` is not a Rocky execution mode."""
+    with pytest.raises(ToolError, match="local"):
+        await study.call_tool("rocky_set_simulation_settings", {"execution_mode": "parallel"})
+
+
+async def test_serial_execution_mode_is_rejected(study: Client) -> None:
+    """``serial`` is not a Rocky execution mode."""
+    with pytest.raises(ToolError, match="single_mpi"):
+        await study.call_tool("rocky_set_simulation_settings", {"execution_mode": "serial"})
+
+
+async def test_local_execution_mode_is_accepted(study: Client) -> None:
+    """``local`` is stored as the solver execution mode."""
+    result = await study.call_tool("rocky_set_simulation_settings", {"execution_mode": "local"})
+    assert result.data["execution_mode"] == "local"
+
+
+async def test_selection_size_requires_three_numbers(study: Client) -> None:
+    """A short selection size is rejected and is not padded."""
+    with pytest.raises(ToolError, match="three numbers"):
+        await study.call_tool(
+            "rocky_create_selection",
+            {"kind": "cylinder", "size": [1.0], "center": [0.0, 0.0, 0.0]},
+        )
+
+
 async def test_disconnect_closes_the_session(client: Client) -> None:
     """Disconnecting reports that the session was closed."""
     await client.call_tool("rocky_create_project")

@@ -505,7 +505,7 @@ class MockSimulatorRun:
         self._duration = DEFAULT_DURATION
         self._time_interval = DEFAULT_DURATION / 20.0
         self._processors = 1
-        self._execution_mode = "parallel"
+        self._execution_mode = "local"
         self._gpu = 0
 
     def GetSimulationDuration(self, unit: str | None = None) -> float:
@@ -543,11 +543,14 @@ class MockSimulatorRun:
 
     def SetExecutionMode(self, value: str) -> None:
         """Set the execution mode."""
+        if value not in self.GetValidExecutionModeValues():
+            legal = ", ".join(self.GetValidExecutionModeValues())
+            raise ValueError(f"Invalid execution mode {value!r}. Expected one of {legal}.")
         self._execution_mode = value
 
     def GetValidExecutionModeValues(self) -> list[str]:
         """Return the supported execution modes."""
-        return ["parallel", "serial"]
+        return ["local", "single_mpi", "multi_mpi"]
 
     def GetTargetGpu(self) -> int:
         """Return the target GPU index."""
@@ -791,7 +794,7 @@ class MockUserProcessCollection:
         parent: Any = None,
         name: str | None = None,
         center: Any = None,
-        size: Any = None,
+        magnitude: Any = None,
         **kwargs: Any,
     ) -> MockCubeProcess:
         """Create a cube selection process."""
@@ -799,8 +802,8 @@ class MockUserProcessCollection:
         process._study = self._study
         if center is not None:
             process.SetCenter(center)
-        if size is not None:
-            sx, sy, sz = _as_sequence(size)
+        if magnitude is not None:
+            sx, sy, sz = _as_sequence(magnitude)
             process.SetSize(sx, sy, sz)
         self._study._selections.append(process)
         return process

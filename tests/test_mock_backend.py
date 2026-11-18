@@ -176,13 +176,28 @@ def test_selection_process_filters_the_curve() -> None:
     study.StartSimulation(non_blocking=False)
 
     processes = study.GetUserProcessCollection()
-    selection = processes.CreateCylinderProcess(study.GetParticles())
-    selection.SetSize(1.0, 1.0, 1.0, unit="m")
-    selection.SetCenter(0.0, 0.0, 0.0, unit="m")
+    selection = processes.CreateCylinderProcess(
+        study.GetParticles(),
+        size=(1.0, 1.0, 1.0),
+        center=(0.0, 0.0, 0.0),
+    )
 
     _, whole = study.GetParticles().GetNumpyCurve("Particles Count")
     _, subset = selection.GetNumpyCurve("Particles Count")
     assert subset[-1] < whole[-1]
+
+
+def test_cube_process_stores_magnitude() -> None:
+    """A cube created with magnitude stores that size."""
+    app = MockRockyApplication()
+    study = app.CreateProject().GetStudy()
+    cube = study.GetUserProcessCollection().CreateCubeProcess(
+        study.GetParticles(),
+        magnitude=(2.0, 3.0, 4.0),
+        center=(1.0, 2.0, 3.0),
+    )
+    assert cube.GetSize() == [2.0, 3.0, 4.0]
+    assert cube.GetCenter() == [1.0, 2.0, 3.0]
 
 
 def test_save_project_writes_a_file(tmp_path) -> None:

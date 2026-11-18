@@ -269,7 +269,7 @@ src/ansys_rocky_mcp/
 ```
 
 The tool layer is written against the **Rocky application object** — the same interface
-`pyrocky` returns from `RockyClient.api()` (`CreateProject`, `GetProject`, `GetVersion`,
+`pyrocky` returns from `RockyClient.api` (`CreateProject`, `GetProject`, `GetVersion`,
 …). Both backends expose that interface, so tool code is identical whether a real Rocky
 application or the simulator is behind it.
 

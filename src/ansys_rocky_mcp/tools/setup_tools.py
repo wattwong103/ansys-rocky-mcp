@@ -13,6 +13,7 @@ from ansys_rocky_mcp.tools._common import envelope, get_session, require_study
 __all__ = ["register"]
 
 SURFACE_KINDS = ("circular", "rectangular")
+EXECUTION_MODES = ("local", "single_mpi", "multi_mpi")
 
 
 def _resolve(session: Any, object_id: str, category: str) -> Any:
@@ -355,13 +356,16 @@ async def rocky_set_simulation_settings(
     processors : int | None, default: None
         Number of processors used by the solver.
     execution_mode : str | None, default: None
-        Execution mode, for example ``"parallel"`` or ``"serial"``.
+        Execution mode: ``"local"``, ``"single_mpi"``, or ``"multi_mpi"``.
     unit : str, default: "s"
         Unit of the duration and the time interval.
 
     """
     session = get_session(ctx)
     study = require_study(session)
+    if execution_mode is not None and execution_mode not in EXECUTION_MODES:
+        legal = ", ".join(EXECUTION_MODES)
+        raise ToolError(f"Unknown execution mode {execution_mode!r}. Expected one of {legal}.")
     solver = study.GetSolver()
     try:
         if duration is not None:
