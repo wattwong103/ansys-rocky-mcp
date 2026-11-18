@@ -467,6 +467,8 @@ class MockParticle:
         self._joint_damping = 0.0
         self._with_failure = False
         self._failure_ratio = 1.0
+        self._random_angle = False
+        self._random_half_rad = (0.0, 0.0, 0.0)
         self._surface_energy = 0.0
         self._material: MockSolidMaterial | None = None
         self._horizontal_aspect = 1.0
@@ -851,6 +853,33 @@ class MockParticle:
     def SetFailureRatio(self, value: float) -> None:
         """Set the failure ratio."""
         self._failure_ratio = float(value)
+
+    def GetEnableRandomAngle(self) -> bool:
+        """Return whether the particle is given a random orientation."""
+        return self._random_angle
+
+    def SetEnableRandomAngle(self, value: bool) -> None:
+        """Set whether the particle is given a random orientation."""
+        self._random_angle = bool(value)
+
+    def GetRandomAnglesHalfRange(self, unit: str | None = None) -> list[float]:
+        """Return the random-angle half ranges in radians, or degrees when asked."""
+        if unit in ("deg", "dega"):
+            return [math.degrees(value) for value in self._random_half_rad]
+        if unit not in (None, "rad"):
+            raise ValueError(f"Unsupported angle unit {unit!r}.")
+        return list(self._random_half_rad)
+
+    def SetRandomAnglesHalfRange(self, values: list[float], unit: str | None = None) -> None:
+        """Set the random-angle half ranges. Degrees use Rocky's ``dega`` token."""
+        if len(values) != 3:
+            raise ValueError("Random angle half range must have three numbers.")
+        if unit in ("deg", "dega"):
+            self._random_half_rad = tuple(math.radians(float(value)) for value in values)
+        elif unit in (None, "rad"):
+            self._random_half_rad = tuple(float(value) for value in values)
+        else:
+            raise ValueError(f"Unsupported angle unit {unit!r}.")
 
     def GetSurfaceEnergy(self, unit: str | None = None) -> float:
         """Return the surface energy."""

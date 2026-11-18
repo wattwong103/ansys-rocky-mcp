@@ -510,6 +510,12 @@ async def test_particle_shape_dimensions_are_stored(study: Client) -> None:
     assert created.data["joint_damping_ratio"] == pytest.approx(0.05)
     assert created.data["failure_ratio"] == pytest.approx(0.15)
     assert created.data["with_failure"] is True
+    oriented = await study.call_tool(
+        "rocky_create_particle",
+        {"shape": "sphere", "random_angle_deg": [10.0, 0.0, 5.0], "name": "tilted"},
+    )
+    assert oriented.data["random_angle"] is True
+    assert oriented.data["random_angle_deg"] == pytest.approx([10.0, 0.0, 5.0])
 
 
 async def test_particle_size_distribution_is_set(study: Client) -> None:

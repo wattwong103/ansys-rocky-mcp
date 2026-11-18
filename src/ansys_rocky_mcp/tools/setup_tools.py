@@ -583,6 +583,7 @@ async def rocky_create_particle(
     joint_damping_ratio: float | None = None,
     with_failure: bool | None = None,
     failure_ratio: float | None = None,
+    random_angle_deg: list[float] | None = None,
     name: str | None = None,
 ) -> dict[str, Any]:
     """Create a Rocky particle definition.
@@ -660,6 +661,9 @@ async def rocky_create_particle(
         Allow a flexible particle to break. A failure ratio turns this on.
     failure_ratio : float | None, default: None
         Strain ratio at which a flexible particle breaks.
+    random_angle_deg : list[float] | None, default: None
+        Half-range of a random orientation, ``[x, y, z]`` in degrees.
+        Rocky stores this as ``dega``. Setting it turns random orientation on.
     name : str | None, default: None
         Name for the created particle.
 
@@ -768,6 +772,12 @@ async def rocky_create_particle(
             particle.SetWithFailure(with_failure)
         if failure_ratio is not None:
             particle.SetFailureRatio(failure_ratio)
+        if random_angle_deg is not None:
+            particle.SetRandomAnglesHalfRange(
+                _three_vector(random_angle_deg, "random_angle_deg"),
+                unit="dega",
+            )
+            particle.SetEnableRandomAngle(True)
         if name:
             particle.SetName(name)
     except Exception as exc:
@@ -817,6 +827,8 @@ async def rocky_create_particle(
         joint_damping_ratio=particle.GetJointDampingRatio(),
         with_failure=bool(particle.GetWithFailure()),
         failure_ratio=particle.GetFailureRatio(),
+        random_angle=bool(particle.GetEnableRandomAngle()),
+        random_angle_deg=particle.GetRandomAnglesHalfRange("dega"),
     )
 
 
