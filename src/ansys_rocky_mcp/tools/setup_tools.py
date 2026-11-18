@@ -485,6 +485,11 @@ async def rocky_create_particle(
     shape: str = "sphere",
     sieve_size: float | None = None,
     unit: str = "m",
+    horizontal_aspect_ratio: float | None = None,
+    vertical_aspect_ratio: float | None = None,
+    thickness: float | None = None,
+    number_of_corners: int | None = None,
+    edge_angle_deg: float | None = None,
     name: str | None = None,
 ) -> dict[str, Any]:
     """Create a Rocky particle definition.
@@ -497,7 +502,17 @@ async def rocky_create_particle(
         Sieve size of the particle. This sets the particle mass and therefore
         the particle throughput for a given mass flow.
     unit : str, default: "m"
-        Unit of the sieve size.
+        Unit of the sieve size and of ``thickness``.
+    horizontal_aspect_ratio : float | None, default: None
+        Horizontal aspect ratio of a non-spherical particle.
+    vertical_aspect_ratio : float | None, default: None
+        Vertical aspect ratio of a non-spherical particle.
+    thickness : float | None, default: None
+        Particle thickness. Rocky stores this in meters.
+    number_of_corners : int | None, default: None
+        Number of corners for a faceted particle.
+    edge_angle_deg : float | None, default: None
+        Edge angle in degrees. Rocky's token is ``dega``.
     name : str | None, default: None
         Name for the created particle.
 
@@ -511,6 +526,16 @@ async def rocky_create_particle(
         particle.SetShape(shape)
         if sieve_size is not None:
             particle.SetMinimumSize(sieve_size, unit=unit)
+        if horizontal_aspect_ratio is not None:
+            particle.SetHorizontalAspectRatio(horizontal_aspect_ratio)
+        if vertical_aspect_ratio is not None:
+            particle.SetVerticalAspectRatio(vertical_aspect_ratio)
+        if thickness is not None:
+            particle.SetThickness(thickness, unit="m")
+        if number_of_corners is not None:
+            particle.SetNumberOfCorners(number_of_corners)
+        if edge_angle_deg is not None:
+            particle.SetEdgeAngle(edge_angle_deg, unit="dega")
         if name:
             particle.SetName(name)
     except Exception as exc:
@@ -528,6 +553,11 @@ async def rocky_create_particle(
         particle_id=ident,
         shape=shape,
         name=getattr(particle, "GetName", lambda: name or "")(),
+        horizontal_aspect_ratio=particle.GetHorizontalAspectRatio(),
+        vertical_aspect_ratio=particle.GetVerticalAspectRatio(),
+        thickness_m=particle.GetThickness("m"),
+        number_of_corners=particle.GetNumberOfCorners(),
+        edge_angle_deg=particle.GetEdgeAngle("dega"),
     )
 
 

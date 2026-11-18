@@ -443,6 +443,11 @@ class MockParticle:
         self._distribution = "gaudin_schumann"
         self._surface_energy = 0.0
         self._material: MockSolidMaterial | None = None
+        self._horizontal_aspect = 1.0
+        self._vertical_aspect = 1.0
+        self._thickness = 0.0
+        self._corners = 4
+        self._edge_deg = 0.0
 
     def GetName(self) -> str:
         """Return the particle name."""
@@ -471,6 +476,54 @@ class MockParticle:
     def SetShape(self, value: str) -> None:
         """Set the particle shape."""
         self._shape = value
+
+    def GetHorizontalAspectRatio(self) -> float:
+        """Return the horizontal aspect ratio."""
+        return self._horizontal_aspect
+
+    def SetHorizontalAspectRatio(self, value: float) -> None:
+        """Set the horizontal aspect ratio."""
+        self._horizontal_aspect = float(value)
+
+    def GetVerticalAspectRatio(self) -> float:
+        """Return the vertical aspect ratio."""
+        return self._vertical_aspect
+
+    def SetVerticalAspectRatio(self, value: float) -> None:
+        """Set the vertical aspect ratio."""
+        self._vertical_aspect = float(value)
+
+    def GetThickness(self, unit: str | None = None) -> float:
+        """Return the particle thickness in meters."""
+        if unit not in (None, "m"):
+            raise ValueError(f"Unsupported length unit {unit!r}. Expected 'm'.")
+        return self._thickness
+
+    def SetThickness(self, value: float, unit: str | None = None) -> None:
+        """Set the particle thickness in meters."""
+        if unit not in (None, "m"):
+            raise ValueError(f"Unsupported length unit {unit!r}. Expected 'm'.")
+        self._thickness = float(value)
+
+    def GetNumberOfCorners(self) -> int:
+        """Return the number of corners."""
+        return self._corners
+
+    def SetNumberOfCorners(self, value: int) -> None:
+        """Set the number of corners."""
+        self._corners = int(value)
+
+    def GetEdgeAngle(self, unit: str | None = None) -> float:
+        """Return the edge angle in degrees."""
+        if unit not in (None, "dega"):
+            raise ValueError(f"Unsupported angle unit {unit!r}. Expected 'dega'.")
+        return self._edge_deg
+
+    def SetEdgeAngle(self, value: float, unit: str | None = None) -> None:
+        """Set the edge angle. Rocky's degree token is ``dega``."""
+        if unit not in (None, "dega"):
+            raise ValueError(f"Unsupported angle unit {unit!r}. Expected 'dega'.")
+        self._edge_deg = float(value)
 
     def GetSizeType(self) -> str:
         """Return the particle size type."""

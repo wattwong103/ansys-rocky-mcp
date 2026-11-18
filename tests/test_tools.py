@@ -394,6 +394,28 @@ async def test_unknown_particle_shape_is_rejected(study: Client) -> None:
         await study.call_tool("rocky_create_particle", {"shape": "cube"})
 
 
+async def test_particle_shape_dimensions_are_stored(study: Client) -> None:
+    """Non-spherical shape dimensions use Rocky's meters and dega tokens."""
+    created = await study.call_tool(
+        "rocky_create_particle",
+        {
+            "shape": "faceted_cylinder",
+            "horizontal_aspect_ratio": 1.5,
+            "vertical_aspect_ratio": 2.0,
+            "thickness": 0.01,
+            "number_of_corners": 6,
+            "edge_angle_deg": 30.0,
+            "name": "flake",
+        },
+    )
+    assert created.data["name"] == "flake"
+    assert created.data["horizontal_aspect_ratio"] == pytest.approx(1.5)
+    assert created.data["vertical_aspect_ratio"] == pytest.approx(2.0)
+    assert created.data["thickness_m"] == pytest.approx(0.01)
+    assert created.data["number_of_corners"] == 6
+    assert created.data["edge_angle_deg"] == pytest.approx(30.0)
+
+
 async def test_particle_size_distribution_is_set(study: Client) -> None:
     """A particle can use one of Rocky's size distribution models."""
     objects = await study.call_tool("rocky_list_processes")
