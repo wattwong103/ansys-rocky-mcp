@@ -287,10 +287,16 @@ async def test_particle_size_distribution_is_set(study: Client) -> None:
     ]
     updated = await study.call_tool(
         "rocky_set_size_distribution",
-        {"particle_id": particles[0], "model": "incomplete_beta", "minimum_size": 0.02},
+        {
+            "particle_id": particles[0],
+            "model": "incomplete_beta",
+            "minimum_size": 0.02,
+            "surface_energy": 0.05,
+        },
     )
     assert updated.data["model"] == "incomplete_beta"
     assert updated.data["minimum_size_m"] == pytest.approx(0.02)
+    assert updated.data["surface_energy"] == pytest.approx(0.05)
 
 
 async def test_inlet_injection_duration_is_stored(study: Client) -> None:

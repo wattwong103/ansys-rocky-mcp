@@ -342,6 +342,7 @@ class MockParticle:
         self._size_type = "sieve"
         self._minimum_size = DEFAULT_SIEVE_SIZE
         self._distribution = "gaudin_schumann"
+        self._surface_energy = 0.0
         self._material: MockSolidMaterial | None = None
 
     def GetName(self) -> str:
@@ -396,6 +397,14 @@ class MockParticle:
     def SetDistributionModel(self, value: str) -> None:
         """Set the size distribution model."""
         self._distribution = value
+
+    def GetSurfaceEnergy(self, unit: str | None = None) -> float:
+        """Return the surface energy."""
+        return self._surface_energy
+
+    def SetSurfaceEnergy(self, value: float, unit: str | None = None) -> None:
+        """Set the surface energy."""
+        self._surface_energy = float(value)
 
 
 class MockParticleInletProperties:

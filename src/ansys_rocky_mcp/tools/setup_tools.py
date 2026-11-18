@@ -225,7 +225,9 @@ async def rocky_set_size_distribution(
     particle_id: str,
     model: str,
     minimum_size: float | None = None,
+    surface_energy: float | None = None,
     unit: str = "m",
+    energy_unit: str = "J/m2",
 ) -> dict[str, Any]:
     """Set the size distribution model on a particle.
 
@@ -239,6 +241,10 @@ async def rocky_set_size_distribution(
         Minimum sieve size. Omit it to leave the current size.
     unit : str, default: "m"
         Unit of ``minimum_size``.
+    surface_energy : float | None, default: None
+        Surface energy used by an adhesion model such as JKR.
+    energy_unit : str, default: "J/m2"
+        Unit of ``surface_energy``.
 
     """
     session = get_session(ctx)
@@ -252,6 +258,8 @@ async def rocky_set_size_distribution(
         particle.SetDistributionModel(model)
         if minimum_size is not None:
             particle.SetMinimumSize(minimum_size, unit=unit)
+        if surface_energy is not None:
+            particle.SetSurfaceEnergy(surface_energy, unit=energy_unit)
     except Exception as exc:
         raise ToolError(f"Could not set the size distribution: {exc}") from exc
     return envelope(
@@ -260,6 +268,7 @@ async def rocky_set_size_distribution(
         particle_id=particle_id,
         model=particle.GetDistributionModel(),
         minimum_size_m=particle.GetMinimumSize("m"),
+        surface_energy=particle.GetSurfaceEnergy("J/m2"),
     )
 
 
