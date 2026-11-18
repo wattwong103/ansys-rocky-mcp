@@ -763,6 +763,32 @@ async def test_motion_is_applied_to_the_targets(study: Client) -> None:
         },
     )
     assert coasting.data["define_as"] == "initial_and_final_velocity"
+    shaking = await study.call_tool(
+        "rocky_set_motion",
+        {
+            "kind": "vibration",
+            "targets": [surfaces[0]],
+            "frequency_hz": 12.0,
+            "amplitude": 0.004,
+            "direction": [0.0, 0.0, 1.0],
+        },
+    )
+    assert shaking.data["frequency_hz"] == pytest.approx(12.0)
+    assert shaking.data["amplitude_m"] == pytest.approx(0.004)
+    assert shaking.data["direction_m"] == pytest.approx([0.0, 0.0, 1.0])
+    swinging = await study.call_tool(
+        "rocky_set_motion",
+        {
+            "kind": "pendulum",
+            "targets": [surfaces[0]],
+            "frequency_hz": 0.5,
+            "amplitude": 180.0,
+            "phase_deg": 90.0,
+            "direction": [0.0, 1.0, 0.0],
+        },
+    )
+    assert swinging.data["amplitude_rad"] == pytest.approx(math.pi)
+    assert swinging.data["phase_rad"] == pytest.approx(math.pi / 2.0)
     assert motion.data["kind"] == "rotation"
     assert motion.data["targets"] == [surfaces[0]]
 

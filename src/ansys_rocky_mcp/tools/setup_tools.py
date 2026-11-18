@@ -93,6 +93,15 @@ def _angular_acceleration_rad_s2(values: list[float], unit: str) -> tuple[float,
     return tuple(float(value) * scale for value in values)  # type: ignore[return-value]
 
 
+def _angle_rad(value: float, unit: str, label: str) -> float:
+    """Return an angle in radians. Degrees are converted."""
+    if unit == "rad":
+        return float(value)
+    if unit in ("deg", "dega"):
+        return float(value) * math.pi / 180.0
+    raise ToolError(f"Unknown {label} unit {unit!r}. Expected 'rad', 'deg', or 'dega'.")
+
+
 _TRANSLATION_DEFINITIONS = {
     "fixed_velocity": "fixed_velocity",
     "initial_velocity_and_acceleration": "initial_velocity_and_acceleration",
@@ -1805,13 +1814,19 @@ async def rocky_set_motion(
     period: float | None = None,
     period_start: float | None = None,
     period_stop: float | None = None,
+    frequency_hz: float | None = None,
+    amplitude: float | None = None,
+    direction: list[float] | None = None,
+    phase_deg: float | None = None,
+    frequency_variation_hz_s: float = 0.0,
+    amplitude_variation: float | None = None,
 ) -> dict[str, Any]:
-    """Apply a rotation or translation motion to one or more study objects.
+    """Apply a rotation, translation, vibration, or pendulum to study objects.
 
     Parameters
     ----------
     kind : str
-        Either ``"rotation"`` or ``"translation"``.
+        ``"rotation"``, ``"translation"``, ``"vibration"``, or ``"pendulum"``.
     targets : list[str]
         Identifiers of the objects the motion is applied to, for example
         ``["surface_1"]``.
@@ -1852,13 +1867,30 @@ async def rocky_set_motion(
         Time in seconds when the repeating motion starts.
     period_stop : float | None, default: None
         Time in seconds when the repeating motion stops.
+    frequency_hz : float | None, default: None
+        Frequency in hertz. Required for a vibration or a pendulum.
+    amplitude : float | None, default: None
+        Vibration amplitude in meters, or pendulum amplitude in degrees.
+        A pendulum amplitude is converted to radians before Rocky stores it.
+    direction : list[float] | None, default: None
+        Direction ``[x, y, z]``. Rocky stores it with the length token ``m``.
+    phase_deg : float | None, default: None
+        Pendulum phase in degrees. Rocky's token is ``rad``.
+    frequency_variation_hz_s : float, default: 0.0
+        Change of frequency in hertz per second.
+    amplitude_variation : float | None, default: None
+        Vibration amplitude change in meters per second, or pendulum amplitude
+        change in degrees per second. The pendulum value is converted to ``rad/s``.
 
     """
     session = get_session(ctx)
     study = require_study(session)
     kind = kind.strip().lower()
-    if kind not in ("rotation", "translation"):
-        raise ToolError(f"Unknown motion kind {kind!r}. Expected 'rotation' or 'translation'.")
+    if kind not in ("rotation", "translation", "vibration", "pendulum"):
+        raise ToolError(
+            f"Unknown motion kind {kind!r}. "
+            "Expected 'rotation', 'translation', 'vibration', or 'pendulum'."
+        )
     if not targets:
         raise ToolError("At least one target object id is required.")
 
@@ -1872,6 +1904,10 @@ async def rocky_set_motion(
     acceleration: tuple[float, float, float] | None = None
     placed = _three_vector(origin, "origin")
     angles = _three_vector(orientation_deg, "orientation_deg")
+    axis = _three_vector(direction, "direction")
+    amplitude_rad: float | None = None
+    phase_rad: float | None = None
+    amplitude_rate_rad_s: float | None = None
     try:
         if placed is not None:
             frame.SetRelativePosition(placed, unit="m")
@@ -1891,6 +1927,41 @@ async def rocky_set_motion(
                     acceleration if acceleration is not None else (0.0, 0.0, 0.0),
                     "rad/s2",
                 ),
+            )
+        elif kind == "vibration":
+            if frequency_hz is None or amplitude is None or axis is None:
+                raise ToolError(
+                    "A vibration requires 'frequency_hz', 'amplitude', and 'direction'."
+                )
+            rate = 0.0 if amplitude_variation is None else float(amplitude_variation)
+            frame.AddVibrationMotion(
+                start_time=(start_time, "s"),
+                stop_time=(stop_time, "s"),
+                initial_frequency=(float(frequency_hz), "Hz"),
+                initial_amplitude=(float(amplitude), "m"),
+                direction=(tuple(axis), "m"),
+                frequency_variation=(float(frequency_variation_hz_s), "Hz/s"),
+                amplitude_variation=(rate, "m/s"),
+            )
+        elif kind == "pendulum":
+            if frequency_hz is None or amplitude is None or axis is None:
+                raise ToolError("A pendulum requires 'frequency_hz', 'amplitude', and 'direction'.")
+            amplitude_rad = _angle_rad(amplitude, "dega", "amplitude")
+            phase_rad = 0.0 if phase_deg is None else _angle_rad(phase_deg, "dega", "phase")
+            amplitude_rate_rad_s = (
+                0.0
+                if amplitude_variation is None
+                else _angle_rad(amplitude_variation, "dega", "amplitude_variation")
+            )
+            frame.AddPendulumMotion(
+                start_time=(start_time, "s"),
+                stop_time=(stop_time, "s"),
+                initial_frequency=(float(frequency_hz), "Hz"),
+                angular_initial_amplitude=(amplitude_rad, "rad"),
+                direction=(tuple(axis), "m"),
+                angular_initial_phase=(phase_rad, "rad"),
+                frequency_variation=(float(frequency_variation_hz_s), "Hz/s"),
+                angular_amplitude_variation=(amplitude_rate_rad_s, "rad/s"),
             )
         else:
             if linear_velocity is None:
@@ -1966,6 +2037,12 @@ async def rocky_set_motion(
         period_s=frame.GetPeriodicMotionPeriod("s"),
         period_start_s=frame.GetPeriodicMotionStartTime("s") if period_start is not None else None,
         period_stop_s=frame.GetPeriodicMotionStopTime("s") if period_stop is not None else None,
+        frequency_hz=frequency_hz if kind in ("vibration", "pendulum") else None,
+        amplitude_m=amplitude if kind == "vibration" else None,
+        amplitude_rad=amplitude_rad,
+        phase_rad=phase_rad,
+        direction_m=axis if kind in ("vibration", "pendulum") else None,
+        amplitude_variation_rad_s=amplitude_rate_rad_s,
     )
 
 

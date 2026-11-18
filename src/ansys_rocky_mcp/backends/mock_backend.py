@@ -2055,6 +2055,70 @@ class MockMotionFrame:
             raise ValueError("Orientation must have three numbers.")
         self._orientation = tuple(float(value) for value in rotation)
 
+    def _require_unit(self, value: Any, expected: str, label: str) -> None:
+        """Reject a quantity whose unit token is not the one Rocky stores."""
+        if (
+            isinstance(value, tuple)
+            and len(value) == 2
+            and isinstance(value[1], str)
+            and value[1] != expected
+        ):
+            raise ValueError(f"Unsupported {label} unit {value[1]!r}. Expected {expected!r}.")
+
+    def AddVibrationMotion(
+        self,
+        start_time: Any = (0.0, "s"),
+        stop_time: Any = (1000.0, "s"),
+        initial_frequency: Any = (0.0, "Hz"),
+        initial_amplitude: Any = (0.0, "m"),
+        direction: Any = ((0.0, 0.0, 0.0), "m"),
+        frequency_variation: Any = (0.0, "Hz/s"),
+        amplitude_variation: Any = (0.0, "m/s"),
+        **kwargs: Any,
+    ) -> dict[str, Any]:
+        """Add a vibration motion to the frame."""
+        self._require_unit(initial_frequency, "Hz", "frequency")
+        self._require_unit(initial_amplitude, "m", "amplitude")
+        self._require_unit(direction, "m", "direction")
+        self._require_unit(frequency_variation, "Hz/s", "frequency variation")
+        self._require_unit(amplitude_variation, "m/s", "amplitude variation")
+        motion = {
+            "kind": "vibration",
+            "initial_frequency": list(initial_frequency),
+            "initial_amplitude": list(initial_amplitude),
+            "direction": list(direction),
+        }
+        self._motions.append(motion)
+        return motion
+
+    def AddPendulumMotion(
+        self,
+        start_time: Any = (0.0, "s"),
+        stop_time: Any = (1000.0, "s"),
+        initial_frequency: Any = (0.0, "Hz"),
+        angular_initial_amplitude: Any = (0.0, "rad"),
+        direction: Any = ((0.0, 0.0, 0.0), "m"),
+        angular_initial_phase: Any = (0.0, "rad"),
+        frequency_variation: Any = (0.0, "Hz/s"),
+        angular_amplitude_variation: Any = (0.0, "rad/s"),
+        **kwargs: Any,
+    ) -> dict[str, Any]:
+        """Add a pendulum motion to the frame."""
+        self._require_unit(initial_frequency, "Hz", "frequency")
+        self._require_unit(angular_initial_amplitude, "rad", "amplitude")
+        self._require_unit(direction, "m", "direction")
+        self._require_unit(angular_initial_phase, "rad", "phase")
+        self._require_unit(frequency_variation, "Hz/s", "frequency variation")
+        self._require_unit(angular_amplitude_variation, "rad/s", "amplitude variation")
+        motion = {
+            "kind": "pendulum",
+            "angular_initial_amplitude": list(angular_initial_amplitude),
+            "angular_initial_phase": list(angular_initial_phase),
+            "direction": list(direction),
+        }
+        self._motions.append(motion)
+        return motion
+
     def ApplyTo(self, obj: Any) -> None:
         """Apply the frame to an object."""
         name = getattr(obj, "GetName", lambda: str(obj))()
