@@ -1277,7 +1277,7 @@ async def rocky_set_simulation_settings(
 
 async def rocky_set_output_property(
     ctx: Context,
-    names: list[str],
+    names: list[str] | None = None,
     enabled: bool = True,
     modules: bool = False,
 ) -> dict[str, Any]:
@@ -1285,8 +1285,9 @@ async def rocky_set_output_property(
 
     Parameters
     ----------
-    names : list[str]
-        Property path, for example ``["Particles", "Count"]``.
+    names : list[str] | None, default: None
+        Property path, for example ``["Particles", "Count"]``. Omit it to
+        list the names Rocky accepts without changing anything.
     enabled : bool, default: True
         Whether the property is recorded.
     modules : bool, default: False
@@ -1295,9 +1296,14 @@ async def rocky_set_output_property(
     """
     session = get_session(ctx)
     study = require_study(session)
-    if not names:
-        raise ToolError("At least one output property name is required.")
     solver = study.GetSolver()
+    if not names:
+        return envelope(
+            session,
+            message="Listed the output properties Rocky can record.",
+            available_standard=solver.GetAvailableStandardOutputProperties(),
+            available_modules=solver.GetAvailableModulesOutputProperties(),
+        )
     try:
         if modules:
             solver.SetModulesOutputPropertyEnabled(*names, enabled=enabled)

@@ -269,6 +269,8 @@ async def test_domain_and_solver_settings_are_applied(study: Client) -> None:
         {"release_without_overlap_check": True},
     )
     assert released.data["release_without_overlap_check"] is True
+    listed = await study.call_tool("rocky_set_output_property", {})
+    assert "Particles" in listed.data["available_standard"]
     output = await study.call_tool(
         "rocky_set_output_property",
         {"names": ["Particles", "Count"], "enabled": True},
