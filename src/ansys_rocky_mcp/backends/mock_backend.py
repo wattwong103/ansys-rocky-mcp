@@ -508,8 +508,19 @@ class MockParticle:
         self._abt10_size = 0.0
         self._abt10_energy = 0.0
         self._tavares_a = 0.0
+        self._tavares_b = 0.0
         self._tavares_d0 = 0.0
         self._tavares_e_inf = 0.0
+        self._tavares_gamma = 0.0
+        self._tavares_phi = 0.0
+        self._tavares_sigma = 0.0
+        self._tavares_emax = 0.0
+        self._tavares_minimum_energy = 0.0
+        self._energy_after = 0.0
+        self._t10_formula = "it10E_50b"
+        self._abt10_t10 = 0.0
+        self._abt10_select = 0.0
+        self._cgm_scale = 1.0
         self._shear_limit = 0.0
         self._tensile_limit = 0.0
         self._von_mises_limit = 0.0
@@ -741,6 +752,127 @@ class MockParticle:
         if unit not in (None, "J/kg"):
             raise ValueError(f"Unsupported energy unit {unit!r}. Expected 'J/kg'.")
         self._tavares_e_inf = float(value)
+
+    def _plain(self, unit: str | None) -> None:
+        """Reject a unit other than Rocky's plain-number token."""
+        if unit not in (None, "-"):
+            raise ValueError(f"Unsupported plain unit {unit!r}. Expected '-'.")
+
+    def GetTavaresB(self, unit: str | None = None) -> float:
+        """Return Tavares b."""
+        self._plain(unit)
+        return self._tavares_b
+
+    def SetTavaresB(self, value: float, unit: str | None = None) -> None:
+        """Set Tavares b. Rocky's token is ``-``."""
+        self._plain(unit)
+        self._tavares_b = float(value)
+
+    def GetTavaresGamma(self, unit: str | None = None) -> float:
+        """Return Tavares gamma."""
+        self._plain(unit)
+        return self._tavares_gamma
+
+    def SetTavaresGamma(self, value: float, unit: str | None = None) -> None:
+        """Set Tavares gamma. Rocky's token is ``-``."""
+        self._plain(unit)
+        self._tavares_gamma = float(value)
+
+    def GetTavaresPhi(self, unit: str | None = None) -> float:
+        """Return Tavares phi."""
+        self._plain(unit)
+        return self._tavares_phi
+
+    def SetTavaresPhi(self, value: float, unit: str | None = None) -> None:
+        """Set Tavares phi. Rocky's token is ``-``."""
+        self._plain(unit)
+        self._tavares_phi = float(value)
+
+    def GetTavaresSigmaSquared(self, unit: str | None = None) -> float:
+        """Return Tavares sigma squared."""
+        self._plain(unit)
+        return self._tavares_sigma
+
+    def SetTavaresSigmaSquared(self, value: float, unit: str | None = None) -> None:
+        """Set Tavares sigma squared. Rocky's token is ``-``."""
+        self._plain(unit)
+        self._tavares_sigma = float(value)
+
+    def GetTavaresRatioEmax(self, unit: str | None = None) -> float:
+        """Return the Tavares Emax ratio."""
+        self._plain(unit)
+        return self._tavares_emax
+
+    def SetTavaresRatioEmax(self, value: float, unit: str | None = None) -> None:
+        """Set the Tavares Emax ratio. Rocky's token is ``-``."""
+        self._plain(unit)
+        self._tavares_emax = float(value)
+
+    def GetTavaresMinimumEnergy(self, unit: str | None = None) -> float:
+        """Return the Tavares minimum specific energy in J/kg."""
+        if unit not in (None, "J/kg"):
+            raise ValueError(f"Unsupported energy unit {unit!r}. Expected 'J/kg'.")
+        return self._tavares_minimum_energy
+
+    def SetTavaresMinimumEnergy(self, value: float, unit: str | None = None) -> None:
+        """Set the Tavares minimum specific energy. Rocky's token is ``J/kg``."""
+        if unit not in (None, "J/kg"):
+            raise ValueError(f"Unsupported energy unit {unit!r}. Expected 'J/kg'.")
+        self._tavares_minimum_energy = float(value)
+
+    def GetRatioEnergyAfterBreakage(self, unit: str | None = None) -> float:
+        """Return the energy kept after breakage."""
+        self._plain(unit)
+        return self._energy_after
+
+    def SetRatioEnergyAfterBreakage(self, value: float, unit: str | None = None) -> None:
+        """Set the energy kept after breakage. Rocky's token is ``-``."""
+        self._plain(unit)
+        self._energy_after = float(value)
+
+    def GetT10Formula(self) -> str:
+        """Return the t10 formula."""
+        return self._t10_formula
+
+    def SetT10Formula(self, value: str) -> None:
+        """Set the t10 formula."""
+        if value not in ("it10E_50b", "it10E_fract"):
+            raise ValueError(
+                f"Unsupported t10 formula {value!r}. Expected 'it10E_50b' or 'it10E_fract'."
+            )
+        self._t10_formula = value
+
+    def GetAbt10MaximumT10Value(self, unit: str | None = None) -> float:
+        """Return the maximum t10 as a percent."""
+        if unit not in (None, "%"):
+            raise ValueError(f"Unsupported percent unit {unit!r}. Expected '%'.")
+        return self._abt10_t10
+
+    def SetAbt10MaximumT10Value(self, value: float, unit: str | None = None) -> None:
+        """Set the maximum t10. Rocky's token is ``%``."""
+        if unit not in (None, "%"):
+            raise ValueError(f"Unsupported percent unit {unit!r}. Expected '%'.")
+        self._abt10_t10 = float(value)
+
+    def GetAbt10SelectFunctionCoefficient(self, unit: str | None = None) -> float:
+        """Return the selection function coefficient in kg/J."""
+        if unit not in (None, "kg/J"):
+            raise ValueError(f"Unsupported coefficient unit {unit!r}. Expected 'kg/J'.")
+        return self._abt10_select
+
+    def SetAbt10SelectFunctionCoefficient(self, value: float, unit: str | None = None) -> None:
+        """Set the selection function coefficient. Rocky's token is ``kg/J``."""
+        if unit not in (None, "kg/J"):
+            raise ValueError(f"Unsupported coefficient unit {unit!r}. Expected 'kg/J'.")
+        self._abt10_select = float(value)
+
+    def GetCgmScaleFactor(self) -> float:
+        """Return the coarse-grain scale factor."""
+        return self._cgm_scale
+
+    def SetCgmScaleFactor(self, value: float) -> None:
+        """Set the coarse-grain scale factor."""
+        self._cgm_scale = float(value)
 
     def _stress(self, unit: str | None) -> None:
         """Reject a stress unit other than newtons per square meter."""

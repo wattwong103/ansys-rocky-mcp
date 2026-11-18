@@ -31,6 +31,7 @@ BREAKAGE_MODELS = (
     "von_mises_stress_criterion",
     "discrete_custom",
 )
+T10_FORMULAS = ("it10E_50b", "it10E_fract")
 PARTICLE_SHAPES = (
     "sphere",
     "polyhedron",
@@ -653,8 +654,19 @@ async def rocky_create_particle(
     abt10_reference_size: float | None = None,
     abt10_reference_energy: float | None = None,
     tavares_a: float | None = None,
+    tavares_b: float | None = None,
     tavares_d0: float | None = None,
     tavares_e_inf: float | None = None,
+    tavares_gamma: float | None = None,
+    tavares_phi: float | None = None,
+    tavares_sigma_squared: float | None = None,
+    tavares_ratio_emax: float | None = None,
+    tavares_minimum_energy: float | None = None,
+    ratio_energy_after_breakage: float | None = None,
+    t10_formula: str | None = None,
+    abt10_maximum_t10: float | None = None,
+    abt10_select_coefficient: float | None = None,
+    cgm_scale_factor: float | None = None,
     shear_stress_limit: float | None = None,
     tensile_stress_limit: float | None = None,
     von_mises_stress_limit: float | None = None,
@@ -712,8 +724,30 @@ async def rocky_create_particle(
         Tavares A parameter. Rocky's token is ``%``.
     tavares_d0 : float | None, default: None
         Tavares reference size in meters.
+    tavares_b : float | None, default: None
+        Tavares b. Rocky stores a plain number, token ``-``.
     tavares_e_inf : float | None, default: None
-        Tavares upper specific energy in ``J/kg``.
+        Tavares E infinity in ``J/kg``.
+    tavares_gamma : float | None, default: None
+        Tavares gamma. Rocky's token is ``-``.
+    tavares_phi : float | None, default: None
+        Tavares phi. Rocky's token is ``-``.
+    tavares_sigma_squared : float | None, default: None
+        Tavares sigma squared. Rocky's token is ``-``.
+    tavares_ratio_emax : float | None, default: None
+        Tavares Emax ratio. Rocky's token is ``-``.
+    tavares_minimum_energy : float | None, default: None
+        Tavares minimum specific energy in ``J/kg``.
+    ratio_energy_after_breakage : float | None, default: None
+        Energy kept after breakage. Rocky's token is ``-``.
+    t10_formula : str | None, default: None
+        One of ``it10E_50b`` or ``it10E_fract``.
+    abt10_maximum_t10 : float | None, default: None
+        Maximum t10 as a percent. Rocky's token is ``%``.
+    abt10_select_coefficient : float | None, default: None
+        Selection function coefficient in ``kg/J``.
+    cgm_scale_factor : float | None, default: None
+        Coarse-grain scale factor.
     shear_stress_limit : float | None, default: None
         Shear breakage limit. Rocky's token is ``N/m2``. ``Pa`` is accepted.
     tensile_stress_limit : float | None, default: None
@@ -772,6 +806,8 @@ async def rocky_create_particle(
         raise ToolError(
             f"Unknown breakage model {breakage_model!r}. Expected one of {BREAKAGE_MODELS}."
         )
+    if t10_formula is not None and t10_formula not in T10_FORMULAS:
+        raise ToolError(f"Unknown t10 formula {t10_formula!r}. Expected one of {T10_FORMULAS}.")
     session = get_session(ctx)
     study = require_study(session)
     particle = study.CreateParticle()
@@ -805,6 +841,28 @@ async def rocky_create_particle(
             particle.SetTavaresD0(tavares_d0, unit="m")
         if tavares_e_inf is not None:
             particle.SetTavaresEInf(tavares_e_inf, unit="J/kg")
+        if tavares_b is not None:
+            particle.SetTavaresB(tavares_b, unit="-")
+        if tavares_gamma is not None:
+            particle.SetTavaresGamma(tavares_gamma, unit="-")
+        if tavares_phi is not None:
+            particle.SetTavaresPhi(tavares_phi, unit="-")
+        if tavares_sigma_squared is not None:
+            particle.SetTavaresSigmaSquared(tavares_sigma_squared, unit="-")
+        if tavares_ratio_emax is not None:
+            particle.SetTavaresRatioEmax(tavares_ratio_emax, unit="-")
+        if tavares_minimum_energy is not None:
+            particle.SetTavaresMinimumEnergy(tavares_minimum_energy, unit="J/kg")
+        if ratio_energy_after_breakage is not None:
+            particle.SetRatioEnergyAfterBreakage(ratio_energy_after_breakage, unit="-")
+        if t10_formula is not None:
+            particle.SetT10Formula(t10_formula)
+        if abt10_maximum_t10 is not None:
+            particle.SetAbt10MaximumT10Value(abt10_maximum_t10, unit="%")
+        if abt10_select_coefficient is not None:
+            particle.SetAbt10SelectFunctionCoefficient(abt10_select_coefficient, unit="kg/J")
+        if cgm_scale_factor is not None:
+            particle.SetCgmScaleFactor(cgm_scale_factor)
         if any(
             value is not None
             for value in (shear_stress_limit, tensile_stress_limit, von_mises_stress_limit)
@@ -900,6 +958,17 @@ async def rocky_create_particle(
         tavares_a_percent=particle.GetTavaresA("%"),
         tavares_d0_m=particle.GetTavaresD0("m"),
         tavares_e_inf_j_kg=particle.GetTavaresEInf("J/kg"),
+        tavares_b=particle.GetTavaresB("-"),
+        tavares_gamma=particle.GetTavaresGamma("-"),
+        tavares_phi=particle.GetTavaresPhi("-"),
+        tavares_sigma_squared=particle.GetTavaresSigmaSquared("-"),
+        tavares_ratio_emax=particle.GetTavaresRatioEmax("-"),
+        tavares_minimum_energy_j_kg=particle.GetTavaresMinimumEnergy("J/kg"),
+        ratio_energy_after_breakage=particle.GetRatioEnergyAfterBreakage("-"),
+        t10_formula=particle.GetT10Formula(),
+        abt10_maximum_t10_percent=particle.GetAbt10MaximumT10Value("%"),
+        abt10_select_coefficient_kg_j=particle.GetAbt10SelectFunctionCoefficient("kg/J"),
+        cgm_scale_factor=particle.GetCgmScaleFactor(),
         shear_stress_limit_n_m2=particle.GetShearStressLimit("N/m2"),
         tensile_stress_limit_n_m2=particle.GetTensileStressLimit("N/m2"),
         von_mises_stress_limit_n_m2=particle.GetVonMisesStressLimit("N/m2"),
