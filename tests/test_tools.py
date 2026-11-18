@@ -158,6 +158,21 @@ async def test_material_can_be_assigned_to_a_wall(study: Client, tmp_path) -> No
     assert created.data["name"] == "rubber"
 
 
+async def test_walls_can_be_exported_to_stl(study: Client, tmp_path) -> None:
+    """Exporting a wall writes an STL through the export toolkit."""
+    geometry = tmp_path / "chute.stl"
+    geometry.write_text("solid chute\nendsolid chute\n", encoding="utf-8")
+    imported = await study.call_tool("rocky_import_wall", {"path": str(geometry)})
+    destination = tmp_path / "out.stl"
+    exported = await study.call_tool(
+        "rocky_export_stl",
+        {"path": str(destination), "wall_ids": imported.data["wall_ids"]},
+    )
+    assert exported.data["simulated"] is True
+    assert destination.exists()
+    assert "mock" in destination.read_text(encoding="utf-8")
+
+
 async def test_domain_and_solver_settings_are_applied(study: Client) -> None:
     """Domain and solver settings are visible in the study description."""
     await study.call_tool(

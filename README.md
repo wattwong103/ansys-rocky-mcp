@@ -27,7 +27,7 @@ Rocky study, run it, and read the results.
 
 | | |
 |---|---|
-| **Tools** | 29 (session, project, setup, run control, results, Python escape hatch) |
+| **Tools** | 30 (session, project, setup, run control, results, Python escape hatch) |
 | **Transport** | `stdio` (default) and `http` |
 | **Verified** | Full workflow end-to-end over a real MCP stdio handshake, 42 automated tests |
 | **Requires** | Python ≥ 3.12, `ansys-common-mcp`, `ansys-rocky-core` |
@@ -200,6 +200,7 @@ startup_timeout_sec = 90
 | `rocky_get_grid_function_stats` | Min/max of a grid function over the time set. |
 | `rocky_create_selection` | Create a cylinder or cube selection process. |
 | `rocky_list_processes` | List user processes and registered objects. |
+| `rocky_export_stl` | Export walls to an STL file. |
 | `rocky_run_python` | Run arbitrary Python in a persistent session (escape hatch). |
 
 ### Object identifiers
@@ -306,7 +307,7 @@ the server running as a subprocess.
   differences on the first run against a real installation.
 - The mock backend models bulk transport, not particle–particle contact mechanics. It is
   a simulator for interface exploration and testing, **not** a DEM solver.
-- Result export through the Rocky export toolkit is not exposed as a tool yet.
+- STL export of walls is exposed. The other export-toolkit methods (FEM forces, geometry loads, HTC) are not.
 
 ## License
 

@@ -252,6 +252,54 @@ async def rocky_create_selection(
     )
 
 
+async def rocky_export_stl(
+    ctx: Context,
+    path: str,
+    wall_ids: list[str],
+    output_unit: str = "m",
+) -> dict[str, Any]:
+    """Export walls to an STL file through Rocky's export toolkit.
+
+    Parameters
+    ----------
+    path : str
+        Destination STL path.
+    wall_ids : list[str]
+        Wall identifiers to export, for example ``["wall_1"]``.
+    output_unit : str, default: "m"
+        Unit written into the file.
+
+    """
+    session = get_session(ctx)
+    study = require_study(session)
+    if not wall_ids:
+        raise ToolError("At least one wall id is required.")
+    walls = [_resolve_wall(session, wall_id) for wall_id in wall_ids]
+    try:
+        study.GetExportToolkit().ExportToSTL(
+            path,
+            walls,
+            output_unit=output_unit,
+        )
+    except Exception as exc:
+        raise ToolError(f"Could not export the STL: {exc}") from exc
+    return envelope(
+        session,
+        message=f"Exported {len(walls)} wall(s) to {path}.",
+        path=path,
+        wall_ids=wall_ids,
+        output_unit=output_unit,
+    )
+
+
+def _resolve_wall(session: Any, wall_id: str) -> Any:
+    """Resolve a wall id."""
+    try:
+        return session.registry.resolve(wall_id, "wall")
+    except KeyError as exc:
+        raise ToolError(str(exc)) from exc
+
+
 async def rocky_list_processes(ctx: Context) -> dict[str, Any]:
     """List the user processes and registered objects of the study."""
     session = get_session(ctx)
@@ -319,4 +367,5 @@ def register(mcp: Any) -> None:
     mcp.tool()(rocky_get_grid_function_stats)
     mcp.tool()(rocky_create_selection)
     mcp.tool()(rocky_list_processes)
+    mcp.tool()(rocky_export_stl)
     mcp.tool()(rocky_run_python)

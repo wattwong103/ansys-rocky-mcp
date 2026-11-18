@@ -1022,6 +1022,31 @@ class MockPhysics:
         self._rolling_resistance = value
 
 
+class MockExportToolkit:
+    """Stand-in for the Rocky export toolkit."""
+
+    def __init__(self, study: MockStudy) -> None:
+        """Initialize the toolkit for one study."""
+        self._study = study
+
+    def ExportToSTL(
+        self,
+        stl_filename: str,
+        entities: Any,
+        time_to_export: Any = None,
+        output_unit: str | None = None,
+    ) -> None:
+        """Write a stand-in STL that records which entities were requested."""
+        items = entities if isinstance(entities, list) else [entities]
+        names = []
+        for item in items:
+            get_name = getattr(item, "GetName", None)
+            names.append(get_name() if get_name is not None else str(item))
+        path = Path(stl_filename)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("solid mock\n" + "\n".join(names) + "\nendsolid mock\n", encoding="utf-8")
+
+
 class MockStudy:
     """Stand-in for a Rocky study, the container of a DEM simulation."""
 
@@ -1164,9 +1189,9 @@ class MockStudy:
         """Return the user process collection."""
         return self._processes
 
-    def GetExportToolkit(self) -> Any:
-        """Return an export toolkit stub."""
-        raise NotImplementedError("The mock backend does not implement result export.")
+    def GetExportToolkit(self) -> MockExportToolkit:
+        """Return the export toolkit."""
+        return MockExportToolkit(self)
 
     def GetElementNames(self, type_name: str | None = None) -> list[str]:
         """Return the names of the study elements."""

@@ -44,6 +44,7 @@ EXPECTED_TOOLS = {
     "rocky_get_grid_function_stats",
     "rocky_create_selection",
     "rocky_list_processes",
+    "rocky_export_stl",
     "rocky_run_python",
 }
 
