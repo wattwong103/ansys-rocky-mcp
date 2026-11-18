@@ -307,6 +307,7 @@ async def test_a_feed_conveyor_records_belt_speed(study: Client) -> None:
             "transition_length": 1.5,
             "idler_diameter": 0.4,
             "wall_thickness": 0.008,
+            "face_width": 0.35,
             "name": "feed",
         },
     )
@@ -317,6 +318,7 @@ async def test_a_feed_conveyor_records_belt_speed(study: Client) -> None:
     assert created.data["transition_length_m"] == pytest.approx(1.5)
     assert created.data["idler_diameter_m"] == pytest.approx(0.4)
     assert created.data["wall_thickness_m"] == pytest.approx(0.008)
+    assert created.data["face_width_m"] == pytest.approx(0.35)
     assert created.data["belt_speed_m_s"] == pytest.approx(2.5)
     assert created.data["belt_width_m"] == pytest.approx(0.8)
     assert created.data["incline_deg"] == pytest.approx(12.0)

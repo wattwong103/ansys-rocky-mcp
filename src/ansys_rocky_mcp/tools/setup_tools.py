@@ -205,6 +205,7 @@ async def rocky_create_feed_conveyor(
     belt_thickness: float | None = None,
     idler_diameter: float | None = None,
     wall_thickness: float | None = None,
+    face_width: float | None = None,
     name: str | None = None,
 ) -> dict[str, Any]:
     """Create a Rocky feed conveyor.
@@ -247,6 +248,8 @@ async def rocky_create_feed_conveyor(
         Pulley diameter in meters. Feed conveyors only.
     wall_thickness : float | None, default: None
         Side wall thickness in meters. Feed conveyors only.
+    face_width : float | None, default: None
+        Pulley face width in meters. Feed conveyors only.
     name : str | None, default: None
         Conveyor name.
 
@@ -273,6 +276,7 @@ async def rocky_create_feed_conveyor(
         belt_thickness=belt_thickness,
         idler_diameter=idler_diameter,
         wall_thickness=wall_thickness,
+        face_width=face_width,
     )
 
 
@@ -298,6 +302,7 @@ async def _create_conveyor(
     belt_thickness: float | None = None,
     idler_diameter: float | None = None,
     wall_thickness: float | None = None,
+    face_width: float | None = None,
 ) -> dict[str, Any]:
     """Create a feed or receiving conveyor."""
     session = get_session(ctx)
@@ -345,6 +350,8 @@ async def _create_conveyor(
             conveyor.SetDiameter(idler_diameter, unit="m")
         if wall_thickness is not None:
             conveyor.SetWallThickness(wall_thickness, unit="m")
+        if face_width is not None:
+            conveyor.SetFaceWidth(face_width, unit="m")
     except ToolError:
         raise
     except Exception as exc:
@@ -381,6 +388,7 @@ async def _create_conveyor(
         belt_thickness_m=conveyor.GetBeltThickness("m"),
         idler_diameter_m=conveyor.GetDiameter("m"),
         wall_thickness_m=conveyor.GetWallThickness("m"),
+        face_width_m=conveyor.GetFaceWidth("m"),
     )
 
 
