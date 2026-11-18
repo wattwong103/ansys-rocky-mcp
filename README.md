@@ -173,7 +173,7 @@ startup_timeout_sec = 90
 | `rocky_import_wall` | Import a geometry file as a wall. |
 | `rocky_create_surface` | Create a circular or rectangular surface. |
 | `rocky_create_particle` | Create a particle definition (shape, sieve size). |
-| `rocky_create_material` | Create a solid material and optionally assign it to a particle. |
+| `rocky_create_material` | Create a solid material and assign it to a particle or a wall. |
 | `rocky_set_material_interaction` | Set friction and restitution between two materials. |
 | `rocky_create_inlet` | Create a particle inlet and set its mass flow rate. |
 | `rocky_create_outlet` | Create an outlet on a surface. |

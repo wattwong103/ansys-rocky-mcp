@@ -522,10 +522,11 @@ async def rocky_create_material(
     youngs_modulus: float | None = None,
     poisson_ratio: float | None = None,
     particle_id: str | None = None,
+    wall_id: str | None = None,
     density_unit: str = "kg/m3",
     modulus_unit: str = "Pa",
 ) -> dict[str, Any]:
-    """Create a solid material and optionally assign it to a particle.
+    """Create a solid material and optionally assign it to a particle or wall.
 
     Parameters
     ----------
@@ -539,6 +540,8 @@ async def rocky_create_material(
         Poisson's ratio.
     particle_id : str | None, default: None
         Particle to assign the material to, for example ``particle_1``.
+    wall_id : str | None, default: None
+        Wall to assign the material to, for example ``wall_1``.
     density_unit : str, default: "kg/m3"
         Unit of ``density``.
     modulus_unit : str, default: "Pa"
@@ -567,6 +570,15 @@ async def rocky_create_material(
             raise ToolError(f"Could not assign the material to {particle_id}: {exc}") from exc
         assigned = particle_id
 
+    assigned_wall = None
+    if wall_id is not None:
+        wall = _resolve(session, wall_id, "wall")
+        try:
+            wall.SetMaterial(material)
+        except Exception as exc:
+            raise ToolError(f"Could not assign the material to {wall_id}: {exc}") from exc
+        assigned_wall = wall_id
+
     ident = session.registry.add(
         "material",
         material,
@@ -582,6 +594,7 @@ async def rocky_create_material(
         youngs_modulus=material.GetYoungsModulus("Pa"),
         poisson_ratio=material.GetPoissonRatio(),
         particle_id=assigned,
+        wall_id=assigned_wall,
     )
 
 

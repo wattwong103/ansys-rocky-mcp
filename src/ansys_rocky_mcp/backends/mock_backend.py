@@ -544,6 +544,7 @@ class MockWall:
         """Initialize the wall."""
         self._filename = filename
         self._name = name
+        self._material: Any = None
 
     def GetName(self) -> str:
         """Return the wall name."""
@@ -556,6 +557,14 @@ class MockWall:
     def GetFilename(self) -> str:
         """Return the source file of the wall."""
         return self._filename
+
+    def SetMaterial(self, value: Any) -> None:
+        """Assign a solid material."""
+        self._material = value
+
+    def GetMaterial(self) -> Any:
+        """Return the assigned material."""
+        return self._material
 
 
 class MockDomainSettings:

@@ -127,6 +127,7 @@ async def test_material_can_be_assigned_to_a_particle(study: Client) -> None:
     assert created.data["name"] == "sand"
     assert created.data["density"] == pytest.approx(2600.0)
     assert created.data["particle_id"] == particles[0]
+    assert created.data["wall_id"] is None
 
     other = await study.call_tool("rocky_create_material", {"name": "steel", "density": 7800.0})
     pair = await study.call_tool(
@@ -142,6 +143,19 @@ async def test_material_can_be_assigned_to_a_particle(study: Client) -> None:
     assert pair.data["static_friction"] == pytest.approx(0.6)
     assert pair.data["dynamic_friction"] == pytest.approx(0.4)
     assert pair.data["restitution"] == pytest.approx(0.2)
+
+
+async def test_material_can_be_assigned_to_a_wall(study: Client, tmp_path) -> None:
+    """A solid material can be assigned to an imported wall."""
+    geometry = tmp_path / "chute.stl"
+    geometry.write_text("solid chute\nendsolid chute\n", encoding="utf-8")
+    imported = await study.call_tool("rocky_import_wall", {"path": str(geometry)})
+    created = await study.call_tool(
+        "rocky_create_material",
+        {"name": "rubber", "density": 1100.0, "wall_id": imported.data["wall_ids"][0]},
+    )
+    assert created.data["wall_id"] == imported.data["wall_ids"][0]
+    assert created.data["name"] == "rubber"
 
 
 async def test_domain_and_solver_settings_are_applied(study: Client) -> None:
