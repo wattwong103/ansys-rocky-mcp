@@ -314,11 +314,20 @@ async def test_a_feed_conveyor_records_belt_speed(study: Client) -> None:
     assert created.data["incline_deg"] == pytest.approx(12.0)
     receiving = await study.call_tool(
         "rocky_create_receiving_conveyor",
-        {"belt_speed": 1.2, "start_time": 3.0, "acceleration_period": 1.5, "name": "discharge"},
+        {
+            "belt_speed": 1.2,
+            "start_time": 3.0,
+            "acceleration_period": 1.5,
+            "stop_time": 20.0,
+            "deceleration_period": 2.0,
+            "name": "discharge",
+        },
     )
     assert receiving.data["kind"] == "receiving"
     assert receiving.data["start_time_s"] == pytest.approx(3.0)
     assert receiving.data["acceleration_period_s"] == pytest.approx(1.5)
+    assert receiving.data["stop_time_s"] == pytest.approx(20.0)
+    assert receiving.data["deceleration_period_s"] == pytest.approx(2.0)
     assert receiving.data["name"] == "discharge"
     assert receiving.data["belt_speed_m_s"] == pytest.approx(1.2)
     belt = await study.call_tool(

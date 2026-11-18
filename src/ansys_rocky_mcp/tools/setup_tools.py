@@ -192,6 +192,8 @@ async def rocky_create_feed_conveyor(
     incline_deg: float = 0.0,
     start_time: float | None = None,
     acceleration_period: float | None = None,
+    stop_time: float | None = None,
+    deceleration_period: float | None = None,
     loading_length: float | None = None,
     drop_length: float | None = None,
     drop_width: float | None = None,
@@ -212,6 +214,10 @@ async def rocky_create_feed_conveyor(
         Time in seconds when the belt starts moving.
     acceleration_period : float | None, default: None
         Seconds the belt takes to reach ``belt_speed``.
+    stop_time : float | None, default: None
+        Time in seconds when the belt starts to stop.
+    deceleration_period : float | None, default: None
+        Seconds the belt takes to stop.
     loading_length : float | None, default: None
         Length of the loading section in meters. Feed conveyors only.
     drop_length : float | None, default: None
@@ -233,6 +239,8 @@ async def rocky_create_feed_conveyor(
         name,
         start_time=start_time,
         acceleration_period=acceleration_period,
+        stop_time=stop_time,
+        deceleration_period=deceleration_period,
         loading_length=loading_length,
         drop_length=drop_length,
         drop_width=drop_width,
@@ -249,6 +257,8 @@ async def _create_conveyor(
     name: str | None,
     start_time: float | None = None,
     acceleration_period: float | None = None,
+    stop_time: float | None = None,
+    deceleration_period: float | None = None,
     loading_length: float | None = None,
     drop_length: float | None = None,
     drop_width: float | None = None,
@@ -269,6 +279,10 @@ async def _create_conveyor(
             conveyor.SetBeginningStartTime(start_time, unit="s")
         if acceleration_period is not None:
             conveyor.SetAccelerationPeriod(acceleration_period, unit="s")
+        if stop_time is not None:
+            conveyor.SetBeginningStopTime(stop_time, unit="s")
+        if deceleration_period is not None:
+            conveyor.SetDecelerationPeriod(deceleration_period, unit="s")
         if name:
             conveyor.SetName(name)
         if loading_length is not None:
@@ -298,6 +312,8 @@ async def _create_conveyor(
         incline_deg=conveyor.GetBeltInclineAngle("deg"),
         start_time_s=conveyor.GetBeginningStartTime("s"),
         acceleration_period_s=conveyor.GetAccelerationPeriod("s"),
+        stop_time_s=conveyor.GetBeginningStopTime("s"),
+        deceleration_period_s=conveyor.GetDecelerationPeriod("s"),
         loading_length_m=conveyor.GetLoadingLength("m"),
         drop_box_m=[
             conveyor.GetDropBoxLength("m"),
@@ -314,6 +330,8 @@ async def rocky_create_receiving_conveyor(
     incline_deg: float = 0.0,
     start_time: float | None = None,
     acceleration_period: float | None = None,
+    stop_time: float | None = None,
+    deceleration_period: float | None = None,
     name: str | None = None,
 ) -> dict[str, Any]:
     """Create a Rocky receiving conveyor.
@@ -329,6 +347,8 @@ async def rocky_create_receiving_conveyor(
         name,
         start_time=start_time,
         acceleration_period=acceleration_period,
+        stop_time=stop_time,
+        deceleration_period=deceleration_period,
     )
 
 
