@@ -3865,6 +3865,177 @@ class MockFeedConveyor:
         return self._material
 
 
+class MockSphSettings:
+    """Stand-in for Rocky SPH settings."""
+
+    def __init__(self) -> None:
+        """Initialize SPH as disabled."""
+        self._enabled = False
+        self._solver = "WCSPH"
+        self._size = 0.0
+        self._sound = 0.0
+        self._max_velocity = 0.0
+        self._kernel = "cubic"
+        self._position = "none"
+        self._turbulence = "laminar"
+        self._viscosity = "cleary"
+        self._integration = "explicit"
+        self._tension = "none"
+        self._tension_coefficient = 0.0
+        self._tension_angle = 0.0
+
+    def GetEnabled(self) -> bool:
+        """Return whether SPH is enabled."""
+        return self._enabled
+
+    def SetEnabled(self, value: bool) -> None:
+        """Set whether SPH is enabled."""
+        self._enabled = bool(value)
+
+    def GetSolverModel(self) -> str:
+        """Return the SPH solver model."""
+        return self._solver
+
+    def SetSolverModel(self, value: str) -> None:
+        """Set the SPH solver model."""
+        if value not in ("WCSPH", "IISPH", "DFSPH"):
+            raise ValueError(
+                f"Unsupported SPH solver {value!r}. Expected 'WCSPH', 'IISPH', or 'DFSPH'."
+            )
+        self._solver = value
+
+    def GetSize(self, unit: str | None = None) -> float:
+        """Return the SPH particle size in meters."""
+        if unit not in (None, "m"):
+            raise ValueError(f"Unsupported length unit {unit!r}. Expected 'm'.")
+        return self._size
+
+    def SetSize(self, value: float, unit: str | None = None) -> None:
+        """Set the SPH particle size. Rocky's token is ``m``."""
+        if unit not in (None, "m"):
+            raise ValueError(f"Unsupported length unit {unit!r}. Expected 'm'.")
+        self._size = float(value)
+
+    def _speed(self, value: float, unit: str | None) -> float:
+        """Store a speed. Rocky's token is ``m/s``."""
+        if unit not in (None, "m/s"):
+            raise ValueError(f"Unsupported velocity unit {unit!r}. Expected 'm/s'.")
+        return float(value)
+
+    def GetSoundSpeed(self, unit: str | None = None) -> float:
+        """Return the sound speed in m/s."""
+        return self._speed(self._sound, unit)
+
+    def SetSoundSpeed(self, value: float, unit: str | None = None) -> None:
+        """Set the sound speed. Rocky's token is ``m/s``."""
+        self._sound = self._speed(value, unit)
+
+    def GetMaximumExpectedVelocity(self, unit: str | None = None) -> float:
+        """Return the maximum expected velocity in m/s."""
+        return self._speed(self._max_velocity, unit)
+
+    def SetMaximumExpectedVelocity(self, value: float, unit: str | None = None) -> None:
+        """Set the maximum expected velocity. Rocky's token is ``m/s``."""
+        self._max_velocity = self._speed(value, unit)
+
+    def GetKernelType(self) -> str:
+        """Return the SPH kernel."""
+        return self._kernel
+
+    def SetKernelType(self, value: str) -> None:
+        """Set the SPH kernel."""
+        if value not in ("cubic", "quintic", "wendland"):
+            raise ValueError(
+                f"Unsupported SPH kernel {value!r}. Expected 'cubic', 'quintic', or 'wendland'."
+            )
+        self._kernel = value
+
+    def GetPosCorrectionType(self) -> str:
+        """Return the position correction."""
+        return self._position
+
+    def SetPosCorrectionType(self, value: str) -> None:
+        """Set the position correction."""
+        if value not in ("none", "xsph", "shift"):
+            raise ValueError(
+                f"Unsupported position correction {value!r}. Expected 'none', 'xsph', or 'shift'."
+            )
+        self._position = value
+
+    def GetTurbulenceType(self) -> str:
+        """Return the turbulence model."""
+        return self._turbulence
+
+    def SetTurbulenceType(self, value: str) -> None:
+        """Set the turbulence model."""
+        if value not in ("laminar", "les"):
+            raise ValueError(
+                f"Unsupported turbulence model {value!r}. Expected 'laminar' or 'les'."
+            )
+        self._turbulence = value
+
+    def GetViscosityType(self) -> str:
+        """Return the viscosity model."""
+        return self._viscosity
+
+    def SetViscosityType(self, value: str) -> None:
+        """Set the viscosity model."""
+        if value not in ("cleary", "morris", "custom"):
+            raise ValueError(
+                f"Unsupported viscosity model {value!r}. Expected 'cleary', 'morris', or 'custom'."
+            )
+        self._viscosity = value
+
+    def GetViscousForceIntegration(self) -> str:
+        """Return the viscous force integration."""
+        return self._integration
+
+    def SetViscousForceIntegration(self, value: str) -> None:
+        """Set the viscous force integration."""
+        if value not in ("explicit", "implicit"):
+            raise ValueError(
+                f"Unsupported viscous integration {value!r}. Expected 'explicit' or 'implicit'."
+            )
+        self._integration = value
+
+    def GetSurfaceTensionType(self) -> str:
+        """Return the surface tension model."""
+        return self._tension
+
+    def SetSurfaceTensionType(self, value: str) -> None:
+        """Set the surface tension model."""
+        if value not in ("none", "CSF", "CSS", "custom", "pairwise_potential"):
+            raise ValueError(
+                f"Unsupported surface tension {value!r}. "
+                "Expected 'none', 'CSF', 'CSS', 'custom', or 'pairwise_potential'."
+            )
+        self._tension = value
+
+    def GetSurfaceTensionCoefficient(self, unit: str | None = None) -> float:
+        """Return the surface tension coefficient in N/m."""
+        if unit not in (None, "N/m"):
+            raise ValueError(f"Unsupported surface tension unit {unit!r}. Expected 'N/m'.")
+        return self._tension_coefficient
+
+    def SetSurfaceTensionCoefficient(self, value: float, unit: str | None = None) -> None:
+        """Set the surface tension coefficient. Rocky's token is ``N/m``."""
+        if unit not in (None, "N/m"):
+            raise ValueError(f"Unsupported surface tension unit {unit!r}. Expected 'N/m'.")
+        self._tension_coefficient = float(value)
+
+    def GetSurfaceTensionBoundaryAngle(self, unit: str | None = None) -> float:
+        """Return the surface tension boundary angle in degrees."""
+        if unit not in (None, "dega"):
+            raise ValueError(f"Unsupported angle unit {unit!r}. Expected 'dega'.")
+        return self._tension_angle
+
+    def SetSurfaceTensionBoundaryAngle(self, value: float, unit: str | None = None) -> None:
+        """Set the surface tension boundary angle. Rocky's token is ``dega``."""
+        if unit not in (None, "dega"):
+            raise ValueError(f"Unsupported angle unit {unit!r}. Expected 'dega'.")
+        self._tension_angle = float(value)
+
+
 class MockStudy:
     """Stand-in for a Rocky study, the container of a DEM simulation."""
 
@@ -3883,6 +4054,7 @@ class MockStudy:
         self._materials = MockMaterialCollection()
         self._interactions = MockMaterialsInteractionCollection()
         self._solver = MockSimulatorRun()
+        self._sph = MockSphSettings()
         self._motion_source = MockMotionFrameSource()
         self._processes = MockUserProcessCollection(self)
         self._particles_process = MockParticlesProcess(self)
@@ -4030,6 +4202,10 @@ class MockStudy:
     def GetDomainSettings(self) -> MockDomainSettings:
         """Return the domain settings."""
         return self._domain
+
+    def GetSphSettings(self) -> MockSphSettings:
+        """Return the SPH settings."""
+        return self._sph
 
     def GetPhysics(self) -> MockPhysics:
         """Return the physics settings."""

@@ -258,6 +258,22 @@ async def test_domain_and_solver_settings_are_applied(study: Client) -> None:
         "rocky_set_domain", {"min_values": [-5.0, -1.5, -1.5], "max_values": [5.0, 1.5, 1.5]}
     )
     assert box.data["use_boundary_limits"] is False
+    sph = await study.call_tool(
+        "rocky_set_sph",
+        {
+            "solver_model": "DFSPH",
+            "size_m": 0.005,
+            "kernel": "wendland",
+            "surface_tension": "CSF",
+            "surface_tension_angle_deg": 30.0,
+        },
+    )
+    assert sph.data["enabled"] is True
+    assert sph.data["solver_model"] == "DFSPH"
+    assert sph.data["size_m"] == pytest.approx(0.005)
+    assert sph.data["kernel"] == "wendland"
+    assert sph.data["surface_tension"] == "CSF"
+    assert sph.data["surface_tension_angle_deg"] == pytest.approx(30.0)
     await study.call_tool("rocky_set_simulation_settings", {"duration": 4.0, "time_interval": 0.2})
     timed = await study.call_tool(
         "rocky_set_simulation_settings",

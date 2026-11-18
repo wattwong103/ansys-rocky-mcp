@@ -3162,6 +3162,148 @@ async def rocky_set_temperature(
     )
 
 
+SPH_SOLVERS = ("WCSPH", "IISPH", "DFSPH")
+SPH_KERNELS = ("cubic", "quintic", "wendland")
+SPH_POSITION_CORRECTIONS = ("none", "xsph", "shift")
+SPH_TURBULENCE = ("laminar", "les")
+SPH_VISCOSITY = ("cleary", "morris", "custom")
+SPH_INTEGRATION = ("explicit", "implicit")
+SPH_SURFACE_TENSION = ("none", "CSF", "CSS", "custom", "pairwise_potential")
+
+
+async def rocky_set_sph(
+    ctx: Context,
+    enabled: bool | None = None,
+    solver_model: str | None = None,
+    size_m: float | None = None,
+    sound_speed: float | None = None,
+    max_velocity: float | None = None,
+    kernel: str | None = None,
+    position_correction: str | None = None,
+    turbulence: str | None = None,
+    viscosity: str | None = None,
+    viscous_integration: str | None = None,
+    surface_tension: str | None = None,
+    surface_tension_n_m: float | None = None,
+    surface_tension_angle_deg: float | None = None,
+) -> dict[str, Any]:
+    """Configure Rocky's SPH fluid settings.
+
+    Parameters
+    ----------
+    enabled : bool | None, default: None
+        Turn SPH on or off. Any other SPH value turns it on when this is omitted.
+    solver_model : str | None, default: None
+        One of ``WCSPH``, ``IISPH``, or ``DFSPH``.
+    size_m : float | None, default: None
+        SPH particle size in meters.
+    sound_speed : float | None, default: None
+        Sound speed in meters per second.
+    max_velocity : float | None, default: None
+        Maximum expected velocity in meters per second.
+    kernel : str | None, default: None
+        One of ``cubic``, ``quintic``, or ``wendland``.
+    position_correction : str | None, default: None
+        One of ``none``, ``xsph``, or ``shift``.
+    turbulence : str | None, default: None
+        ``laminar`` or ``les``.
+    viscosity : str | None, default: None
+        One of ``cleary``, ``morris``, or ``custom``.
+    viscous_integration : str | None, default: None
+        ``explicit`` or ``implicit``.
+    surface_tension : str | None, default: None
+        One of ``none``, ``CSF``, ``CSS``, ``custom``, or ``pairwise_potential``.
+    surface_tension_n_m : float | None, default: None
+        Surface tension coefficient. Rocky's token is ``N/m``.
+    surface_tension_angle_deg : float | None, default: None
+        Boundary contact angle in degrees. Rocky's token is ``dega``.
+
+    """
+    session = get_session(ctx)
+    study = require_study(session)
+    _require_choice(solver_model, SPH_SOLVERS, "SPH solver")
+    _require_choice(kernel, SPH_KERNELS, "SPH kernel")
+    _require_choice(position_correction, SPH_POSITION_CORRECTIONS, "position correction")
+    _require_choice(turbulence, SPH_TURBULENCE, "turbulence model")
+    _require_choice(viscosity, SPH_VISCOSITY, "viscosity model")
+    _require_choice(viscous_integration, SPH_INTEGRATION, "viscous integration")
+    _require_choice(surface_tension, SPH_SURFACE_TENSION, "surface tension")
+    sph_on = enabled
+    if sph_on is None and any(
+        value is not None
+        for value in (
+            solver_model,
+            size_m,
+            sound_speed,
+            max_velocity,
+            kernel,
+            position_correction,
+            turbulence,
+            viscosity,
+            viscous_integration,
+            surface_tension,
+            surface_tension_n_m,
+            surface_tension_angle_deg,
+        )
+    ):
+        sph_on = True
+    try:
+        sph = study.GetSphSettings()
+        if sph_on is not None:
+            sph.SetEnabled(bool(sph_on))
+        if solver_model is not None:
+            sph.SetSolverModel(solver_model)
+        if size_m is not None:
+            sph.SetSize(size_m, unit="m")
+        if sound_speed is not None:
+            sph.SetSoundSpeed(sound_speed, unit="m/s")
+        if max_velocity is not None:
+            sph.SetMaximumExpectedVelocity(max_velocity, unit="m/s")
+        if kernel is not None:
+            sph.SetKernelType(kernel)
+        if position_correction is not None:
+            sph.SetPosCorrectionType(position_correction)
+        if turbulence is not None:
+            sph.SetTurbulenceType(turbulence)
+        if viscosity is not None:
+            sph.SetViscosityType(viscosity)
+        if viscous_integration is not None:
+            sph.SetViscousForceIntegration(viscous_integration)
+        if surface_tension is not None:
+            sph.SetSurfaceTensionType(surface_tension)
+        if surface_tension_n_m is not None:
+            sph.SetSurfaceTensionCoefficient(surface_tension_n_m, unit="N/m")
+        if surface_tension_angle_deg is not None:
+            sph.SetSurfaceTensionBoundaryAngle(surface_tension_angle_deg, unit="dega")
+    except ToolError:
+        raise
+    except Exception as exc:
+        raise ToolError(f"Could not configure SPH: {exc}") from exc
+    return envelope(
+        session,
+        message="SPH settings updated.",
+        enabled=bool(sph.GetEnabled()),
+        solver_model=sph.GetSolverModel(),
+        size_m=sph.GetSize("m"),
+        sound_speed_m_s=sph.GetSoundSpeed("m/s"),
+        max_velocity_m_s=sph.GetMaximumExpectedVelocity("m/s"),
+        kernel=sph.GetKernelType(),
+        position_correction=sph.GetPosCorrectionType(),
+        turbulence=sph.GetTurbulenceType(),
+        viscosity=sph.GetViscosityType(),
+        viscous_integration=sph.GetViscousForceIntegration(),
+        surface_tension=sph.GetSurfaceTensionType(),
+        surface_tension_n_m=sph.GetSurfaceTensionCoefficient("N/m"),
+        surface_tension_angle_deg=sph.GetSurfaceTensionBoundaryAngle("dega"),
+    )
+
+
+def _require_choice(value: str | None, allowed: tuple[str, ...], label: str) -> None:
+    """Reject a token Rocky does not list."""
+    if value is not None and value not in allowed:
+        raise ToolError(f"Unknown {label} {value!r}. Expected one of {allowed}.")
+
+
 def register(mcp: Any) -> None:
     """Register the setup tools on the MCP server."""
     mcp.tool()(rocky_import_wall)
@@ -3179,6 +3321,7 @@ def register(mcp: Any) -> None:
     mcp.tool()(rocky_create_outlet)
     mcp.tool()(rocky_set_domain)
     mcp.tool()(rocky_set_simulation_settings)
+    mcp.tool()(rocky_set_sph)
     mcp.tool()(rocky_set_output_property)
     mcp.tool()(rocky_set_sph_boundary)
     mcp.tool()(rocky_set_wall_wear)
